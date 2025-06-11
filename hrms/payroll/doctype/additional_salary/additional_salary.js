@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Additional Salary", {
+nts.ui.form.on("Additional Salary", {
 	setup: function (frm) {
 		frm.add_fetch(
 			"salary_component",
@@ -27,7 +27,7 @@ frappe.ui.form.on("Additional Salary", {
 
 	employee: function (frm) {
 		if (frm.doc.employee) {
-			frappe.run_serially([
+			nts.run_serially([
 				() => frm.trigger("get_employee_currency"),
 				() => frm.trigger("set_company"),
 			]);
@@ -37,8 +37,8 @@ frappe.ui.form.on("Additional Salary", {
 	},
 
 	set_company: function (frm) {
-		frappe.call({
-			method: "frappe.client.get_value",
+		nts.call({
+			method: "nts.client.get_value",
 			args: {
 				doctype: "Employee",
 				fieldname: "company",
@@ -73,7 +73,7 @@ frappe.ui.form.on("Additional Salary", {
 	},
 
 	get_employee_currency: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment.get_employee_currency",
 			args: {
 				employee: frm.doc.employee,
@@ -94,8 +94,8 @@ frappe.ui.form.on("Additional Salary", {
 	},
 
 	get_salary_component_amount: function (frm) {
-		frappe.call({
-			method: "frappe.client.get_value",
+		nts.call({
+			method: "nts.client.get_value",
 			args: {
 				doctype: "Salary Component",
 				fieldname: "amount",

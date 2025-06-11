@@ -1,4 +1,4 @@
-import frappe
+import nts
 
 
 def execute():
@@ -8,10 +8,10 @@ def execute():
 	        - the claim is partially paid via advances and the rest is reimbursed
 	"""
 
-	ExpenseClaim = frappe.qb.DocType("Expense Claim")
+	ExpenseClaim = nts.qb.DocType("Expense Claim")
 
 	(
-		frappe.qb.update(ExpenseClaim)
+		nts.qb.update(ExpenseClaim)
 		.set(ExpenseClaim.status, "Paid")
 		.where(
 			(

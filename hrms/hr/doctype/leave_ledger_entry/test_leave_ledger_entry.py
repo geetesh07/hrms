@@ -1,10 +1,10 @@
-# Copyright (c) 2019, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2019, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.utils.data import add_to_date, today
+import nts
+from nts.utils.data import add_to_date, today
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import expire_allocation
 from hrms.tests.utils import HRMSTestSuite
@@ -19,7 +19,7 @@ class TestLeaveLedgerEntry(HRMSTestSuite):
 
 	def setUp(self):
 		emp_id = make_employee("test_leave_allocation@salary.com", company="_Test Company")
-		self.employee = frappe.get_doc("Employee", emp_id)
+		self.employee = nts.get_doc("Employee", emp_id)
 
 	def test_expire_allocation(self):
 		import json
@@ -36,7 +36,7 @@ class TestLeaveLedgerEntry(HRMSTestSuite):
 			"docstatus": 1,
 		}
 
-		allocation = frappe.get_doc(allocation).save()
+		allocation = nts.get_doc(allocation).save()
 
 		expire_allocation(json.dumps(allocation.as_dict()))
 		allocation.reload()
@@ -44,4 +44,4 @@ class TestLeaveLedgerEntry(HRMSTestSuite):
 		self.assertEqual(allocation.expired, 1)
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()

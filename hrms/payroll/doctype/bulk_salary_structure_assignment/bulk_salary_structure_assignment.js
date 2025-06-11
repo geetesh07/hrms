@@ -1,7 +1,7 @@
-// Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Bulk Salary Structure Assignment", {
+nts.ui.form.on("Bulk Salary Structure Assignment", {
 	setup(frm) {
 		frm.trigger("set_queries");
 		hrms.setup_employee_filter_group(frm);
@@ -76,7 +76,7 @@ frappe.ui.form.on("Bulk Salary Structure Assignment", {
 			};
 		});
 		frm.set_query("payroll_payable_account", function () {
-			const company_currency = erpnext.get_currency(frm.doc.company);
+			const company_currency = prodman.get_currency(frm.doc.company);
 			return {
 				filters: {
 					company: frm.doc.company,
@@ -89,7 +89,7 @@ frappe.ui.form.on("Bulk Salary Structure Assignment", {
 	},
 
 	set_payroll_payable_account(frm) {
-		frappe.db.get_value("Company", frm.doc.company, "default_payroll_payable_account", (r) => {
+		nts.db.get_value("Company", frm.doc.company, "default_payroll_payable_account", (r) => {
 			frm.set_value("payroll_payable_account", r.default_payroll_payable_account);
 		});
 	},
@@ -196,7 +196,7 @@ frappe.ui.form.on("Bulk Salary Structure Assignment", {
 			frm.add_custom_button(
 				__(d),
 				function () {
-					const dialog = new frappe.ui.Dialog({
+					const dialog = new nts.ui.Dialog({
 						title: __("Set {0} for selected employees", [__(d)]),
 						fields: [
 							{
@@ -266,7 +266,7 @@ frappe.ui.form.on("Bulk Salary Structure Assignment", {
 	},
 
 	validate_base_zero(frm, employees_with_base_zero, checked_rows_content) {
-		frappe.warn(
+		nts.warn(
 			__("Are you sure you want to proceed?"),
 			__("<b>Base</b> amount has not been set for the following employee(s): {0}", [
 				employees_with_base_zero.join(", "),
@@ -279,7 +279,7 @@ frappe.ui.form.on("Bulk Salary Structure Assignment", {
 	},
 
 	show_confirm_dialog(frm, checked_rows_content) {
-		frappe.confirm(
+		nts.confirm(
 			__("Assign Salary Structure to {0} employee(s)?", [checked_rows_content.length]),
 			() => {
 				frm.events.bulk_assign_structure(frm, checked_rows_content);

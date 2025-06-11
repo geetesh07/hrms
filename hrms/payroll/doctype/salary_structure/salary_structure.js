@@ -1,14 +1,14 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.ui.form.on("Salary Structure", {
+nts.ui.form.on("Salary Structure", {
 	onload: function (frm) {
 		frm.alerted_rows = [];
 
 		let help_button = $(`<a class = 'control-label'>
 			${__("Condition and Formula Help")}
 		</a>`).click(() => {
-			let d = new frappe.ui.Dialog({
+			let d = new nts.ui.Dialog({
 				title: __("Condition and Formula Help"),
 				fields: [
 					{
@@ -18,7 +18,7 @@ frappe.ui.form.on("Salary Structure", {
 				],
 			});
 
-			let message_html = frappe.render_template("condition_and_formula_help");
+			let message_html = nts.render_template("condition_and_formula_help");
 
 			d.fields_dict.msg_wrapper.$wrapper.append(message_html);
 
@@ -46,7 +46,7 @@ frappe.ui.form.on("Salary Structure", {
 	},
 
 	mode_of_payment: function (frm) {
-		erpnext.accounts.pos.get_payment_mode_account(
+		prodman.accounts.pos.get_payment_mode_account(
 			frm,
 			frm.doc.mode_of_payment,
 			function (account) {
@@ -119,10 +119,10 @@ frappe.ui.form.on("Salary Structure", {
 			frm.add_custom_button(
 				__("Single Assignment"),
 				function () {
-					const doc = frappe.model.get_new_doc("Salary Structure Assignment");
+					const doc = nts.model.get_new_doc("Salary Structure Assignment");
 					doc.salary_structure = frm.doc.name;
 					doc.company = frm.doc.company;
-					frappe.set_route("Form", "Salary Structure Assignment", doc.name);
+					nts.set_route("Form", "Salary Structure Assignment", doc.name);
 				},
 				__("Create"),
 			);
@@ -130,10 +130,10 @@ frappe.ui.form.on("Salary Structure", {
 			frm.add_custom_button(
 				__("Bulk Assignments"),
 				() => {
-					const doc = frappe.model.get_new_doc("Bulk Salary Structure Assignment");
+					const doc = nts.model.get_new_doc("Bulk Salary Structure Assignment");
 					doc.salary_structure = frm.doc.name;
 					doc.company = frm.doc.company;
-					frappe.set_route("Form", "Bulk Salary Structure Assignment", doc.name);
+					nts.set_route("Form", "Bulk Salary Structure Assignment", doc.name);
 				},
 				__("Create"),
 			);
@@ -141,9 +141,9 @@ frappe.ui.form.on("Salary Structure", {
 			frm.add_custom_button(
 				__("Income Tax Slab"),
 				() => {
-					frappe.model.with_doctype("Income Tax Slab", () => {
-						const doc = frappe.model.get_new_doc("Income Tax Slab");
-						frappe.set_route("Form", "Income Tax Slab", doc.name);
+					nts.model.with_doctype("Income Tax Slab", () => {
+						const doc = nts.model.get_new_doc("Income Tax Slab");
+						nts.set_route("Form", "Income Tax Slab", doc.name);
 					});
 				},
 				__("Create"),
@@ -178,7 +178,7 @@ frappe.ui.form.on("Salary Structure", {
 	},
 
 	preview_salary_slip: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.payroll.doctype.salary_structure.salary_structure.get_employees",
 			args: {
 				salary_structure: frm.doc.name,
@@ -189,7 +189,7 @@ frappe.ui.form.on("Salary Structure", {
 				if (employees.length == 1) {
 					frm.events.open_salary_slip(frm, employees[0]);
 				} else {
-					var d = new frappe.ui.Dialog({
+					var d = new nts.ui.Dialog({
 						title: __("Preview Salary Slip"),
 						fields: [
 							{
@@ -221,7 +221,7 @@ frappe.ui.form.on("Salary Structure", {
 		var print_format = frm.doc.salary_slip_based_on_timesheet
 			? "Salary Slip based on Timesheet"
 			: "Salary Slip Standard";
-		frappe.call({
+		nts.call({
 			method: "hrms.payroll.doctype.salary_structure.salary_structure.make_salary_slip",
 			args: {
 				source_name: frm.doc.name,
@@ -250,17 +250,17 @@ frappe.ui.form.on("Salary Structure", {
 var validate_date = function (frm, cdt, cdn) {
 	var doc = locals[cdt][cdn];
 	if (doc.to_date && doc.from_date) {
-		var from_date = frappe.datetime.str_to_obj(doc.from_date);
-		var to_date = frappe.datetime.str_to_obj(doc.to_date);
+		var from_date = nts.datetime.str_to_obj(doc.from_date);
+		var to_date = nts.datetime.str_to_obj(doc.to_date);
 
 		if (to_date < from_date) {
-			frappe.model.set_value(cdt, cdn, "to_date", "");
-			frappe.throw(__("From Date cannot be greater than To Date"));
+			nts.model.set_value(cdt, cdn, "to_date", "");
+			nts.throw(__("From Date cannot be greater than To Date"));
 		}
 	}
 };
 
-// nosemgrep: frappe-semgrep-rules.rules.frappe-cur-frm-usage
+// nosemgrep: nts-semgrep-rules.rules.nts-cur-frm-usage
 cur_frm.cscript.amount = function (doc, cdt, cdn) {
 	calculate_totals(doc, cdt, cdn);
 };
@@ -287,12 +287,12 @@ var calculate_totals = function (doc) {
 	refresh_many(["total_earning", "total_deduction", "net_pay"]);
 };
 
-// nosemgrep: frappe-semgrep-rules.rules.frappe-cur-frm-usage
+// nosemgrep: nts-semgrep-rules.rules.nts-cur-frm-usage
 cur_frm.cscript.validate = function (doc, cdt, cdn) {
 	calculate_totals(doc);
 };
 
-frappe.ui.form.on("Salary Detail", {
+nts.ui.form.on("Salary Detail", {
 	form_render: function (frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
 		hrms.payroll_utils.set_autocompletions_for_condition_and_formula(frm, row);
@@ -313,7 +313,7 @@ frappe.ui.form.on("Salary Detail", {
 	formula: function (frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
 		if (row.formula && !row?.amount_based_on_formula && !frm.alerted_rows.includes(cdn)) {
-			frappe.msgprint({
+			nts.msgprint({
 				message: __(
 					"{0} Row #{1}: {2} needs to be enabled for the formula to be considered.",
 					[toTitle(row.parentfield), row.idx, __("Amount based on formula").bold()],
@@ -328,8 +328,8 @@ frappe.ui.form.on("Salary Detail", {
 	salary_component: function (frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		if (child.salary_component) {
-			frappe.call({
-				method: "frappe.client.get",
+			nts.call({
+				method: "nts.client.get",
 				args: {
 					doctype: "Salary Component",
 					name: child.salary_component,
@@ -337,49 +337,49 @@ frappe.ui.form.on("Salary Detail", {
 				callback: function (data) {
 					if (data.message) {
 						var result = data.message;
-						frappe.model.set_value(cdt, cdn, "condition", result.condition);
-						frappe.model.set_value(
+						nts.model.set_value(cdt, cdn, "condition", result.condition);
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"amount_based_on_formula",
 							result.amount_based_on_formula,
 						);
 						if (result.amount_based_on_formula == 1) {
-							frappe.model.set_value(cdt, cdn, "formula", result.formula);
+							nts.model.set_value(cdt, cdn, "formula", result.formula);
 						} else {
-							frappe.model.set_value(cdt, cdn, "amount", result.amount);
+							nts.model.set_value(cdt, cdn, "amount", result.amount);
 						}
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"statistical_component",
 							result.statistical_component,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"depends_on_payment_days",
 							result.depends_on_payment_days,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"do_not_include_in_total",
 							result.do_not_include_in_total,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"variable_based_on_taxable_salary",
 							result.variable_based_on_taxable_salary,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"is_tax_applicable",
 							result.is_tax_applicable,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"is_flexible_benefit",
@@ -396,11 +396,11 @@ frappe.ui.form.on("Salary Detail", {
 	amount_based_on_formula: function (frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		if (child.amount_based_on_formula == 1) {
-			frappe.model.set_value(cdt, cdn, "amount", null);
+			nts.model.set_value(cdt, cdn, "amount", null);
 			const index = frm.alerted_rows.indexOf(cdn);
 			if (index > -1) frm.alerted_rows.splice(index, 1);
 		} else {
-			frappe.model.set_value(cdt, cdn, "formula", null);
+			nts.model.set_value(cdt, cdn, "formula", null);
 		}
 	},
 });

@@ -1,35 +1,35 @@
-import frappe
-from frappe.boot import load_translations
+import nts
+from nts.boot import load_translations
 
 no_cache = 1
 
 
 def get_context(context):
-	csrf_token = frappe.sessions.get_csrf_token()
-	frappe.db.commit()  # nosempgrep
-	context = frappe._dict()
+	csrf_token = nts.sessions.get_csrf_token()
+	nts.db.commit()  # nosempgrep
+	context = nts._dict()
 	context.csrf_token = csrf_token
 	context.boot = get_boot()
 	return context
 
 
-@frappe.whitelist(methods=["POST"], allow_guest=True)
+@nts.whitelist(methods=["POST"], allow_guest=True)
 def get_context_for_dev():
-	if not frappe.conf.developer_mode:
-		frappe.throw(frappe._("This method is only meant for developer mode"))
+	if not nts.conf.developer_mode:
+		nts.throw(nts._("This method is only meant for developer mode"))
 	return get_boot()
 
 
 def get_boot():
-	bootinfo = frappe._dict(
+	bootinfo = nts._dict(
 		{
-			"site_name": frappe.local.site,
-			"push_relay_server_url": frappe.conf.get("push_relay_server_url") or "",
+			"site_name": nts.local.site,
+			"push_relay_server_url": nts.conf.get("push_relay_server_url") or "",
 			"default_route": get_default_route(),
 		}
 	)
 
-	bootinfo.lang = frappe.local.lang
+	bootinfo.lang = nts.local.lang
 	load_translations(bootinfo)
 
 	return bootinfo

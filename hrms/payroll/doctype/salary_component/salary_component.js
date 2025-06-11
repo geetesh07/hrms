@@ -1,7 +1,7 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Salary Component", {
+nts.ui.form.on("Salary Component", {
 	setup: function (frm) {
 		frm.set_query("account", "accounts", function (doc, cdt, cdn) {
 			var d = locals[cdt][cdn];
@@ -82,7 +82,7 @@ frappe.ui.form.on("Salary Component", {
 			frm.add_custom_button(
 				__("Sync {0}", [__(df)]),
 				function () {
-					frappe
+					nts
 						.call({
 							method: "get_structures_to_be_updated",
 							doc: frm.doc,
@@ -91,7 +91,7 @@ frappe.ui.form.on("Salary Component", {
 							if (r.message.length)
 								frm.events.update_salary_structures(frm, df, r.message);
 							else
-								frappe.msgprint({
+								nts.msgprint({
 									message: __(
 										"Salary Component {0} is currently not used in any Salary Structure.",
 										[frm.doc.name.bold()],
@@ -109,16 +109,16 @@ frappe.ui.form.on("Salary Component", {
 	update_salary_structures: function (frm, df, structures) {
 		let msg = __("{0} will be updated for the following Salary Structures: {1}.", [
 			df,
-			frappe.utils.comma_and(
+			nts.utils.comma_and(
 				structures.map((d) =>
-					frappe.utils.get_form_link("Salary Structure", d, true).bold(),
+					nts.utils.get_form_link("Salary Structure", d, true).bold(),
 				),
 			),
 		]);
 		msg += "<br>";
 		msg += __("Are you sure you want to proceed?");
-		frappe.confirm(msg, () => {
-			frappe
+		nts.confirm(msg, () => {
+			nts
 				.call({
 					method: "update_salary_structures",
 					doc: frm.doc,
@@ -130,7 +130,7 @@ frappe.ui.form.on("Salary Component", {
 				})
 				.then((r) => {
 					if (!r.exc) {
-						frappe.show_alert({
+						nts.show_alert({
 							message: __("Salary Structures updated successfully"),
 							indicator: "green",
 						});
@@ -140,14 +140,14 @@ frappe.ui.form.on("Salary Component", {
 	},
 
 	create_salary_structure: function (frm) {
-		frappe.model.with_doctype("Salary Structure", () => {
-			const salary_structure = frappe.model.get_new_doc("Salary Structure");
-			const salary_detail = frappe.model.add_child(
+		nts.model.with_doctype("Salary Structure", () => {
+			const salary_structure = nts.model.get_new_doc("Salary Structure");
+			const salary_detail = nts.model.add_child(
 				salary_structure,
 				frm.doc.type === "Earning" ? "earnings" : "deductions",
 			);
 			salary_detail.salary_component = frm.doc.name;
-			frappe.set_route("Form", "Salary Structure", salary_structure.name);
+			nts.set_route("Form", "Salary Structure", salary_structure.name);
 		});
 	},
 });

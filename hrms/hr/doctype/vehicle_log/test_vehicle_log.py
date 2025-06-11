@@ -1,18 +1,18 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import cstr, flt, nowdate, random_string
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import cstr, flt, nowdate, random_string
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.vehicle_log.vehicle_log import make_expense_claim
 
 
 class TestVehicleLog(IntegrationTestCase):
 	def setUp(self):
-		employee_id = frappe.db.sql("""select name from `tabEmployee` where name='testdriver@example.com'""")
+		employee_id = nts.db.sql("""select name from `tabEmployee` where name='testdriver@example.com'""")
 		self.employee_id = employee_id[0][0] if employee_id else None
 
 		if not self.employee_id:
@@ -21,14 +21,14 @@ class TestVehicleLog(IntegrationTestCase):
 		self.license_plate = get_vehicle(self.employee_id)
 
 	def tearDown(self):
-		frappe.delete_doc("Vehicle", self.license_plate, force=1)
-		frappe.delete_doc("Employee", self.employee_id, force=1)
+		nts.delete_doc("Vehicle", self.license_plate, force=1)
+		nts.delete_doc("Employee", self.employee_id, force=1)
 
 	def test_make_vehicle_log_and_syncing_of_odometer_value(self):
 		vehicle_log = make_vehicle_log(self.license_plate, self.employee_id)
 
 		# checking value of vehicle odometer value on submit.
-		vehicle = frappe.get_doc("Vehicle", self.license_plate)
+		vehicle = nts.get_doc("Vehicle", self.license_plate)
 		self.assertEqual(vehicle.last_odometer, vehicle_log.odometer)
 
 		# checking value vehicle odometer on vehicle log cancellation.
@@ -51,8 +51,8 @@ class TestVehicleLog(IntegrationTestCase):
 		self.assertEqual(fuel_expense, 50 * 500)
 
 		vehicle_log.cancel()
-		frappe.delete_doc("Expense Claim", expense_claim.name)
-		frappe.delete_doc("Vehicle Log", vehicle_log.name)
+		nts.delete_doc("Expense Claim", expense_claim.name)
+		nts.delete_doc("Vehicle Log", vehicle_log.name)
 
 	def test_vehicle_log_with_service_expenses(self):
 		vehicle_log = make_vehicle_log(self.license_plate, self.employee_id, with_services=True)
@@ -62,13 +62,13 @@ class TestVehicleLog(IntegrationTestCase):
 		self.assertEqual(expenses, 27000)
 
 		vehicle_log.cancel()
-		frappe.delete_doc("Expense Claim", expense_claim.name)
-		frappe.delete_doc("Vehicle Log", vehicle_log.name)
+		nts.delete_doc("Expense Claim", expense_claim.name)
+		nts.delete_doc("Vehicle Log", vehicle_log.name)
 
 
 def get_vehicle(employee_id):
 	license_plate = random_string(10).upper()
-	vehicle = frappe.get_doc(
+	vehicle = nts.get_doc(
 		{
 			"doctype": "Vehicle",
 			"license_plate": cstr(license_plate),
@@ -85,13 +85,13 @@ def get_vehicle(employee_id):
 	)
 	try:
 		vehicle.insert(ignore_if_duplicate=True)
-	except frappe.DuplicateEntryError:
+	except nts.DuplicateEntryError:
 		pass
 	return license_plate
 
 
 def make_vehicle_log(license_plate, employee_id, with_services=False):
-	vehicle_log = frappe.get_doc(
+	vehicle_log = nts.get_doc(
 		{
 			"doctype": "Vehicle Log",
 			"license_plate": cstr(license_plate),

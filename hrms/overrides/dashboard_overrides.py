@@ -1,7 +1,7 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-from frappe import _
+from nts import _
 
 
 def get_dashboard_for_employee(data):

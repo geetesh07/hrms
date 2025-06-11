@@ -1,14 +1,14 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Leave Policy", {});
+nts.ui.form.on("Leave Policy", {});
 
-frappe.ui.form.on("Leave Policy Detail", {
+nts.ui.form.on("Leave Policy Detail", {
 	leave_type: function (frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		if (child.leave_type) {
-			frappe.call({
-				method: "frappe.client.get_value",
+			nts.call({
+				method: "nts.client.get_value",
 				args: {
 					doctype: "Leave Type",
 					fieldname: "max_leaves_allowed",

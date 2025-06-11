@@ -1,8 +1,8 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 /* eslint-disable */
 
-frappe.query_reports["Employee Advance Summary"] = {
+nts.query_reports["Employee Advance Summary"] = {
 	filters: [
 		{
 			fieldname: "employee",
@@ -15,14 +15,14 @@ frappe.query_reports["Employee Advance Summary"] = {
 			fieldname: "from_date",
 			label: __("From Date"),
 			fieldtype: "Date",
-			default: erpnext.utils.get_fiscal_year(frappe.datetime.get_today(), true)[1],
+			default: prodman.utils.get_fiscal_year(nts.datetime.get_today(), true)[1],
 			width: "80",
 		},
 		{
 			fieldname: "to_date",
 			label: __("To Date"),
 			fieldtype: "Date",
-			default: frappe.datetime.get_today(),
+			default: nts.datetime.get_today(),
 		},
 		{
 			fieldname: "company",

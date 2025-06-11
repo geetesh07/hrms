@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Payroll Period", {
+nts.ui.form.on("Payroll Period", {
 	onload: function (frm) {
 		frm.trigger("set_start_date");
 	},
@@ -9,7 +9,7 @@ frappe.ui.form.on("Payroll Period", {
 	set_start_date: function (frm) {
 		if (!frm.doc.__islocal) return;
 
-		frappe.db
+		nts.db
 			.get_list("Payroll Period", {
 				fields: ["end_date"],
 				order_by: "end_date desc",
@@ -20,9 +20,9 @@ frappe.ui.form.on("Payroll Period", {
 				// else set it based on the current fiscal year's start date
 				if (result.length) {
 					const last_end_date = result[0].end_date;
-					frm.set_value("start_date", frappe.datetime.add_days(last_end_date, 1));
+					frm.set_value("start_date", nts.datetime.add_days(last_end_date, 1));
 				} else {
-					frm.set_value("start_date", frappe.defaults.get_default("year_start_date"));
+					frm.set_value("start_date", nts.defaults.get_default("year_start_date"));
 				}
 			});
 	},
@@ -30,7 +30,7 @@ frappe.ui.form.on("Payroll Period", {
 	start_date: function (frm) {
 		frm.set_value(
 			"end_date",
-			frappe.datetime.add_days(frappe.datetime.add_months(frm.doc.start_date, 12), -1),
+			nts.datetime.add_days(nts.datetime.add_months(frm.doc.start_date, 12), -1),
 		);
 	},
 });

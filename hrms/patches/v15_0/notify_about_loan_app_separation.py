@@ -1,22 +1,22 @@
-import frappe
-from frappe import _
-from frappe.desk.doctype.notification_log.notification_log import make_notification_logs
-from frappe.utils.user import get_system_managers
+import nts
+from nts import _
+from nts.desk.doctype.notification_log.notification_log import make_notification_logs
+from nts.utils.user import get_system_managers
 
 
 def execute():
-	if "lending" in frappe.get_installed_apps():
+	if "lending" in nts.get_installed_apps():
 		return
 
-	if frappe.db.a_row_exists("Salary Slip Loan"):
+	if nts.db.a_row_exists("Salary Slip Loan"):
 		notify_existing_users()
 
 
 def notify_existing_users():
-	subject = _("WARNING: Loan Management module has been separated from ERPNext.") + "<br>"
+	subject = _("WARNING: Loan Management module has been separated from prodman.") + "<br>"
 	subject += _(
-		"If you are using loans in salary slips, please install the {0} app from Frappe Cloud Marketplace or GitHub to continue using loan integration with payroll."
-	).format(frappe.bold("Lending"))
+		"If you are using loans in salary slips, please install the {0} app from nts Cloud Marketplace or GitHub to continue using loan integration with payroll."
+	).format(nts.bold("Lending"))
 
 	notification = {
 		"subject": subject,

@@ -1,7 +1,7 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Vehicle Log", {
+nts.ui.form.on("Vehicle Log", {
 	setup: function (frm) {
 		frm.set_query("employee", function () {
 			return {
@@ -25,14 +25,14 @@ frappe.ui.form.on("Vehicle Log", {
 	},
 
 	expense_claim: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.vehicle_log.vehicle_log.make_expense_claim",
 			args: {
 				docname: frm.doc.name,
 			},
 			callback: function (r) {
-				var doc = frappe.model.sync(r.message);
-				frappe.set_route("Form", "Expense Claim", r.message.name);
+				var doc = nts.model.sync(r.message);
+				nts.set_route("Form", "Expense Claim", r.message.name);
 			},
 		});
 	},

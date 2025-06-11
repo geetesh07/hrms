@@ -1,9 +1,9 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import add_days, nowdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import add_days, nowdate
 
 from hrms.hr.doctype.staffing_plan.staffing_plan import ParentCompanyError, SubsidiaryCompanyError
 
@@ -13,10 +13,10 @@ test_dependencies = ["Designation"]
 class TestStaffingPlan(IntegrationTestCase):
 	def test_staffing_plan(self):
 		_set_up()
-		frappe.db.set_value("Company", "_Test Company 3", "is_group", 1)
-		if frappe.db.exists("Staffing Plan", "Test"):
+		nts.db.set_value("Company", "_Test Company 3", "is_group", 1)
+		if nts.db.exists("Staffing Plan", "Test"):
 			return
-		staffing_plan = frappe.new_doc("Staffing Plan")
+		staffing_plan = nts.new_doc("Staffing Plan")
 		staffing_plan.company = "_Test Company 10"
 		staffing_plan.name = "Test"
 		staffing_plan.from_date = nowdate()
@@ -31,9 +31,9 @@ class TestStaffingPlan(IntegrationTestCase):
 
 	def test_staffing_plan_subsidiary_company(self):
 		self.test_staffing_plan()
-		if frappe.db.exists("Staffing Plan", "Test 1"):
+		if nts.db.exists("Staffing Plan", "Test 1"):
 			return
-		staffing_plan = frappe.new_doc("Staffing Plan")
+		staffing_plan = nts.new_doc("Staffing Plan")
 		staffing_plan.company = "_Test Company 3"
 		staffing_plan.name = "Test 1"
 		staffing_plan.from_date = nowdate()
@@ -46,9 +46,9 @@ class TestStaffingPlan(IntegrationTestCase):
 
 	def test_staffing_plan_parent_company(self):
 		_set_up()
-		if frappe.db.exists("Staffing Plan", "Test"):
+		if nts.db.exists("Staffing Plan", "Test"):
 			return
-		staffing_plan = frappe.new_doc("Staffing Plan")
+		staffing_plan = nts.new_doc("Staffing Plan")
 		staffing_plan.company = "_Test Company 3"
 		staffing_plan.name = "Test"
 		staffing_plan.from_date = nowdate()
@@ -60,9 +60,9 @@ class TestStaffingPlan(IntegrationTestCase):
 		staffing_plan.insert()
 		staffing_plan.submit()
 		self.assertEqual(staffing_plan.total_estimated_budget, 350000.00)
-		if frappe.db.exists("Staffing Plan", "Test 1"):
+		if nts.db.exists("Staffing Plan", "Test 1"):
 			return
-		staffing_plan = frappe.new_doc("Staffing Plan")
+		staffing_plan = nts.new_doc("Staffing Plan")
 		staffing_plan.company = "_Test Company 10"
 		staffing_plan.name = "Test 1"
 		staffing_plan.from_date = nowdate()
@@ -77,7 +77,7 @@ class TestStaffingPlan(IntegrationTestCase):
 
 def _set_up():
 	for doctype in ["Staffing Plan", "Staffing Plan Detail"]:
-		frappe.db.sql(f"delete from `tab{doctype}`")
+		nts.db.sql(f"delete from `tab{doctype}`")
 	make_company()
 
 
@@ -85,10 +85,10 @@ def make_company(name=None, abbr=None):
 	if not name:
 		name = "_Test Company 10"
 
-	if frappe.db.exists("Company", name):
+	if nts.db.exists("Company", name):
 		return
 
-	company = frappe.new_doc("Company")
+	company = nts.new_doc("Company")
 	company.company_name = name
 	company.abbr = abbr or "_TC10"
 	company.parent_company = "_Test Company 3"

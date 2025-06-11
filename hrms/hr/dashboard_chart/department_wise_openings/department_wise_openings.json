@@ -7,7 +7,7 @@
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "Job Opening",
- "dynamic_filters_json": "[[\"Job Opening\",\"company\",\"=\",\"frappe.defaults.get_user_default(\\\"Company\\\")\"]]",
+ "dynamic_filters_json": "[[\"Job Opening\",\"company\",\"=\",\"nts.defaults.get_user_default(\\\"Company\\\")\"]]",
  "filters_json": "[[\"Job Opening\",\"status\",\"=\",\"Open\",false]]",
  "group_by_based_on": "department",
  "group_by_type": "Count",

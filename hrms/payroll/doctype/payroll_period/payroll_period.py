@@ -1,12 +1,12 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import add_months, cint, date_diff, flt, formatdate, getdate
-from frappe.utils.caching import redis_cache
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import add_months, cint, date_diff, flt, formatdate, getdate
+from nts.utils.caching import redis_cache
 
 from hrms.hr.utils import get_exact_month_diff, get_holiday_dates_for_employee
 
@@ -33,7 +33,7 @@ class PayrollPeriod(Document):
 			# hack! if name is null, it could cause problems with !=
 			self.name = "New " + self.doctype
 
-		overlap_doc = frappe.db.sql(
+		overlap_doc = nts.db.sql(
 			query.format(self.doctype),
 			{
 				"start_date": self.start_date,
@@ -52,13 +52,13 @@ class PayrollPeriod(Document):
 				+ f""" <b><a href="/app/Form/{self.doctype}/{overlap_doc[0].name}">{overlap_doc[0].name}</a></b>"""
 				+ _(") for {0}").format(self.company)
 			)
-			frappe.throw(msg)
+			nts.throw(msg)
 
 
 def get_payroll_period_days(start_date, end_date, employee, company=None):
 	if not company:
-		company = frappe.db.get_value("Employee", employee, "company")
-	payroll_period = frappe.db.sql(
+		company = nts.db.get_value("Employee", employee, "company")
+	payroll_period = nts.db.sql(
 		"""
 		select name, start_date, end_date
 		from `tabPayroll Period`
@@ -73,7 +73,7 @@ def get_payroll_period_days(start_date, end_date, employee, company=None):
 	if len(payroll_period) > 0:
 		actual_no_of_days = date_diff(getdate(payroll_period[0][2]), getdate(payroll_period[0][1])) + 1
 		working_days = actual_no_of_days
-		if not cint(frappe.db.get_single_value("Payroll Settings", "include_holidays_in_total_working_days")):
+		if not cint(nts.db.get_single_value("Payroll Settings", "include_holidays_in_total_working_days")):
 			holidays = get_holiday_dates_for_employee(
 				employee, getdate(payroll_period[0][1]), getdate(payroll_period[0][2])
 			)
@@ -84,10 +84,10 @@ def get_payroll_period_days(start_date, end_date, employee, company=None):
 
 @redis_cache()
 def get_payroll_period(from_date, to_date, company):
-	PayrollPeriod = frappe.qb.DocType("Payroll Period")
+	PayrollPeriod = nts.qb.DocType("Payroll Period")
 
 	payroll_period = (
-		frappe.qb.from_(PayrollPeriod)
+		nts.qb.from_(PayrollPeriod)
 		.select(PayrollPeriod.name, PayrollPeriod.start_date, PayrollPeriod.end_date)
 		.where(
 			(PayrollPeriod.start_date <= from_date)
@@ -113,7 +113,7 @@ def get_period_factor(
 	period_start, period_end = payroll_period.start_date, payroll_period.end_date
 
 	if not joining_date and not relieving_date:
-		joining_date, relieving_date = frappe.get_cached_value(
+		joining_date, relieving_date = nts.get_cached_value(
 			"Employee", employee, ["date_of_joining", "relieving_date"]
 		)
 

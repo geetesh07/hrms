@@ -1,4 +1,4 @@
-import frappe
+import nts
 
 
 def execute():
@@ -11,6 +11,6 @@ def execute():
 		"Wheels",
 	]
 	for item in service_items:
-		doc = frappe.new_doc("Vehicle Service Item")
+		doc = nts.new_doc("Vehicle Service Item")
 		doc.service_item = item
 		doc.insert(ignore_permissions=True, ignore_if_duplicate=True)

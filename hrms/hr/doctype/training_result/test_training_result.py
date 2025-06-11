@@ -1,9 +1,9 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
+from nts.tests import IntegrationTestCase
 
-# test_records = frappe.get_test_records('Training Result')
+# test_records = nts.get_test_records('Training Result')
 
 
 class TestTrainingResult(IntegrationTestCase):

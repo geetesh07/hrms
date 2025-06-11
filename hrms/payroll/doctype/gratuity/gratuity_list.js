@@ -1,4 +1,4 @@
-frappe.listview_settings["Gratuity"] = {
+nts.listview_settings["Gratuity"] = {
 	get_indicator: function (doc) {
 		let status_color = {
 			Draft: "red",

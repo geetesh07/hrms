@@ -1,7 +1,7 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Journal Entry", {
+nts.ui.form.on("Journal Entry", {
 	setup(frm) {
 		frm.ignore_doctypes_on_cancel_all.push("Salary Withholding");
 		if (frm.doc.voucher_type === "Bank Entry") {
@@ -12,7 +12,7 @@ frappe.ui.form.on("Journal Entry", {
 
 	refresh(frm) {
 		frm.set_query("reference_name", "accounts", function (frm, cdt, cdn) {
-			let jvd = frappe.get_doc(cdt, cdn);
+			let jvd = nts.get_doc(cdt, cdn);
 
 			// filters for hrms doctypes
 			if (jvd.reference_type === "Expense Claim") {
@@ -39,11 +39,11 @@ frappe.ui.form.on("Journal Entry", {
 				};
 			}
 
-			// filters for erpnext doctypes
+			// filters for prodman doctypes
 			if (jvd.reference_type === "Journal Entry") {
-				frappe.model.validate_missing(jvd, "account");
+				nts.model.validate_missing(jvd, "account");
 				return {
-					query: "erpnext.accounts.doctype.journal_entry.journal_entry.get_against_jv",
+					query: "prodman.accounts.doctype.journal_entry.journal_entry.get_against_jv",
 					filters: {
 						account: jvd.account,
 						party: jvd.party,
@@ -67,7 +67,7 @@ frappe.ui.form.on("Journal Entry", {
 					]);
 				}
 				// account filter
-				frappe.model.validate_missing(jvd, "account");
+				nts.model.validate_missing(jvd, "account");
 				const party_account_field =
 					jvd.reference_type === "Sales Invoice" ? "debit_to" : "credit_to";
 				out.filters.push([jvd.reference_type, party_account_field, "=", jvd.account]);
@@ -75,8 +75,8 @@ frappe.ui.form.on("Journal Entry", {
 
 			if (["Sales Order", "Purchase Order"].includes(jvd.reference_type)) {
 				// party_type and party mandatory
-				frappe.model.validate_missing(jvd, "party_type");
-				frappe.model.validate_missing(jvd, "party");
+				nts.model.validate_missing(jvd, "party_type");
+				nts.model.validate_missing(jvd, "party");
 
 				out.filters.push([jvd.reference_type, "per_billed", "<", 100]);
 			}

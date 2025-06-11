@@ -1,8 +1,8 @@
-import frappe
-from frappe.tests import change_settings
-from frappe.utils import add_days, add_months, getdate, nowdate
+import nts
+from nts.tests import change_settings
+from nts.utils import add_days, add_months, getdate, nowdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.leave_allocation.leave_allocation import (
 	BackDatedAllocationError,
@@ -21,13 +21,13 @@ class TestLeaveAllocation(HRMSTestSuite):
 		cls.make_leave_types()
 
 	def setUp(self):
-		frappe.db.delete("Leave Period")
-		frappe.db.delete("Leave Allocation")
-		frappe.db.delete("Leave Application")
-		frappe.db.delete("Leave Ledger Entry")
+		nts.db.delete("Leave Period")
+		nts.db.delete("Leave Allocation")
+		nts.db.delete("Leave Application")
+		nts.db.delete("Leave Ledger Entry")
 
 		emp_id = make_employee("test_leave_allocation@salary.com", company="_Test Company")
-		self.employee = frappe.get_doc("Employee", emp_id)
+		self.employee = nts.get_doc("Employee", emp_id)
 
 	def test_overlapping_allocation(self):
 		leaves = [
@@ -54,11 +54,11 @@ class TestLeaveAllocation(HRMSTestSuite):
 			},
 		]
 
-		frappe.get_doc(leaves[0]).save()
-		self.assertRaises(frappe.ValidationError, frappe.get_doc(leaves[1]).save)
+		nts.get_doc(leaves[0]).save()
+		self.assertRaises(nts.ValidationError, nts.get_doc(leaves[1]).save)
 
 	def test_invalid_period(self):
-		doc = frappe.get_doc(
+		doc = nts.get_doc(
 			{
 				"doctype": "Leave Allocation",
 				"__islocal": 1,
@@ -72,12 +72,12 @@ class TestLeaveAllocation(HRMSTestSuite):
 		)
 
 		# invalid period
-		self.assertRaises(frappe.ValidationError, doc.save)
+		self.assertRaises(nts.ValidationError, doc.save)
 
 	def test_validation_for_over_allocation(self):
 		leave_type = create_leave_type(leave_type_name="Test Over Allocation", is_carry_forward=1)
 
-		doc = frappe.get_doc(
+		doc = nts.get_doc(
 			{
 				"doctype": "Leave Allocation",
 				"__islocal": 1,
@@ -98,7 +98,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		leave_type.save()
 
 		# allows creating a leave allocation with more leave days than period days
-		doc = frappe.get_doc(
+		doc = nts.get_doc(
 			{
 				"doctype": "Leave Allocation",
 				"__islocal": 1,
@@ -113,7 +113,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		).insert()
 
 	def test_validation_for_over_allocation_post_submission(self):
-		allocation = frappe.get_doc(
+		allocation = nts.get_doc(
 			{
 				"doctype": "Leave Allocation",
 				"__islocal": 1,
@@ -131,8 +131,8 @@ class TestLeaveAllocation(HRMSTestSuite):
 		self.assertRaises(OverAllocationError, allocation.save)
 
 	def test_validation_for_over_allocation_based_on_leave_setup(self):
-		frappe.delete_doc_if_exists("Leave Period", "Test Allocation Period")
-		leave_period = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Period", "Test Allocation Period")
+		leave_period = nts.get_doc(
 			dict(
 				name="Test Allocation Period",
 				doctype="Leave Period",
@@ -168,8 +168,8 @@ class TestLeaveAllocation(HRMSTestSuite):
 		self.assertRaises(OverAllocationError, allocation.save)
 
 	def test_validation_for_over_allocation_based_on_leave_setup_post_submission(self):
-		frappe.delete_doc_if_exists("Leave Period", "Test Allocation Period")
-		leave_period = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Period", "Test Allocation Period")
+		leave_period = nts.get_doc(
 			dict(
 				name="Test Allocation Period",
 				doctype="Leave Period",
@@ -403,7 +403,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 
 		# only unused carry-forwarded leaves should expire
 		process_expired_allocation()
-		expired_leaves = frappe.db.get_value(
+		expired_leaves = nts.db.get_value(
 			"Leave Ledger Entry",
 			dict(
 				transaction_name=leave_allocation.name,
@@ -454,7 +454,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 
 		# 0 leaves should expire
 		process_expired_allocation()
-		expired_leaves = frappe.db.exists(
+		expired_leaves = nts.db.exists(
 			"Leave Ledger Entry",
 			dict(
 				transaction_name=leave_allocation.name,
@@ -470,7 +470,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		)
 		leave_allocation.submit()
 
-		leave_ledger_entry = frappe.get_all(
+		leave_ledger_entry = nts.get_all(
 			"Leave Ledger Entry", fields="*", filters=dict(transaction_name=leave_allocation.name)
 		)
 
@@ -481,7 +481,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 
 		# check if leave ledger entry is deleted on cancellation
 		leave_allocation.cancel()
-		self.assertFalse(frappe.db.exists("Leave Ledger Entry", {"transaction_name": leave_allocation.name}))
+		self.assertFalse(nts.db.exists("Leave Ledger Entry", {"transaction_name": leave_allocation.name}))
 
 	def test_leave_addition_after_submit(self):
 		leave_allocation = create_leave_allocation(
@@ -495,7 +495,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		leave_allocation.save()
 		leave_allocation.reload()
 
-		updated_entry = frappe.db.get_all(
+		updated_entry = nts.db.get_all(
 			"Leave Ledger Entry",
 			{"transaction_name": leave_allocation.name},
 			pluck="leaves",
@@ -525,7 +525,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		leave_allocation.save()
 		leave_allocation.reload()
 
-		updated_entry = frappe.db.get_all(
+		updated_entry = nts.db.get_all(
 			"Leave Ledger Entry",
 			{"transaction_name": leave_allocation.name},
 			pluck="leaves",
@@ -547,7 +547,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		leave_allocation.submit()
 		leave_allocation.reload()
 
-		updated_entry = frappe.db.get_all(
+		updated_entry = nts.db.get_all(
 			"Leave Ledger Entry",
 			{"transaction_name": leave_allocation.name},
 			pluck="leaves",
@@ -575,7 +575,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		leave_allocation.new_leaves_allocated = 8
 		leave_allocation.save()
 
-		updated_entry = frappe.db.get_all(
+		updated_entry = nts.db.get_all(
 			"Leave Ledger Entry",
 			{"transaction_name": leave_allocation.name},
 			pluck="leaves",
@@ -589,7 +589,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		from hrms.payroll.doctype.salary_slip.test_salary_slip import make_holiday_list
 
 		make_holiday_list()
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Company", self.employee.company, "default_holiday_list", "Salary Slip Test Holiday List"
 		)
 
@@ -599,7 +599,7 @@ class TestLeaveAllocation(HRMSTestSuite):
 		leave_allocation.submit()
 		self.assertTrue(leave_allocation.total_leaves_allocated, 15)
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			{
 				"doctype": "Leave Application",
 				"employee": self.employee.name,
@@ -618,16 +618,16 @@ class TestLeaveAllocation(HRMSTestSuite):
 		# allocate less leaves than the ones which are already approved
 		leave_allocation.new_leaves_allocated = leave_application.total_leave_days - 1
 		leave_allocation.total_leaves_allocated = leave_application.total_leave_days - 1
-		self.assertRaises(frappe.ValidationError, leave_allocation.submit)
+		self.assertRaises(nts.ValidationError, leave_allocation.submit)
 
 
 def create_leave_allocation(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 
 	emp_id = make_employee("test_emp_leave_allocation@salary.com")
-	employee = frappe.get_doc("Employee", emp_id)
+	employee = nts.get_doc("Employee", emp_id)
 
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Leave Allocation",
 			"__islocal": 1,

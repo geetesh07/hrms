@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.query_reports["Employee Leave Balance"] = {
+nts.query_reports["Employee Leave Balance"] = {
 	filters: [
 		{
 			fieldname: "from_date",
@@ -21,7 +21,7 @@ frappe.query_reports["Employee Leave Balance"] = {
 			fieldtype: "Link",
 			options: "Company",
 			reqd: 1,
-			default: frappe.defaults.get_user_default("Company"),
+			default: nts.defaults.get_user_default("Company"),
 		},
 		{
 			fieldname: "department",
@@ -57,20 +57,20 @@ frappe.query_reports["Employee Leave Balance"] = {
 		},
 	],
 	onload: () => {
-		const today = frappe.datetime.now_date();
+		const today = nts.datetime.now_date();
 
-		frappe.call({
+		nts.call({
 			type: "GET",
 			method: "hrms.hr.utils.get_leave_period",
 			args: {
 				from_date: today,
 				to_date: today,
-				company: frappe.defaults.get_user_default("Company"),
+				company: nts.defaults.get_user_default("Company"),
 			},
 			freeze: true,
 			callback: (data) => {
-				frappe.query_report.set_filter_value("from_date", data.message[0].from_date);
-				frappe.query_report.set_filter_value("to_date", data.message[0].to_date);
+				nts.query_report.set_filter_value("from_date", data.message[0].from_date);
+				nts.query_report.set_filter_value("to_date", data.message[0].to_date);
 			},
 		});
 	},

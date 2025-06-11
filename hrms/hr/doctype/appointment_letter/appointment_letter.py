@@ -1,24 +1,24 @@
-# Copyright (c) 2019, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2019, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe.model.document import Document
+import nts
+from nts.model.document import Document
 
 
 class AppointmentLetter(Document):
 	pass
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_appointment_letter_details(template):
 	body = []
-	intro = frappe.get_list(
+	intro = nts.get_list(
 		"Appointment Letter Template",
 		fields=["introduction", "closing_notes"],
 		filters={"name": template},
 	)[0]
-	content = frappe.get_all(
+	content = nts.get_all(
 		"Appointment Letter content",
 		fields=["title", "description"],
 		filters={"parent": template},

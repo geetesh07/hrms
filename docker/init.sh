@@ -1,8 +1,8 @@
 #!bin/bash
 
-if [ -d "/home/frappe/frappe-bench/apps/frappe" ]; then
+if [ -d "/home/nts/nts-bench/apps/nts" ]; then
     echo "Bench already exists, skipping init"
-    cd frappe-bench
+    cd nts-bench
     bench start
 else
     echo "Creating new bench..."
@@ -10,9 +10,9 @@ fi
 
 export PATH="${NVM_DIR}/versions/node/v${NODE_VERSION_DEVELOP}/bin/:${PATH}"
 
-bench init --skip-redis-config-generation frappe-bench
+bench init --skip-redis-config-generation nts-bench
 
-cd frappe-bench
+cd nts-bench
 
 # Use containers instead of localhost
 bench set-mariadb-host mariadb
@@ -24,7 +24,7 @@ bench set-redis-socketio-host redis:6379
 sed -i '/redis/d' ./Procfile
 sed -i '/watch/d' ./Procfile
 
-bench get-app erpnext
+bench get-app prodman
 bench get-app hrms
 
 bench new-site hrms.localhost \

@@ -6,7 +6,7 @@
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "Shift Assignment",
- "dynamic_filters_json": "[[\"Shift Assignment\",\"company\",\"=\",\"frappe.defaults.get_user_default(\\\"Company\\\")\"]]",
+ "dynamic_filters_json": "[[\"Shift Assignment\",\"company\",\"=\",\"nts.defaults.get_user_default(\\\"Company\\\")\"]]",
  "filters_json": "[[\"Shift Assignment\",\"docstatus\",\"=\",\"1\",false]]",
  "group_by_based_on": "shift_type",
  "group_by_type": "Count",

@@ -1,8 +1,8 @@
-// Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2023, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 /* eslint-disable */
 
-frappe.query_reports["Appraisal Overview"] = {
+nts.query_reports["Appraisal Overview"] = {
 	filters: [
 		{
 			fieldname: "company",
@@ -10,7 +10,7 @@ frappe.query_reports["Appraisal Overview"] = {
 			fieldtype: "Link",
 			options: "Company",
 			reqd: 1,
-			default: frappe.defaults.get_user_default("Company"),
+			default: nts.defaults.get_user_default("Company"),
 		},
 		{
 			fieldname: "appraisal_cycle",

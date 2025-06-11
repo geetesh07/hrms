@@ -1,4 +1,4 @@
-frappe.provide("hrms");
+nts.provide("hrms");
 
 hrms.PerformanceFeedback = class PerformanceFeedback {
 	constructor({ frm, wrapper }) {
@@ -16,7 +16,7 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 	}
 
 	setup_feedback_view() {
-		frappe.run_serially([
+		nts.run_serially([
 			() => this.get_feedback_history(),
 			(data) => this.render_feedback_history(data),
 			() => this.setup_actions(),
@@ -27,7 +27,7 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 		let me = this;
 
 		return new Promise((resolve) => {
-			frappe
+			nts
 				.call({
 					method: "hrms.hr.doctype.appraisal.appraisal.get_feedback_history",
 					args: {
@@ -43,7 +43,7 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 		const { feedback_history, reviews_per_rating, avg_feedback_score } = data || {};
 		const can_create = await this.can_create();
 
-		const feedback_html = frappe.render_template("performance_feedback", {
+		const feedback_html = nts.render_template("performance_feedback", {
 			feedback_history: feedback_history,
 			average_feedback_score: avg_feedback_score,
 			reviews_per_rating: reviews_per_rating,
@@ -63,7 +63,7 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 	}
 
 	add_feedback() {
-		frappe.run_serially([
+		nts.run_serially([
 			() => this.get_feedback_criteria_data(),
 			(criteria_data) => this.show_add_feedback_dialog(criteria_data),
 		]);
@@ -73,7 +73,7 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 		let me = this;
 
 		return new Promise((resolve) => {
-			frappe.db
+			nts.db
 				.get_doc("Appraisal Template", me.frm.doc.appraisal_template)
 				.then(({ rating_criteria }) => {
 					const criteria_list = [];
@@ -91,7 +91,7 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 	show_add_feedback_dialog(criteria_data) {
 		let me = this;
 
-		const dialog = new frappe.ui.Dialog({
+		const dialog = new nts.ui.Dialog({
 			title: __("Add Feedback"),
 			fields: me.get_feedback_dialog_fields(criteria_data),
 			size: "large",
@@ -100,7 +100,7 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 			primary_action: function () {
 				const data = dialog.get_values();
 
-				frappe.call({
+				nts.call({
 					method: "add_feedback",
 					doc: me.frm.doc,
 					args: {
@@ -110,12 +110,12 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 					freeze: true,
 					callback: function (r) {
 						if (!r.exc) {
-							frappe.run_serially([
+							nts.run_serially([
 								() => me.frm.refresh_fields(),
 								() => me.refresh(),
 							]);
 
-							frappe.show_alert({
+							nts.show_alert({
 								message: __("Feedback {0} added successfully", [
 									r.message?.name?.bold(),
 								]),
@@ -174,9 +174,9 @@ hrms.PerformanceFeedback = class PerformanceFeedback {
 
 	async can_create() {
 		const is_employee =
-			(await frappe.db.get_value("Employee", { user_id: frappe.session.user }, "name"))
+			(await nts.db.get_value("Employee", { user_id: nts.session.user }, "name"))
 				?.message?.name || false;
 
-		return is_employee && frappe.model.can_create("Employee Performance Feedback");
+		return is_employee && nts.model.can_create("Employee Performance Feedback");
 	}
 };

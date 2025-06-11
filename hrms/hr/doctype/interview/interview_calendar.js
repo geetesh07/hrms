@@ -1,4 +1,4 @@
-frappe.views.calendar["Interview"] = {
+nts.views.calendar["Interview"] = {
 	field_map: {
 		start: "from",
 		end: "to",

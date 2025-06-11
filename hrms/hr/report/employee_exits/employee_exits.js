@@ -1,20 +1,20 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 /* eslint-disable */
 
-frappe.query_reports["Employee Exits"] = {
+nts.query_reports["Employee Exits"] = {
 	filters: [
 		{
 			fieldname: "from_date",
 			label: __("From Date"),
 			fieldtype: "Date",
-			default: frappe.datetime.add_months(frappe.datetime.nowdate(), -12),
+			default: nts.datetime.add_months(nts.datetime.nowdate(), -12),
 		},
 		{
 			fieldname: "to_date",
 			label: __("To Date"),
 			fieldtype: "Date",
-			default: frappe.datetime.nowdate(),
+			default: nts.datetime.nowdate(),
 		},
 		{
 			fieldname: "company",

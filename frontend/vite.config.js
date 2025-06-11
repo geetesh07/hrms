@@ -1,7 +1,7 @@
 import { defineConfig } from "vite"
 import vue from "@vitejs/plugin-vue"
 import { VitePWA } from "vite-plugin-pwa"
-import frappeui from "frappe-ui/vite"
+import ntsui from "frappe-ui/vite"
 
 import path from "path"
 import fs from "fs"
@@ -13,7 +13,7 @@ export default defineConfig({
 	},
 	plugins: [
 		vue(),
-		frappeui(),
+		ntsui(),
 		VitePWA({
 			registerType: "autoUpdate",
 			strategies: "injectManifest",
@@ -23,8 +23,8 @@ export default defineConfig({
 			},
 			manifest: {
 				display: "standalone",
-				name: "Frappe HR",
-				short_name: "Frappe HR",
+				name: "nts HR",
+				short_name: "nts HR",
 				start_url: "/hrms",
 				description: "Everyday HR & Payroll operations at your fingertips",
 				theme_color: "#ffffff",
@@ -109,7 +109,7 @@ function getProxyOptions() {
 
 function getCommonSiteConfig() {
 	let currentDir = path.resolve(".")
-	// traverse up till we find frappe-bench with sites directory
+	// traverse up till we find nts-bench with sites directory
 	while (currentDir !== "/") {
 		if (
 			fs.existsSync(path.join(currentDir, "sites")) &&

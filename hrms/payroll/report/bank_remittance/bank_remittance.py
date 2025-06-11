@@ -1,9 +1,9 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _, get_all
+import nts
+from nts import _, get_all
 
 
 def execute(filters=None):
@@ -44,7 +44,7 @@ def execute(filters=None):
 		},
 	]
 
-	if frappe.db.has_column("Employee", "ifsc_code"):
+	if nts.db.has_column("Employee", "ifsc_code"):
 		columns.append({"label": _("IFSC Code"), "fieldtype": "Data", "fieldname": "bank_code", "width": 100})
 
 	columns += [
@@ -64,7 +64,7 @@ def execute(filters=None):
 	payroll_entries = get_payroll_entries(accounts, filters)
 	salary_slips = get_salary_slips(payroll_entries)
 
-	if frappe.db.has_column("Employee", "ifsc_code"):
+	if nts.db.has_column("Employee", "ifsc_code"):
 		get_emp_bank_ifsc_code(salary_slips)
 
 	for salary in salary_slips:
@@ -77,12 +77,12 @@ def execute(filters=None):
 			row = {
 				"payroll_no": salary.payroll_entry,
 				"debit_account": salary.debit_acc_no,
-				"payment_date": frappe.utils.formatdate(salary.modified.strftime("%Y-%m-%d")),
+				"payment_date": nts.utils.formatdate(salary.modified.strftime("%Y-%m-%d")),
 				"bank_name": salary.bank_name,
 				"employee_account_no": salary.bank_account_no,
 				"bank_code": salary.ifsc_code,
 				"employee_name": salary.employee + ": " + salary.employee_name,
-				"currency": frappe.get_cached_value("Company", filters.company, "default_currency"),
+				"currency": nts.get_cached_value("Company", filters.company, "default_currency"),
 				"amount": salary.net_pay,
 			}
 			data.append(row)

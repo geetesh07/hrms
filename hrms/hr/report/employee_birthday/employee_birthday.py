@@ -1,9 +1,9 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 
 def execute(filters=None):
@@ -31,7 +31,7 @@ def get_columns():
 
 def get_employees(filters):
 	conditions = get_conditions(filters)
-	return frappe.db.sql(
+	return nts.db.sql(
 		"""select name, employee_name, date_of_birth,
 	branch, department, designation,
 	gender, company from tabEmployee where status = 'Active' %s"""

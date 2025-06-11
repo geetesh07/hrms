@@ -1,17 +1,17 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
-from frappe.utils import flt, nowdate
+import nts
+from nts.utils import flt, nowdate
 
-import erpnext
-from erpnext.accounts.doctype.payment_entry.payment_entry import (
+import prodman
+from prodman.accounts.doctype.payment_entry.payment_entry import (
 	PaymentEntry,
 	get_bank_cash_account,
 	get_reference_details,
 )
-from erpnext.accounts.utils import get_account_currency
-from erpnext.setup.utils import get_exchange_rate
+from prodman.accounts.utils import get_account_currency
+from prodman.setup.utils import get_exchange_rate
 
 from hrms.hr.doctype.expense_claim.expense_claim import get_outstanding_amount_for_claim
 
@@ -71,10 +71,10 @@ class EmployeePaymentEntry(PaymentEntry):
 							d.set(field, value)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_payment_entry_for_employee(dt, dn, party_amount=None, bank_account=None, bank_amount=None):
 	"""Function to make Payment Entry for Employee Advance, Gratuity, Expense Claim, Leave Encashment"""
-	doc = frappe.get_doc(dt, dn)
+	doc = nts.get_doc(dt, dn)
 
 	party_account = get_party_account(doc)
 	party_account_currency = get_account_currency(party_account)
@@ -90,7 +90,7 @@ def get_payment_entry_for_employee(dt, dn, party_amount=None, bank_account=None,
 		doc, party_account_currency, bank, outstanding_amount, payment_type, bank_amount
 	)
 
-	pe = frappe.new_doc("Payment Entry")
+	pe = nts.new_doc("Payment Entry")
 	pe.payment_type = payment_type
 	pe.company = doc.company
 	pe.cost_center = doc.get("cost_center")
@@ -211,7 +211,7 @@ def get_paid_amount_and_received_amount(
 	return paid_amount, received_amount
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_payment_reference_details(
 	reference_doctype, reference_name, party_account_currency, party_type=None, party=None
 ):
@@ -223,7 +223,7 @@ def get_payment_reference_details(
 		)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_reference_details_for_employee(reference_doctype, reference_name, party_account_currency):
 	"""
 	Returns payment reference details for employee related doctypes:
@@ -231,8 +231,8 @@ def get_reference_details_for_employee(reference_doctype, reference_name, party_
 	"""
 	total_amount = outstanding_amount = exchange_rate = None
 
-	ref_doc = frappe.get_doc(reference_doctype, reference_name)
-	company_currency = ref_doc.get("company_currency") or erpnext.get_company_currency(ref_doc.company)
+	ref_doc = nts.get_doc(reference_doctype, reference_name)
+	company_currency = ref_doc.get("company_currency") or prodman.get_company_currency(ref_doc.company)
 
 	total_amount, exchange_rate = get_total_amount_and_exchange_rate(
 		ref_doc, party_account_currency, company_currency
@@ -251,7 +251,7 @@ def get_reference_details_for_employee(reference_doctype, reference_name, party_
 	else:
 		outstanding_amount = flt(total_amount) - flt(ref_doc.advance_paid)
 
-	return frappe._dict(
+	return nts._dict(
 		{
 			"due_date": ref_doc.get("due_date"),
 			"total_amount": flt(total_amount),

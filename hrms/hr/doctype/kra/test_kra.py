@@ -1,8 +1,8 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-# import frappe
-from frappe.tests import IntegrationTestCase
+# import nts
+from nts.tests import IntegrationTestCase
 
 
 class TestKRA(IntegrationTestCase):

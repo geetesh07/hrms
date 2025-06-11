@@ -1,25 +1,25 @@
-import frappe
-from frappe import _
-from frappe.utils import add_days, date_diff
+import nts
+from nts import _
+from nts.utils import add_days, date_diff
 
-from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
+from prodman.setup.doctype.employee.employee import get_holiday_list_for_employee
 
 from hrms.hr.doctype.shift_assignment.shift_assignment import ShiftAssignment
 from hrms.hr.doctype.shift_assignment_tool.shift_assignment_tool import create_shift_assignment
 from hrms.hr.doctype.shift_schedule.shift_schedule import get_or_insert_shift_schedule
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_default_company() -> str:
-	return frappe.defaults.get_user_default("Company")
+	return nts.defaults.get_user_default("Company")
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_values(doctype: str, name: str, fields: list) -> dict[str, str]:
-	return frappe.db.get_value(doctype, name, fields, as_dict=True)
+	return nts.db.get_value(doctype, name, fields, as_dict=True)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_events(
 	month_start: str, month_end: str, employee_filters: dict[str, str], shift_filters: dict[str, str]
 ) -> dict[str, list[dict]]:
@@ -37,17 +37,17 @@ def get_events(
 	return events
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_schedule_from_assignment(shift_schedule_assignment: str):
-	shift_schedule = frappe.db.get_value(
+	shift_schedule = nts.db.get_value(
 		"Shift Schedule Assignment", shift_schedule_assignment, "shift_schedule"
 	)
-	frequency = frappe.db.get_value("Shift Schedule", shift_schedule, "frequency")
-	repeat_on_days = frappe.get_all("Assignment Rule Day", filters={"parent": shift_schedule}, pluck="day")
+	frequency = nts.db.get_value("Shift Schedule", shift_schedule, "frequency")
+	repeat_on_days = nts.get_all("Assignment Rule Day", filters={"parent": shift_schedule}, pluck="day")
 	return {"frequency": frequency, "repeat_on_days": repeat_on_days}
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def create_shift_schedule_assignment(
 	employee: str,
 	company: str,
@@ -60,7 +60,7 @@ def create_shift_schedule_assignment(
 	shift_location: str | None = None,
 ) -> None:
 	shift_schedule = get_or_insert_shift_schedule(shift_type, frequency, repeat_on_days)
-	shift_schedule_assignment = frappe.get_doc(
+	shift_schedule_assignment = nts.get_doc(
 		{
 			"doctype": "Shift Schedule Assignment",
 			"shift_schedule": shift_schedule,
@@ -75,38 +75,38 @@ def create_shift_schedule_assignment(
 	if not end_date or date_diff(end_date, start_date) <= 90:
 		return shift_schedule_assignment.create_shifts(start_date, end_date)
 
-	frappe.enqueue(
+	nts.enqueue(
 		shift_schedule_assignment.create_shifts, timeout=4500, start_date=start_date, end_date=end_date
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def delete_shift_schedule_assignment(shift_schedule_assignment: str) -> None:
-	for shift_assignment in frappe.get_all(
+	for shift_assignment in nts.get_all(
 		"Shift Assignment", {"shift_schedule_assignment": shift_schedule_assignment}, pluck="name"
 	):
-		doc = frappe.get_doc("Shift Assignment", shift_assignment)
+		doc = nts.get_doc("Shift Assignment", shift_assignment)
 		if doc.docstatus == 1:
 			doc.cancel()
-		frappe.delete_doc("Shift Assignment", shift_assignment)
-	frappe.delete_doc("Shift Schedule Assignment", shift_schedule_assignment)
+		nts.delete_doc("Shift Assignment", shift_assignment)
+	nts.delete_doc("Shift Schedule Assignment", shift_schedule_assignment)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def swap_shift(
 	src_shift: str, src_date: str, tgt_employee: str, tgt_date: str, tgt_shift: str | None
 ) -> None:
 	if src_shift == tgt_shift:
-		frappe.throw(_("Source and target shifts cannot be the same"))
+		nts.throw(_("Source and target shifts cannot be the same"))
 
 	if tgt_shift:
-		tgt_shift_doc = frappe.get_doc("Shift Assignment", tgt_shift)
+		tgt_shift_doc = nts.get_doc("Shift Assignment", tgt_shift)
 		tgt_company = tgt_shift_doc.company
 		break_shift(tgt_shift_doc, tgt_date)
 	else:
-		tgt_company = frappe.db.get_value("Employee", tgt_employee, "company")
+		tgt_company = nts.db.get_value("Employee", tgt_employee, "company")
 
-	src_shift_doc = frappe.get_doc("Shift Assignment", src_shift)
+	src_shift_doc = nts.get_doc("Shift Assignment", src_shift)
 	break_shift(src_shift_doc, src_date)
 	insert_shift(
 		tgt_employee,
@@ -130,15 +130,15 @@ def swap_shift(
 		)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def break_shift(assignment: str | ShiftAssignment, date: str) -> None:
 	if isinstance(assignment, str):
-		assignment = frappe.get_doc("Shift Assignment", assignment)
+		assignment = nts.get_doc("Shift Assignment", assignment)
 
 	if assignment.end_date and date_diff(assignment.end_date, date) < 0:
-		frappe.throw(_("Cannot break shift after end date"))
+		nts.throw(_("Cannot break shift after end date"))
 	if date_diff(assignment.start_date, date) > 0:
-		frappe.throw(_("Cannot break shift before start date"))
+		nts.throw(_("Cannot break shift before start date"))
 
 	employee = assignment.employee
 	company = assignment.company
@@ -160,7 +160,7 @@ def break_shift(assignment: str | ShiftAssignment, date: str) -> None:
 		)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def insert_shift(
 	employee: str,
 	company: str,
@@ -178,20 +178,20 @@ def insert_shift(
 		"status": status,
 		"shift_location": shift_location,
 	}
-	prev_shift = frappe.db.exists(dict({"end_date": add_days(start_date, -1)}, **filters))
+	prev_shift = nts.db.exists(dict({"end_date": add_days(start_date, -1)}, **filters))
 	next_shift = (
-		frappe.db.exists(dict({"start_date": add_days(end_date, 1)}, **filters)) if end_date else None
+		nts.db.exists(dict({"start_date": add_days(end_date, 1)}, **filters)) if end_date else None
 	)
 
 	if prev_shift:
 		if next_shift:
-			end_date = frappe.db.get_value("Shift Assignment", next_shift, "end_date")
-			frappe.db.set_value("Shift Assignment", next_shift, "docstatus", 2)
-			frappe.delete_doc("Shift Assignment", next_shift)
-		frappe.db.set_value("Shift Assignment", prev_shift, "end_date", end_date or None)
+			end_date = nts.db.get_value("Shift Assignment", next_shift, "end_date")
+			nts.db.set_value("Shift Assignment", next_shift, "docstatus", 2)
+			nts.delete_doc("Shift Assignment", next_shift)
+		nts.db.set_value("Shift Assignment", prev_shift, "end_date", end_date or None)
 
 	elif next_shift:
-		frappe.db.set_value("Shift Assignment", next_shift, "start_date", start_date)
+		nts.db.set_value("Shift Assignment", next_shift, "start_date", start_date)
 
 	else:
 		create_shift_assignment(employee, company, shift_type, start_date, end_date, status, shift_location)
@@ -201,11 +201,11 @@ def get_holidays(month_start: str, month_end: str, employee_filters: dict[str, s
 	holidays = {}
 	holiday_lists = {}
 
-	for employee in frappe.get_list("Employee", filters=employee_filters, pluck="name"):
+	for employee in nts.get_list("Employee", filters=employee_filters, pluck="name"):
 		if not (holiday_list := get_holiday_list_for_employee(employee, raise_exception=False)):
 			continue
 		if holiday_list not in holiday_lists:
-			holiday_lists[holiday_list] = frappe.get_all(
+			holiday_lists[holiday_list] = nts.get_all(
 				"Holiday",
 				filters={"parent": holiday_list, "holiday_date": ["between", [month_start, month_end]]},
 				fields=["name as holiday", "holiday_date", "description", "weekly_off"],
@@ -216,11 +216,11 @@ def get_holidays(month_start: str, month_end: str, employee_filters: dict[str, s
 
 
 def get_leaves(month_start: str, month_end: str, employee_filters: dict[str, str]) -> dict[str, list[dict]]:
-	LeaveApplication = frappe.qb.DocType("Leave Application")
-	Employee = frappe.qb.DocType("Employee")
+	LeaveApplication = nts.qb.DocType("Leave Application")
+	Employee = nts.qb.DocType("Employee")
 
 	query = (
-		frappe.qb.select(
+		nts.qb.select(
 			LeaveApplication.name.as_("leave"),
 			LeaveApplication.employee,
 			LeaveApplication.leave_type,
@@ -247,12 +247,12 @@ def get_leaves(month_start: str, month_end: str, employee_filters: dict[str, str
 def get_shifts(
 	month_start: str, month_end: str, employee_filters: dict[str, str], shift_filters: dict[str, str]
 ) -> dict[str, list[dict]]:
-	ShiftAssignment = frappe.qb.DocType("Shift Assignment")
-	ShiftType = frappe.qb.DocType("Shift Type")
-	Employee = frappe.qb.DocType("Employee")
+	ShiftAssignment = nts.qb.DocType("Shift Assignment")
+	ShiftType = nts.qb.DocType("Shift Type")
+	Employee = nts.qb.DocType("Employee")
 
 	query = (
-		frappe.qb.select(
+		nts.qb.select(
 			ShiftAssignment.name,
 			ShiftAssignment.employee,
 			ShiftAssignment.shift_type,

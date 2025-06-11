@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.ui.form.on("Salary Slip", {
+nts.ui.form.on("Salary Slip", {
 	setup: function (frm) {
 		$.each(["earnings", "deductions"], function (i, table_fieldname) {
 			frm.get_field(table_fieldname).grid.editable_fields = [
@@ -36,7 +36,7 @@ frappe.ui.form.on("Salary Slip", {
 
 		frm.set_query("employee", function () {
 			return {
-				query: "erpnext.controllers.queries.employee_query",
+				query: "prodman.controllers.queries.employee_query",
 			};
 		});
 
@@ -58,7 +58,7 @@ frappe.ui.form.on("Salary Slip", {
 	},
 
 	set_end_date: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.payroll.doctype.payroll_entry.payroll_entry.get_end_date",
 			args: {
 				frequency: frm.doc.payroll_frequency,
@@ -90,7 +90,7 @@ frappe.ui.form.on("Salary Slip", {
 
 	set_dynamic_labels: function (frm) {
 		if (frm.doc.employee && frm.doc.currency) {
-			frappe.run_serially([
+			nts.run_serially([
 				() => frm.events.change_form_labels(frm),
 				() => frm.events.change_grid_labels(frm),
 				() => frm.refresh_fields(),
@@ -99,15 +99,15 @@ frappe.ui.form.on("Salary Slip", {
 	},
 
 	set_exchange_rate: function (frm) {
-		const company_currency = erpnext.get_currency(frm.doc.company);
+		const company_currency = prodman.get_currency(frm.doc.company);
 
 		if (frm.doc.docstatus === 0) {
 			if (frm.doc.currency) {
 				var from_currency = frm.doc.currency;
 				if (from_currency != company_currency) {
 					frm.events.hide_loan_section(frm);
-					frappe.call({
-						method: "erpnext.setup.utils.get_exchange_rate",
+					nts.call({
+						method: "prodman.setup.utils.get_exchange_rate",
 						args: {
 							from_currency: from_currency,
 							to_currency: company_currency,
@@ -142,7 +142,7 @@ frappe.ui.form.on("Salary Slip", {
 	},
 
 	change_form_labels: function (frm) {
-		const company_currency = erpnext.get_currency(frm.doc.company);
+		const company_currency = prodman.get_currency(frm.doc.company);
 
 		frm.set_currency_labels(
 			[
@@ -236,7 +236,7 @@ frappe.ui.form.on("Salary Slip", {
 
 	leave_without_pay: function (frm) {
 		if (frm.doc.employee && frm.doc.start_date && frm.doc.end_date) {
-			return frappe.call({
+			return nts.call({
 				method: "process_salary_based_on_working_days",
 				doc: frm.doc,
 				callback: function () {
@@ -255,7 +255,7 @@ frappe.ui.form.on("Salary Slip", {
 
 	get_emp_and_working_day_details: function (frm) {
 		if (frm.doc.employee) {
-			return frappe.call({
+			return nts.call({
 				method: "get_emp_and_working_day_details",
 				doc: frm.doc,
 				callback: function (r) {
@@ -271,7 +271,7 @@ frappe.ui.form.on("Salary Slip", {
 	set_payment_days_description: function (frm) {
 		if (frm.doc.docstatus !== 0) return;
 
-		frappe.call("hrms.payroll.utils.get_payroll_settings_for_payment_days").then((r) => {
+		nts.call("hrms.payroll.utils.get_payroll_settings_for_payment_days").then((r) => {
 			const {
 				payroll_based_on,
 				consider_unmarked_attendance_as,
@@ -293,7 +293,7 @@ frappe.ui.form.on("Salary Slip", {
 					}
 					<br><br>
 					${__("Click {0} to change the configuration and then resave salary slip", [
-						frappe.utils.get_form_link(
+						nts.utils.get_form_link(
 							"Payroll Settings",
 							"Payroll Settings",
 							true,
@@ -308,7 +308,7 @@ frappe.ui.form.on("Salary Slip", {
 	},
 });
 
-frappe.ui.form.on("Salary Slip Timesheet", {
+nts.ui.form.on("Salary Slip Timesheet", {
 	time_sheet: function (frm) {
 		set_totals(frm);
 	},
@@ -320,7 +320,7 @@ frappe.ui.form.on("Salary Slip Timesheet", {
 var set_totals = function (frm) {
 	if (frm.doc.docstatus === 0 && frm.doc.doctype === "Salary Slip") {
 		if (frm.doc.earnings || frm.doc.deductions) {
-			frappe.call({
+			nts.call({
 				method: "set_totals",
 				doc: frm.doc,
 				callback: function () {
@@ -331,7 +331,7 @@ var set_totals = function (frm) {
 	}
 };
 
-frappe.ui.form.on("Salary Detail", {
+nts.ui.form.on("Salary Detail", {
 	amount: function (frm) {
 		set_totals(frm);
 	},
@@ -347,8 +347,8 @@ frappe.ui.form.on("Salary Detail", {
 	salary_component: function (frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		if (child.salary_component) {
-			frappe.call({
-				method: "frappe.client.get",
+			nts.call({
+				method: "nts.client.get",
 				args: {
 					doctype: "Salary Component",
 					name: child.salary_component,
@@ -356,49 +356,49 @@ frappe.ui.form.on("Salary Detail", {
 				callback: function (data) {
 					if (data.message) {
 						var result = data.message;
-						frappe.model.set_value(cdt, cdn, "condition", result.condition);
-						frappe.model.set_value(
+						nts.model.set_value(cdt, cdn, "condition", result.condition);
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"amount_based_on_formula",
 							result.amount_based_on_formula,
 						);
 						if (result.amount_based_on_formula === 1) {
-							frappe.model.set_value(cdt, cdn, "formula", result.formula);
+							nts.model.set_value(cdt, cdn, "formula", result.formula);
 						} else {
-							frappe.model.set_value(cdt, cdn, "amount", result.amount);
+							nts.model.set_value(cdt, cdn, "amount", result.amount);
 						}
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"statistical_component",
 							result.statistical_component,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"depends_on_payment_days",
 							result.depends_on_payment_days,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"do_not_include_in_total",
 							result.do_not_include_in_total,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"variable_based_on_taxable_salary",
 							result.variable_based_on_taxable_salary,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"is_tax_applicable",
 							result.is_tax_applicable,
 						);
-						frappe.model.set_value(
+						nts.model.set_value(
 							cdt,
 							cdn,
 							"is_flexible_benefit",
@@ -415,9 +415,9 @@ frappe.ui.form.on("Salary Detail", {
 	amount_based_on_formula: function (frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		if (child.amount_based_on_formula === 1) {
-			frappe.model.set_value(cdt, cdn, "amount", null);
+			nts.model.set_value(cdt, cdn, "amount", null);
 		} else {
-			frappe.model.set_value(cdt, cdn, "formula", null);
+			nts.model.set_value(cdt, cdn, "formula", null);
 		}
 	},
 });

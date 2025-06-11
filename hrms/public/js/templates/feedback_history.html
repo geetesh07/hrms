@@ -6,7 +6,7 @@
 				<div class="reviewer-info mb-2 col-xs-3">
 					<div class="row">
 						<div class="col-xs-2">
-							{{ frappe.avatar(feedback_history[i].user, "avatar-medium") }}
+							{{ nts.avatar(feedback_history[i].user, "avatar-medium") }}
 						</div>
 						<div class="col-xs-10">
 							<div class="ml-2">
@@ -26,7 +26,7 @@
 				<!-- Feedback -->
 				<div class="reviewer-feedback col-xs-6">
 					<div class="rating">
-						{%= frappe.render_template("rating",
+						{%= nts.render_template("rating",
 								{number_of_stars: 5, average_rating: feedback_history[i].total_score, for_summary: false}
 							)
 						%}
@@ -39,9 +39,9 @@
 				<!-- Feedback Date & Link -->
 				<div class="feedback-info col-xs-3 d-flex flex-row justify-content-end align-items-baseline">
 					<div class="time small text-muted mr-2">
-						{{ frappe.datetime.comment_when(feedback_history[i].added_on) }}
+						{{ nts.datetime.comment_when(feedback_history[i].added_on) }}
 					</div>
-					<a href="{{ frappe.utils.get_form_link(feedback_doctype, feedback_history[i].name) }}" title="{{ __("Open Feedback") }}">
+					<a href="{{ nts.utils.get_form_link(feedback_doctype, feedback_history[i].name) }}" title="{{ __("Open Feedback") }}">
 						<svg class="icon icon-sm">
 							<use href="#icon-link-url"></use>
 						</svg>

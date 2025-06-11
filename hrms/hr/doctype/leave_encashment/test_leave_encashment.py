@@ -1,12 +1,12 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import add_days, get_year_ending, get_year_start, getdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import add_days, get_year_ending, get_year_start, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 
 from hrms.hr.doctype.leave_allocation.leave_allocation import get_unused_leaves
 from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import process_expired_allocation
@@ -22,7 +22,7 @@ from hrms.payroll.doctype.salary_slip.test_salary_slip import (
 from hrms.payroll.doctype.salary_structure.test_salary_structure import make_salary_structure
 from hrms.tests.test_utils import get_first_sunday
 
-test_records = frappe.get_test_records("Leave Type")
+test_records = nts.get_test_records("Leave Type")
 
 
 class TestLeaveEncashment(IntegrationTestCase):
@@ -36,12 +36,12 @@ class TestLeaveEncashment(IntegrationTestCase):
 			"Leave Encashment",
 			"Leave Application",
 		]:
-			frappe.db.delete(dt)
+			nts.db.delete(dt)
 
 		self.leave_type = "_Test Leave Type Encashment"
-		if frappe.db.exists("Leave Type", self.leave_type):
-			frappe.delete_doc("Leave Type", self.leave_type, force=True)
-		frappe.get_doc(test_records[2]).insert()
+		if nts.db.exists("Leave Type", self.leave_type):
+			nts.delete_doc("Leave Type", self.leave_type, force=True)
+		nts.get_doc(test_records[2]).insert()
 
 		date = getdate()
 		year_start = getdate(get_year_start(date))
@@ -64,7 +64,7 @@ class TestLeaveEncashment(IntegrationTestCase):
 			"leave_period": self.leave_period.name,
 		}
 
-		create_assignment_for_multiple_employees([self.employee], frappe._dict(data))
+		create_assignment_for_multiple_employees([self.employee], nts._dict(data))
 
 		make_salary_structure(
 			"Salary Structure for Encashment",
@@ -85,14 +85,14 @@ class TestLeaveEncashment(IntegrationTestCase):
 		# assert links
 		leave_encashment.submit()
 		self.assertIsNotNone(leave_encashment.leave_allocation)
-		additional_salary_amount = frappe.db.get_value(
+		additional_salary_amount = nts.db.get_value(
 			"Additional Salary", {"ref_docname": leave_encashment.name}, "amount"
 		)
 		self.assertEqual(additional_salary_amount, leave_encashment.encashment_amount)
 
 	@set_holiday_list("_Test Leave Encashment", "_Test Company")
 	def test_non_encashable_leaves_setting(self):
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Leave Type",
 			self.leave_type,
 			{
@@ -121,14 +121,14 @@ class TestLeaveEncashment(IntegrationTestCase):
 
 		# assert links
 		leave_encashment.submit()
-		additional_salary_amount = frappe.db.get_value(
+		additional_salary_amount = nts.db.get_value(
 			"Additional Salary", {"ref_docname": leave_encashment.name}, "amount"
 		)
 		self.assertEqual(additional_salary_amount, leave_encashment.encashment_amount)
 
 	@set_holiday_list("_Test Leave Encashment", "_Test Company")
 	def test_max_encashable_leaves_setting(self):
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Leave Type",
 			self.leave_type,
 			{
@@ -156,14 +156,14 @@ class TestLeaveEncashment(IntegrationTestCase):
 
 		# assert links
 		leave_encashment.submit()
-		additional_salary_amount = frappe.db.get_value(
+		additional_salary_amount = nts.db.get_value(
 			"Additional Salary", {"ref_docname": leave_encashment.name}, "amount"
 		)
 		self.assertEqual(additional_salary_amount, leave_encashment.encashment_amount)
 
 	@set_holiday_list("_Test Leave Encashment", "_Test Company")
 	def test_max_encashable_leaves_and_non_encashable_leaves_setting(self):
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Leave Type",
 			self.leave_type,
 			{
@@ -192,7 +192,7 @@ class TestLeaveEncashment(IntegrationTestCase):
 
 		# assert links
 		leave_encashment.submit()
-		additional_salary_amount = frappe.db.get_value(
+		additional_salary_amount = nts.db.get_value(
 			"Additional Salary", {"ref_docname": leave_encashment.name}, "amount"
 		)
 		self.assertEqual(additional_salary_amount, leave_encashment.encashment_amount)
@@ -202,7 +202,7 @@ class TestLeaveEncashment(IntegrationTestCase):
 		leave_encashment = self.create_test_leave_encashment()
 		leave_encashment.submit()
 
-		leave_ledger_entry = frappe.get_all(
+		leave_ledger_entry = nts.get_all(
 			"Leave Ledger Entry", fields="*", filters=dict(transaction_name=leave_encashment.name)
 		)
 
@@ -212,9 +212,9 @@ class TestLeaveEncashment(IntegrationTestCase):
 		self.assertEqual(leave_ledger_entry[0].leaves, leave_encashment.encashment_days * -1)
 
 		# check if leave ledger entry is deleted on cancellation
-		frappe.db.delete("Additional Salary", {"ref_docname": leave_encashment.name})
+		nts.db.delete("Additional Salary", {"ref_docname": leave_encashment.name})
 		leave_encashment.cancel()
-		self.assertFalse(frappe.db.exists("Leave Ledger Entry", {"transaction_name": leave_encashment.name}))
+		self.assertFalse(nts.db.exists("Leave Ledger Entry", {"transaction_name": leave_encashment.name}))
 
 	@set_holiday_list("_Test Leave Encashment", "_Test Company")
 	def test_unused_leaves_after_leave_encashment_for_carry_forwarding_leave_type(self):
@@ -230,8 +230,8 @@ class TestLeaveEncashment(IntegrationTestCase):
 		self.assertEqual(unused_leaves, 5)
 
 		# check if a single leave ledger entry is created
-		self.assertEqual(frappe.get_value("Leave Type", self.leave_type, "is_carry_forward"), 1)
-		leave_ledger_entry = frappe.get_all(
+		self.assertEqual(nts.get_value("Leave Type", self.leave_type, "is_carry_forward"), 1)
+		leave_ledger_entry = nts.get_all(
 			"Leave Ledger Entry", fields=["leaves"], filters={"transaction_name": leave_encashment.name}
 		)
 		self.assertEqual(len(leave_ledger_entry), 1)
@@ -256,8 +256,8 @@ class TestLeaveEncashment(IntegrationTestCase):
 		# it's assumed that process expired allocation has expired the leaves,
 		# hence a reverse ledger entry should be created for the encashment
 		# check if two leave ledger entries are created
-		self.assertEqual(frappe.get_value("Leave Type", self.leave_type, "is_carry_forward"), 0)
-		leave_ledger_entry = frappe.get_all(
+		self.assertEqual(nts.get_value("Leave Type", self.leave_type, "is_carry_forward"), 0)
+		leave_ledger_entry = nts.get_all(
 			"Leave Ledger Entry",
 			fields="*",
 			filters={"transaction_name": leave_encashment.name},
@@ -270,7 +270,7 @@ class TestLeaveEncashment(IntegrationTestCase):
 		# check if 10 leaves are expired after processing expired allocation runs
 		process_expired_allocation()
 
-		expired_leaves = frappe.get_value(
+		expired_leaves = nts.get_value(
 			"Leave Ledger Entry",
 			{"employee": employee, "leave_type": self.leave_type, "is_expired": 1},
 			"leaves",
@@ -278,12 +278,12 @@ class TestLeaveEncashment(IntegrationTestCase):
 		self.assertEqual(expired_leaves, -10)
 
 	def get_encashment_created_after_leave_period(self, employee, is_carry_forward, encashment_days):
-		frappe.db.delete("Leave Period", {"name": self.leave_period.name})
+		nts.db.delete("Leave Period", {"name": self.leave_period.name})
 		# create new leave period that has end date of yesterday
 		start_date = add_days(getdate(), -30)
 		end_date = add_days(getdate(), -1)
 		self.leave_period = create_leave_period(start_date, end_date, "_Test Company")
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Leave Type",
 			self.leave_type,
 			{
@@ -291,13 +291,13 @@ class TestLeaveEncashment(IntegrationTestCase):
 			},
 		)
 
-		leave_policy = frappe.get_value("Leave Policy", {"title": "Test Leave Policy"}, "name")
+		leave_policy = nts.get_value("Leave Policy", {"title": "Test Leave Policy"}, "name")
 		data = {
 			"assignment_based_on": "Leave Period",
 			"leave_policy": leave_policy,
 			"leave_period": self.leave_period.name,
 		}
-		create_assignment_for_multiple_employees([employee], frappe._dict(data))
+		create_assignment_for_multiple_employees([employee], nts._dict(data))
 
 		make_salary_structure(
 			"Salary Structure for Encashment",
@@ -371,7 +371,7 @@ class TestLeaveEncashment(IntegrationTestCase):
 		leave_encashment.reload()
 		self.assertEqual(leave_encashment.status, "Unpaid")
 
-		frappe.db.set_value("Employee", self.employee, "relieving_date", getdate())
+		nts.db.set_value("Employee", self.employee, "relieving_date", getdate())
 
 		fnf = create_full_and_final_statement(self.employee)
 		fnf.payables = []
@@ -390,7 +390,7 @@ class TestLeaveEncashment(IntegrationTestCase):
 		fnf.submit()
 
 		jv = fnf.create_journal_entry()
-		jv.accounts[1].account = frappe.get_cached_value("Company", "_Test Company", "default_bank_account")
+		jv.accounts[1].account = nts.get_cached_value("Company", "_Test Company", "default_bank_account")
 		jv.cheque_no = "123456"
 		jv.cheque_date = getdate()
 		jv.save()
@@ -418,20 +418,20 @@ class TestLeaveEncashment(IntegrationTestCase):
 
 def create_leave_encashment(**args):
 	if args:
-		args = frappe._dict(args)
-	leave_encashment = frappe.new_doc("Leave Encashment")
+		args = nts._dict(args)
+	leave_encashment = nts.new_doc("Leave Encashment")
 	leave_encashment.company = args.company or "_Test Company"
 	leave_encashment.employee = args.employee
 	leave_encashment.posting_date = args.posting_date or getdate()
 	leave_encashment.leave_type = args.leave_type
 	leave_encashment.leave_period = args.leave_period
 	leave_encashment.encashment_date = args.encashment_date or getdate()
-	leave_encashment.currency = args.currency or frappe.get_cached_value(
+	leave_encashment.currency = args.currency or nts.get_cached_value(
 		"Company", "_Test Company", "default_currency"
 	)
 	leave_encashment.pay_via_payment_entry = args.pay_via_payment_entry or 0
 	if leave_encashment.pay_via_payment_entry:
-		leave_encashment.payable_account = args.payable_account or frappe.get_cached_value(
+		leave_encashment.payable_account = args.payable_account or nts.get_cached_value(
 			"Company", "_Test Company", "default_payable_account"
 		)
 		leave_encashment.expense_account = args.expense_account or "Administrative Expenses - _TC"

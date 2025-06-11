@@ -1,11 +1,11 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase, change_settings
-from frappe.utils import add_days, getdate
+import nts
+from nts.tests import IntegrationTestCase, change_settings
+from nts.utils import add_days, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 
 class TestEmployeeTransfer(IntegrationTestCase):
@@ -13,15 +13,15 @@ class TestEmployeeTransfer(IntegrationTestCase):
 		create_company()
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 	def test_submit_before_transfer_date(self):
 		make_employee("employee2@transfers.com")
 
-		transfer_obj = frappe.get_doc(
+		transfer_obj = nts.get_doc(
 			{
 				"doctype": "Employee Transfer",
-				"employee": frappe.get_value("Employee", {"user_id": "employee2@transfers.com"}, "name"),
+				"employee": nts.get_value("Employee", {"user_id": "employee2@transfers.com"}, "name"),
 				"transfer_details": [
 					{
 						"property": "Designation",
@@ -34,8 +34,8 @@ class TestEmployeeTransfer(IntegrationTestCase):
 		)
 		transfer_obj.transfer_date = add_days(getdate(), 1)
 		transfer_obj.save()
-		self.assertRaises(frappe.DocstatusTransitionError, transfer_obj.submit)
-		transfer = frappe.get_doc("Employee Transfer", transfer_obj.name)
+		self.assertRaises(nts.DocstatusTransitionError, transfer_obj.submit)
+		transfer = nts.get_doc("Employee Transfer", transfer_obj.name)
 		transfer.transfer_date = getdate()
 		transfer.submit()
 		self.assertEqual(transfer.docstatus, 1)
@@ -43,10 +43,10 @@ class TestEmployeeTransfer(IntegrationTestCase):
 	def test_new_employee_creation(self):
 		make_employee("employee3@transfers.com")
 
-		transfer = frappe.get_doc(
+		transfer = nts.get_doc(
 			{
 				"doctype": "Employee Transfer",
-				"employee": frappe.get_value("Employee", {"user_id": "employee3@transfers.com"}, "name"),
+				"employee": nts.get_value("Employee", {"user_id": "employee3@transfers.com"}, "name"),
 				"create_new_employee_id": 1,
 				"transfer_date": getdate(),
 				"transfer_details": [
@@ -61,8 +61,8 @@ class TestEmployeeTransfer(IntegrationTestCase):
 		).insert()
 		transfer.submit()
 		self.assertTrue(transfer.new_employee_id)
-		self.assertEqual(frappe.get_value("Employee", transfer.new_employee_id, "status"), "Active")
-		self.assertEqual(frappe.get_value("Employee", transfer.employee, "status"), "Left")
+		self.assertEqual(nts.get_value("Employee", transfer.new_employee_id, "status"), "Active")
+		self.assertEqual(nts.get_value("Employee", transfer.employee, "status"), "Left")
 
 	def test_employee_history(self):
 		employee = make_employee(
@@ -81,7 +81,7 @@ class TestEmployeeTransfer(IntegrationTestCase):
 		dt = [getdate("01-10-2021"), getdate()]
 		to_date = [add_days(dt[1], -1), None]
 
-		employee = frappe.get_doc("Employee", employee)
+		employee = nts.get_doc("Employee", employee)
 		for data in employee.internal_work_history:
 			self.assertEqual(data.department, department[count])
 			self.assertEqual(data.designation, designation[count])
@@ -110,8 +110,8 @@ class TestEmployeeTransfer(IntegrationTestCase):
 
 
 def create_company():
-	if not frappe.db.exists("Company", "Test Company"):
-		frappe.get_doc(
+	if not nts.db.exists("Company", "Test Company"):
+		nts.get_doc(
 			{
 				"doctype": "Company",
 				"company_name": "Test Company",
@@ -122,7 +122,7 @@ def create_company():
 
 
 def create_employee_transfer(employee):
-	doc = frappe.get_doc(
+	doc = nts.get_doc(
 		{
 			"doctype": "Employee Transfer",
 			"employee": employee,

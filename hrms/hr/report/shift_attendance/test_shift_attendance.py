@@ -1,10 +1,10 @@
 from datetime import date, datetime, time
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import format_datetime
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import format_datetime
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.shift_type.test_shift_type import setup_shift_type
 from hrms.hr.report.shift_attendance.shift_attendance import execute
@@ -16,13 +16,13 @@ class TestShiftAttendance(IntegrationTestCase):
 	def setUpClass(cls):
 		create_company()
 		super().setUpClass()
-		frappe.db.delete("Employee", {"company": "_Test Company"})
+		nts.db.delete("Employee", {"company": "_Test Company"})
 
 		cls.create_records()
 
 	@classmethod
 	def tearDownClass(cls):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 	@classmethod
 	def create_records(cls):
@@ -83,7 +83,7 @@ class TestShiftAttendance(IntegrationTestCase):
 		cls.shift2.process_auto_attendance()
 
 	def test_data(self):
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"company": "_Test Company",
 				"from_date": date(2023, 1, 1),
@@ -141,7 +141,7 @@ class TestShiftAttendance(IntegrationTestCase):
 		self.assertEqual(expected_data, data)
 
 	def test_chart(self):
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"company": "_Test Company",
 				"from_date": date(2023, 1, 1),
@@ -156,7 +156,7 @@ class TestShiftAttendance(IntegrationTestCase):
 		self.assertEqual(expected_values, chart_data["datasets"][0]["values"])
 
 	def test_report_summary(self):
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"company": "_Test Company",
 				"from_date": date(2023, 1, 1),
@@ -177,7 +177,7 @@ class TestShiftAttendance(IntegrationTestCase):
 
 
 def make_checkin(employee, time, log_type):
-	frappe.get_doc(
+	nts.get_doc(
 		{
 			"doctype": "Employee Checkin",
 			"employee": employee,

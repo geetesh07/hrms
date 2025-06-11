@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Job Opening", {
+nts.ui.form.on("Job Opening", {
 	onload: function (frm) {
 		frm.set_query("department", function () {
 			return {
@@ -13,12 +13,12 @@ frappe.ui.form.on("Job Opening", {
 	},
 	designation: function (frm) {
 		if (frm.doc.designation && frm.doc.company) {
-			frappe.call({
+			nts.call({
 				method: "hrms.hr.doctype.staffing_plan.staffing_plan.get_active_staffing_plan_details",
 				args: {
 					company: frm.doc.company,
 					designation: frm.doc.designation,
-					date: frappe.datetime.now_date(), // ToDo - Date in Job Opening?
+					date: nts.datetime.now_date(), // ToDo - Date in Job Opening?
 				},
 				callback: function (data) {
 					if (data.message) {
@@ -27,7 +27,7 @@ frappe.ui.form.on("Job Opening", {
 					} else {
 						frm.set_value("staffing_plan", "");
 						frm.set_value("planned_vacancies", 0);
-						frappe.show_alert({
+						nts.show_alert({
 							indicator: "orange",
 							message: __("No Staffing Plans found for this Designation"),
 						});

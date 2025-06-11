@@ -18,7 +18,7 @@
                     <a href="/app/interview/{%= key %}"  target="_blank">{%= key %}</a>
                 </td>
 				<td class="text-left"> {%= value["interview_round"] %} </td>
-				<td class="text-left"> {%= frappe.datetime.str_to_user(value["scheduled_on"]) %} </td>
+				<td class="text-left"> {%= nts.datetime.str_to_user(value["scheduled_on"]) %} </td>
 				<td class="text-left"> {%= value["status"] %} </td>
 				{% let right_class = ''; %}
 				{% let left_class = ''; %}

@@ -1,4 +1,4 @@
-import frappe
+import nts
 
 
 def sanitize_expression(string: str | None = None) -> str | None:
@@ -26,9 +26,9 @@ def sanitize_expression(string: str | None = None) -> str | None:
 	return string
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_payroll_settings_for_payment_days() -> dict:
-	return frappe.get_cached_value(
+	return nts.get_cached_value(
 		"Payroll Settings",
 		None,
 		[

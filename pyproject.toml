@@ -1,7 +1,7 @@
 [project]
 name = "hrms"
 authors = [
-    { name = "Frappe Technologies Pvt Ltd", email = "developers@frappe.io" },
+    { name = "nts Technologies Pvt Ltd", email = "developers@nts.io" },
 ]
 description = "Open Source HR & Payroll Software"
 requires-python = ">=3.10"
@@ -12,7 +12,7 @@ dynamic = ["version"]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
-[tool.frappe.testing.function_type_validation]
+[tool.nts.testing.function_type_validation]
 max_module_depth = 0
 
 [tool.ruff]
@@ -37,7 +37,7 @@ ignore = [
     "W191",   # indentation contains tabs
     "RUF001", # string contains ambiguous unicode character
 ]
-typing-modules = ["frappe.types.DF"]
+typing-modules = ["nts.types.DF"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -45,8 +45,8 @@ indent-style = "tab"
 docstring-code-format = true
 
 [tool.ruff.lint.isort.sections]
-"frappe" = ["frappe"]
-"erpnext" = ["erpnext"]
+"nts" = ["nts"]
+"prodman" = ["prodman"]
 "hrms" = ["hrms"]
 
 [tool.ruff.lint.isort]
@@ -54,8 +54,8 @@ section-order = [
     "future",
     "standard-library",
     "third-party",
-    "frappe",
-    "erpnext",
+    "nts",
+    "prodman",
     "hrms",
     "first-party",
     "local-folder",
@@ -63,11 +63,11 @@ section-order = [
 
 
 [project.urls]
-Homepage = "https://frappe.io/hr"
-Repository = "https://github.com/frappe/hrms.git"
-"Bug Reports" = "https://github.com/frappe/hrms/issues"
+Homepage = "https://nts.io/hr"
+Repository = "https://github.com/nts/hrms.git"
+"Bug Reports" = "https://github.com/nts/hrms/issues"
 
 
-[tool.bench.frappe-dependencies]
-frappe = ">=16.0.0-dev,<17.0.0"
-erpnext = ">=16.0.0-dev,<17.0.0"
+[tool.bench.nts-dependencies]
+nts = ">=16.0.0-dev,<17.0.0"
+prodman = ">=16.0.0-dev,<17.0.0"

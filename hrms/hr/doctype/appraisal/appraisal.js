@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.ui.form.on("Appraisal", {
+nts.ui.form.on("Appraisal", {
 	refresh(frm) {
 		if (!frm.doc.__islocal) {
 			frm.trigger("add_custom_buttons");
@@ -24,10 +24,10 @@ frappe.ui.form.on("Appraisal", {
 
 	appraisal_cycle(frm) {
 		if (frm.doc.appraisal_cycle) {
-			frappe.run_serially([
+			nts.run_serially([
 				() => {
 					if (frm.doc.__islocal && frm.doc.appraisal_cycle) {
-						frappe.db.get_value(
+						nts.db.get_value(
 							"Appraisal Cycle",
 							frm.doc.appraisal_cycle,
 							"kra_evaluation_method",
@@ -54,17 +54,17 @@ frappe.ui.form.on("Appraisal", {
 
 	add_custom_buttons(frm) {
 		frm.add_custom_button(__("View Goals"), function () {
-			frappe.route_options = {
+			nts.route_options = {
 				company: frm.doc.company,
 				employee: frm.doc.employee,
 				appraisal_cycle: frm.doc.appraisal_cycle,
 			};
-			frappe.set_route("Tree", "Goal");
+			nts.set_route("Tree", "Goal");
 		});
 	},
 
 	show_feedback_history(frm) {
-		frappe.require("performance.bundle.js", () => {
+		nts.require("performance.bundle.js", () => {
 			const feedback_history = new hrms.PerformanceFeedback({
 				frm: frm,
 				wrapper: $(frm.fields_dict.feedback_html.wrapper),
@@ -123,12 +123,12 @@ frappe.ui.form.on("Appraisal", {
 	},
 });
 
-frappe.ui.form.on("Appraisal Goal", {
+nts.ui.form.on("Appraisal Goal", {
 	score(frm, cdt, cdn) {
-		let d = frappe.get_doc(cdt, cdn);
+		let d = nts.get_doc(cdt, cdn);
 
 		if (flt(d.score) > 5) {
-			frappe.msgprint(__("Score must be less than or equal to 5"));
+			nts.msgprint(__("Score must be less than or equal to 5"));
 			d.score = 0;
 			refresh_field("score", d.name, "goals");
 		} else {
@@ -145,10 +145,10 @@ frappe.ui.form.on("Appraisal Goal", {
 	},
 
 	set_score_earned(frm, cdt, cdn) {
-		let d = frappe.get_doc(cdt, cdn);
+		let d = nts.get_doc(cdt, cdn);
 
 		let score_earned = (flt(d.score) * flt(d.per_weightage)) / 100;
-		frappe.model.set_value(cdt, cdn, "score_earned", score_earned);
+		nts.model.set_value(cdt, cdn, "score_earned", score_earned);
 
 		frm.trigger("calculate_total");
 	},

@@ -1,11 +1,11 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
-from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
+from prodman.setup.doctype.employee.employee import get_holiday_list_for_employee
 
 
 def execute(filters=None):
@@ -51,8 +51,8 @@ def get_columns():
 
 
 def get_data(filters):
-	Attendance = frappe.qb.DocType("Attendance")
-	Holiday = frappe.qb.DocType("Holiday")
+	Attendance = nts.qb.DocType("Attendance")
+	Holiday = nts.qb.DocType("Holiday")
 
 	data = []
 
@@ -60,13 +60,13 @@ def get_data(filters):
 	if filters.department:
 		employee_filters["department"] = filters.department
 
-	for employee in frappe.get_list("Employee", filters=employee_filters, pluck="name"):
+	for employee in nts.get_list("Employee", filters=employee_filters, pluck="name"):
 		holiday_list = get_holiday_list_for_employee(employee, raise_exception=False)
 		if not holiday_list or (filters.holiday_list and filters.holiday_list != holiday_list):
 			continue
 
 		working_days = (
-			frappe.qb.from_(Attendance)
+			nts.qb.from_(Attendance)
 			.inner_join(Holiday)
 			.on(Attendance.attendance_date == Holiday.holiday_date)
 			.select(

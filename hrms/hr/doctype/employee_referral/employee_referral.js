@@ -1,11 +1,11 @@
-// Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Employee Referral", {
+nts.ui.form.on("Employee Referral", {
 	refresh: function (frm) {
 		if (frm.doc.docstatus === 1 && frm.doc.status === "Pending") {
 			frm.add_custom_button(__("Reject Employee Referral"), function () {
-				frappe.confirm(
+				nts.confirm(
 					__("Are you sure you want to reject the Employee Referral?"),
 					function () {
 						frm.doc.status = "Rejected";
@@ -25,7 +25,7 @@ frappe.ui.form.on("Employee Referral", {
 
 		// To check whether Payment is done or not
 		if (frm.doc.docstatus === 1 && frm.doc.status === "Accepted") {
-			frappe.db
+			nts.db
 				.get_list("Additional Salary", {
 					filters: {
 						ref_docname: cur_frm.doc.name,
@@ -45,7 +45,7 @@ frappe.ui.form.on("Employee Referral", {
 		}
 	},
 	create_job_applicant: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.employee_referral.employee_referral.create_job_applicant",
 			args: {
 				source_name: frm.docname,
@@ -54,14 +54,14 @@ frappe.ui.form.on("Employee Referral", {
 	},
 
 	create_additional_salary: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.employee_referral.employee_referral.create_additional_salary",
 			args: {
 				doc: frm.doc,
 			},
 			callback: function (r) {
-				var doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				var doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},

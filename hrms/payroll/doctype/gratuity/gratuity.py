@@ -1,13 +1,13 @@
-# Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2020, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _, bold
-from frappe.query_builder.functions import Sum
-from frappe.utils import cstr, flt, get_datetime, get_link_to_form
+import nts
+from nts import _, bold
+from nts.query_builder.functions import Sum
+from nts.utils import cstr, flt, get_datetime, get_link_to_form
 
-from erpnext.accounts.general_ledger import make_gl_entries
-from erpnext.controllers.accounts_controller import AccountsController
+from prodman.accounts.general_ledger import make_gl_entries
+from prodman.controllers.accounts_controller import AccountsController
 
 
 class Gratuity(AccountsController):
@@ -20,7 +20,7 @@ class Gratuity(AccountsController):
 	@property
 	def gratuity_settings(self):
 		if not hasattr(self, "_gratuity_settings"):
-			self._gratuity_settings = frappe.db.get_value(
+			self._gratuity_settings = nts.db.get_value(
 				"Gratuity Rule",
 				self.gratuity_rule,
 				[
@@ -99,13 +99,13 @@ class Gratuity(AccountsController):
 				)
 			)
 		else:
-			frappe.throw(_("Total Amount cannot be zero"))
+			nts.throw(_("Total Amount cannot be zero"))
 
 		return gl_entry
 
 	def create_additional_salary(self):
 		if self.pay_via_salary_slip:
-			additional_salary = frappe.new_doc("Additional Salary")
+			additional_salary = nts.new_doc("Additional Salary")
 			additional_salary.employee = self.employee
 			additional_salary.salary_component = self.salary_component
 			additional_salary.overwrite_salary_structure_amount = 0
@@ -117,9 +117,9 @@ class Gratuity(AccountsController):
 			additional_salary.submit()
 
 	def set_total_advance_paid(self):
-		gle = frappe.qb.DocType("GL Entry")
+		gle = nts.qb.DocType("GL Entry")
 		paid_amount = (
-			frappe.qb.from_(gle)
+			nts.qb.from_(gle)
 			.select(Sum(gle.debit_in_account_currency).as_("paid_amount"))
 			.where(
 				(gle.against_voucher_type == "Gratuity")
@@ -132,12 +132,12 @@ class Gratuity(AccountsController):
 		).run(as_dict=True)[0].paid_amount or 0
 
 		if flt(paid_amount) > self.amount:
-			frappe.throw(_("Row {0}# Paid Amount cannot be greater than Total amount"))
+			nts.throw(_("Row {0}# Paid Amount cannot be greater than Total amount"))
 
 		self.db_set("paid_amount", paid_amount)
 		self.set_status(update=True)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def calculate_work_experience_and_amount(self) -> dict:
 		if self.gratuity_settings.method == "Manual":
 			current_work_experience = flt(self.current_work_experience)
@@ -159,7 +159,7 @@ class Gratuity(AccountsController):
 			work_experience = flt(work_experience, self.precision("current_work_experience"))
 
 		if work_experience < rule.minimum_year_for_gratuity:
-			frappe.throw(
+			nts.throw(
 				_("Employee: {0} have to complete minimum {1} years for gratuity").format(
 					bold(self.employee), rule.minimum_year_for_gratuity
 				)
@@ -167,11 +167,11 @@ class Gratuity(AccountsController):
 		return work_experience or 0
 
 	def get_total_working_days(self) -> float:
-		date_of_joining, relieving_date = frappe.db.get_value(
+		date_of_joining, relieving_date = nts.db.get_value(
 			"Employee", self.employee, ["date_of_joining", "relieving_date"]
 		)
 		if not relieving_date:
-			frappe.throw(
+			nts.throw(
 				_("Please set Relieving Date for employee: {0}").format(
 					bold(get_link_to_form("Employee", self.employee))
 				)
@@ -179,7 +179,7 @@ class Gratuity(AccountsController):
 
 		total_working_days = (get_datetime(relieving_date) - get_datetime(date_of_joining)).days
 
-		payroll_based_on = frappe.db.get_single_value("Payroll Settings", "payroll_based_on") or "Leave"
+		payroll_based_on = nts.db.get_single_value("Payroll Settings", "payroll_based_on") or "Leave"
 		if payroll_based_on == "Leave":
 			total_lwp = self.get_non_working_days(relieving_date, "On Leave")
 			total_working_days -= total_lwp
@@ -198,10 +198,10 @@ class Gratuity(AccountsController):
 		}
 
 		if status == "On Leave":
-			lwp_leave_types = frappe.get_all("Leave Type", filters={"is_lwp": 1}, pluck="name")
+			lwp_leave_types = nts.get_all("Leave Type", filters={"is_lwp": 1}, pluck="name")
 			filters["leave_type"] = ("IN", lwp_leave_types)
 
-		record = frappe.get_all("Attendance", filters=filters, fields=["COUNT(*) as total_lwp"])
+		record = nts.get_all("Attendance", filters=filters, fields=["COUNT(*) as total_lwp"])
 		return record[0].total_lwp if len(record) else 0
 
 	def get_gratuity_amount(self, experience: float) -> float:
@@ -252,7 +252,7 @@ class Gratuity(AccountsController):
 					break
 
 		if not slab_found:
-			frappe.throw(
+			nts.throw(
 				_(
 					"No applicable slab found for the calculation of gratuity amount as per the Gratuity Rule: {0}"
 				).format(bold(self.gratuity_rule))
@@ -264,7 +264,7 @@ class Gratuity(AccountsController):
 		applicable_earning_components = self.get_applicable_components()
 		salary_slip = get_last_salary_slip(self.employee)
 		if not salary_slip:
-			frappe.throw(_("No Salary Slip found for Employee: {0}").format(bold(self.employee)))
+			nts.throw(_("No Salary Slip found for Employee: {0}").format(bold(self.employee)))
 
 		# consider full payment days for calculation as last month's salary slip
 		# might have less payment days as per attendance, making it non-deterministic
@@ -279,7 +279,7 @@ class Gratuity(AccountsController):
 				component_found = True
 
 		if not component_found:
-			frappe.throw(
+			nts.throw(
 				_("No applicable Earning component found in last salary slip for Gratuity Rule: {0}").format(
 					bold(get_link_to_form("Gratuity Rule", self.gratuity_rule))
 				)
@@ -288,11 +288,11 @@ class Gratuity(AccountsController):
 		return total_amount
 
 	def get_applicable_components(self) -> list[str]:
-		applicable_earning_components = frappe.get_all(
+		applicable_earning_components = nts.get_all(
 			"Gratuity Applicable Component", filters={"parent": self.gratuity_rule}, pluck="salary_component"
 		)
 		if not applicable_earning_components:
-			frappe.throw(
+			nts.throw(
 				_("No applicable Earning components found for Gratuity Rule: {0}").format(
 					bold(get_link_to_form("Gratuity Rule", self.gratuity_rule))
 				)
@@ -301,7 +301,7 @@ class Gratuity(AccountsController):
 		return applicable_earning_components
 
 	def get_gratuity_rule_slabs(self) -> list[dict]:
-		return frappe.get_all(
+		return nts.get_all(
 			"Gratuity Rule Slab",
 			filters={"parent": self.gratuity_rule},
 			fields=["from_year", "to_year", "fraction_of_applicable_earnings"],
@@ -316,8 +316,8 @@ class Gratuity(AccountsController):
 
 
 def get_last_salary_slip(employee: str) -> dict | None:
-	salary_slip = frappe.db.get_value(
+	salary_slip = nts.db.get_value(
 		"Salary Slip", {"employee": employee, "docstatus": 1}, order_by="start_date desc"
 	)
 	if salary_slip:
-		return frappe.get_doc("Salary Slip", salary_slip)
+		return nts.get_doc("Salary Slip", salary_slip)

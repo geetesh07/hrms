@@ -1,7 +1,7 @@
-// Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Shift Assignment Tool", {
+nts.ui.form.on("Shift Assignment Tool", {
 	setup(frm) {
 		hrms.setup_employee_filter_group(frm);
 	},
@@ -257,7 +257,7 @@ frappe.ui.form.on("Shift Assignment Tool", {
 		});
 
 		hrms.validate_mandatory_fields(frm, selected_employees);
-		frappe.confirm(
+		nts.confirm(
 			__("{0} to {1} employee(s)?", [__(frm.doc.action), selected_employees.length]),
 			() => {
 				frm.call({
@@ -285,7 +285,7 @@ frappe.ui.form.on("Shift Assignment Tool", {
 		});
 
 		hrms.validate_mandatory_fields(frm, selected_requests, "Shift Requests");
-		frappe.confirm(
+		nts.confirm(
 			__("Process {0} Shift Request(s) as <b>{1}</b>?", [selected_requests.length, status]),
 			() => {
 				frm.events.bulk_process_shift_requests(frm, selected_requests, status);

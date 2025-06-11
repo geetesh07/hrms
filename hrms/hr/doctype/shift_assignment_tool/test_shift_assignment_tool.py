@@ -1,11 +1,11 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase, change_settings
-from frappe.utils import add_days, getdate
+import nts
+from nts.tests import IntegrationTestCase, change_settings
+from nts.utils import add_days, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.shift_assignment_tool.shift_assignment_tool import ShiftAssignmentTool
 from hrms.hr.doctype.shift_request.test_shift_request import make_shift_request
@@ -32,7 +32,7 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 		self.emp5 = make_employee("employee5@test.io", company="_Test Company")
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 	@change_settings("HR Settings", {"allow_multiple_shift_assignments": 0})
 	def test_get_employees_for_assigning_shifts(self):
@@ -65,7 +65,7 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 		self.assertEqual(len(employees), 2)  # emp1, emp2
 
 		# includes emp3 as multiple shifts in a day are allowed and timings don't overlap
-		frappe.db.set_single_value("HR Settings", "allow_multiple_shift_assignments", 1)
+		nts.db.set_single_value("HR Settings", "allow_multiple_shift_assignments", 1)
 		employees = shift_assignment_tool.get_employees(advanced_filters)
 		self.assertEqual(len(employees), 3)  # emp1, emp2, emp3
 
@@ -102,7 +102,7 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 		self.assertEqual(len(employees), 1)  # emp1
 
 		# includes emp3 as multiple shifts in a day are allowed and timings don't overlap
-		frappe.db.set_single_value("HR Settings", "allow_multiple_shift_assignments", 1)
+		nts.db.set_single_value("HR Settings", "allow_multiple_shift_assignments", 1)
 		employees = shift_assignment_tool.get_employees(advanced_filters)
 		self.assertEqual(len(employees), 2)  # emp1, emp3
 
@@ -114,7 +114,7 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 		today = getdate()
 
 		for emp in [self.emp1, self.emp2, self.emp3, self.emp4, self.emp5]:
-			employee = frappe.get_doc("Employee", emp)
+			employee = nts.get_doc("Employee", emp)
 			employee.shift_request_approver = "employee1@test.com"
 			employee.save()
 
@@ -201,7 +201,7 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 
 		employees = [self.emp1, self.emp2, self.emp3]
 		shift_assignment_tool.bulk_assign(employees)
-		shift_assignment_employees = frappe.get_list(
+		shift_assignment_employees = nts.get_list(
 			"Shift Assignment",
 			filters={
 				"shift_type": self.shift1.name,
@@ -232,7 +232,7 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 
 		employees = [self.emp1, self.emp2, self.emp3]
 		shift_assignment_tool._bulk_assign(employees)
-		assigned_employees = frappe.get_list(
+		assigned_employees = nts.get_list(
 			"Shift Schedule Assignment",
 			filters={
 				"shift_schedule": self.schedule1,
@@ -247,7 +247,7 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 
 	def test_bulk_process_shift_requests(self):
 		for emp in [self.emp1, self.emp2, self.emp3]:
-			employee = frappe.get_doc("Employee", emp)
+			employee = nts.get_doc("Employee", emp)
 			employee.shift_request_approver = "employee1@test.com"
 			employee.save()
 
@@ -282,7 +282,7 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 			{"employee": self.emp2, "shift_request": request2.name},
 		]
 		shift_assignment_tool.bulk_process_shift_requests(requests, "Rejected")
-		processed_shift_requests = frappe.get_list(
+		processed_shift_requests = nts.get_list(
 			"Shift Request",
 			filters={"status": "Rejected", "docstatus": 1},
 			pluck="name",
@@ -292,16 +292,16 @@ class TestShiftAssignmentTool(IntegrationTestCase):
 
 		requests = [{"employee": self.emp3, "shift_request": request3.name}]
 		shift_assignment_tool.bulk_process_shift_requests(requests, "Approved")
-		status, docstatus = frappe.db.get_value("Shift Request", request3.name, ["status", "docstatus"])
+		status, docstatus = nts.db.get_value("Shift Request", request3.name, ["status", "docstatus"])
 		self.assertEqual(status, "Approved")
 		self.assertEqual(docstatus, 1)
 
-		shift_assignment = frappe.db.exists("Shift Assignment", {"shift_request": request3.name})
+		shift_assignment = nts.db.exists("Shift Assignment", {"shift_request": request3.name})
 		self.assertTrue(shift_assignment)
 
 
 def make_shift_schedule_assignment(schedule, employee, create_shifts_after=None, enabled=1):
-	assignment = frappe.new_doc("Shift Schedule Assignment")
+	assignment = nts.new_doc("Shift Schedule Assignment")
 	assignment.shift_schedule = schedule
 	assignment.employee = employee
 	assignment.company = "_Test Company"

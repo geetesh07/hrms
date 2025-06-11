@@ -7,7 +7,7 @@
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "Salary Slip",
- "dynamic_filters_json": "[[\"Salary Slip\",\"company\",\"=\",\"frappe.defaults.get_user_default(\\\"Company\\\")\"]]",
+ "dynamic_filters_json": "[[\"Salary Slip\",\"company\",\"=\",\"nts.defaults.get_user_default(\\\"Company\\\")\"]]",
  "filters_json": "[[\"Salary Slip\",\"docstatus\",\"=\",\"1\",false]]",
  "idx": 0,
  "is_public": 1,

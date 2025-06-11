@@ -21,8 +21,8 @@
                 {{ doc.introduction }}
                 <ul class="list-unstyled" style="line-height: 1.7">
                     <li>{{_("Event Location")}}: <b>{{ doc.location }}</b></li>
-                    {% set start = frappe.utils.get_datetime(doc.start_time) %}
-                    {% set end = frappe.utils.get_datetime(doc.end_time) %}
+                    {% set start = nts.utils.get_datetime(doc.start_time) %}
+                    {% set end = nts.utils.get_datetime(doc.end_time) %}
                     {% if start.date() == end.date() %}
                         <li>{{_("Date")}}: <b>{{ start.strftime("%A, %d %b %Y") }}</b></li>
                         <li>
@@ -34,7 +34,7 @@
                         </li>
                         <li>{{_("End Time")}}: <b>{{ end.strftime("%A, %d %b %Y at %I:%M %p") }}</b></li>
                     {% endif %}
-                    <li>{{ _("Event Link") }}: {{ frappe.utils.get_link_to_form(doc.doctype, doc.name) }}</li>
+                    <li>{{ _("Event Link") }}: {{ nts.utils.get_link_to_form(doc.doctype, doc.name) }}</li>
                     {% if doc.is_mandatory %}
                         <li>{{ _("Note: This Training Event is mandatory") }}</li>
                     {% endif %}

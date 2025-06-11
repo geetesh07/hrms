@@ -1,16 +1,16 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
 import unicodedata
 from datetime import date
 
-import frappe
-from frappe import _, msgprint
-from frappe.model.naming import make_autoname
-from frappe.query_builder import Order
-from frappe.query_builder.functions import Count, Sum
-from frappe.utils import (
+import nts
+from nts import _, msgprint
+from nts.model.naming import make_autoname
+from nts.query_builder import Order
+from nts.query_builder.functions import Count, Sum
+from nts.utils import (
 	add_days,
 	ceil,
 	cint,
@@ -26,12 +26,12 @@ from frappe.utils import (
 	money_in_words,
 	rounded,
 )
-from frappe.utils.background_jobs import enqueue
+from nts.utils.background_jobs import enqueue
 
-import erpnext
-from erpnext.accounts.utils import get_fiscal_year
-from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
-from erpnext.utilities.transaction_base import TransactionBase
+import prodman
+from prodman.accounts.utils import get_fiscal_year
+from prodman.setup.doctype.employee.employee import get_holiday_list_for_employee
+from prodman.utilities.transaction_base import TransactionBase
 
 from hrms.hr.utils import validate_active_employee
 from hrms.payroll.doctype.additional_salary.additional_salary import get_additional_salaries
@@ -87,7 +87,7 @@ class SalarySlip(TransactionBase):
 	@property
 	def joining_date(self):
 		if not hasattr(self, "__joining_date"):
-			self.__joining_date = frappe.get_cached_value(
+			self.__joining_date = nts.get_cached_value(
 				"Employee",
 				self.employee,
 				"date_of_joining",
@@ -98,7 +98,7 @@ class SalarySlip(TransactionBase):
 	@property
 	def relieving_date(self):
 		if not hasattr(self, "__relieving_date"):
-			self.__relieving_date = frappe.get_cached_value(
+			self.__relieving_date = nts.get_cached_value(
 				"Employee",
 				self.employee,
 				"relieving_date",
@@ -159,12 +159,12 @@ class SalarySlip(TransactionBase):
 
 		self.add_leave_balances()
 
-		max_working_hours = frappe.db.get_single_value(
+		max_working_hours = nts.db.get_single_value(
 			"Payroll Settings", "max_working_hours_against_timesheet"
 		)
 		if max_working_hours:
 			if self.salary_slip_based_on_timesheet and (self.total_working_hours > int(max_working_hours)):
-				frappe.msgprint(
+				nts.msgprint(
 					_("Total working hours should not be greater than max working hours {0}").format(
 						max_working_hours
 					),
@@ -181,7 +181,7 @@ class SalarySlip(TransactionBase):
 
 	def set_net_total_in_words(self):
 		doc_currency = self.currency
-		company_currency = erpnext.get_company_currency(self.company)
+		company_currency = prodman.get_company_currency(self.company)
 		total = self.net_pay if self.is_rounding_total_disabled() else self.rounded_total
 		base_total = self.base_net_pay if self.is_rounding_total_disabled() else self.base_rounded_total
 		self.total_in_words = money_in_words(total, doc_currency)
@@ -192,16 +192,16 @@ class SalarySlip(TransactionBase):
 
 	def on_submit(self):
 		if self.net_pay < 0:
-			frappe.throw(_("Net Pay cannot be less than 0"))
+			nts.throw(_("Net Pay cannot be less than 0"))
 		else:
 			self.set_status()
 			self.update_status(self.name)
 
 			make_loan_repayment_entry(self)
 
-			if not frappe.flags.via_payroll_entry and not frappe.flags.in_patch:
+			if not nts.flags.via_payroll_entry and not nts.flags.in_patch:
 				email_salary_slip = cint(
-					frappe.db.get_single_value("Payroll Settings", "email_salary_slip_to_employee")
+					nts.db.get_single_value("Payroll Settings", "email_salary_slip_to_employee")
 				)
 				if email_salary_slip:
 					self.email_salary_slip()
@@ -209,7 +209,7 @@ class SalarySlip(TransactionBase):
 		self.update_payment_status_for_gratuity_and_leave_encashment()
 
 	def update_payment_status_for_gratuity_and_leave_encashment(self):
-		additional_salary_docs = frappe.db.get_all(
+		additional_salary_docs = nts.db.get_all(
 			"Additional Salary",
 			filters={
 				"payroll_date": ("between", [self.start_date, self.end_date]),
@@ -228,7 +228,7 @@ class SalarySlip(TransactionBase):
 
 		for additional_salary in additional_salary_docs:
 			if additional_salary.name in earnings:
-				frappe.db.set_value(
+				nts.db.set_value(
 					additional_salary.ref_doctype, additional_salary.ref_docname, "status", status
 				)
 
@@ -241,8 +241,8 @@ class SalarySlip(TransactionBase):
 		self.publish_update()
 
 	def publish_update(self):
-		employee_user = frappe.db.get_value("Employee", self.employee, "user_id", cache=True)
-		frappe.publish_realtime(
+		employee_user = nts.db.get_value("Employee", self.employee, "user_id", cache=True)
+		nts.publish_realtime(
 			event="hrms:update_salary_slips",
 			message={"employee": self.employee},
 			user=employee_user,
@@ -250,7 +250,7 @@ class SalarySlip(TransactionBase):
 		)
 
 	def on_trash(self):
-		from frappe.model.naming import revert_series_if_last
+		from nts.model.naming import revert_series_if_last
 
 		revert_series_if_last(self.series, self.name)
 
@@ -269,24 +269,24 @@ class SalarySlip(TransactionBase):
 		self.validate_from_to_dates("start_date", "end_date")
 
 		if not self.joining_date:
-			frappe.throw(
-				_("Please set the Date Of Joining for employee {0}").format(frappe.bold(self.employee_name))
+			nts.throw(
+				_("Please set the Date Of Joining for employee {0}").format(nts.bold(self.employee_name))
 			)
 
 		if date_diff(self.end_date, self.joining_date) < 0:
-			frappe.throw(_("Cannot create Salary Slip for Employee joining after Payroll Period"))
+			nts.throw(_("Cannot create Salary Slip for Employee joining after Payroll Period"))
 
 		if self.relieving_date and date_diff(self.relieving_date, self.start_date) < 0:
-			frappe.throw(_("Cannot create Salary Slip for Employee who has left before Payroll Period"))
+			nts.throw(_("Cannot create Salary Slip for Employee who has left before Payroll Period"))
 
 	def is_rounding_total_disabled(self):
-		return cint(frappe.db.get_single_value("Payroll Settings", "disable_rounded_total"))
+		return cint(nts.db.get_single_value("Payroll Settings", "disable_rounded_total"))
 
 	def check_existing(self):
 		if not self.salary_slip_based_on_timesheet:
-			ss = frappe.qb.DocType("Salary Slip")
+			ss = nts.qb.DocType("Salary Slip")
 			query = (
-				frappe.qb.from_(ss)
+				nts.qb.from_(ss)
 				.select(ss.name)
 				.where(
 					(ss.start_date == self.start_date)
@@ -303,13 +303,13 @@ class SalarySlip(TransactionBase):
 			ret_exist = query.run()
 
 			if ret_exist:
-				frappe.throw(
+				nts.throw(
 					_("Salary Slip of employee {0} already created for this period").format(self.employee)
 				)
 		else:
 			for data in self.timesheets:
-				if frappe.db.get_value("Timesheet", data.time_sheet, "status") == "Payrolled":
-					frappe.throw(
+				if nts.db.get_value("Timesheet", data.time_sheet, "status") == "Payrolled":
+					nts.throw(
 						_("Salary Slip of employee {0} already created for time sheet {1}").format(
 							self.employee, data.time_sheet
 						)
@@ -321,7 +321,7 @@ class SalarySlip(TransactionBase):
 			self.start_date = date_details.start_date
 			self.end_date = date_details.end_date
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_emp_and_working_day_details(self):
 		"""First time, load all the components from salary structure"""
 		if self.employee:
@@ -353,9 +353,9 @@ class SalarySlip(TransactionBase):
 		if self.salary_slip_based_on_timesheet:
 			self.set("timesheets", [])
 
-			Timesheet = frappe.qb.DocType("Timesheet")
+			Timesheet = nts.qb.DocType("Timesheet")
 			timesheets = (
-				frappe.qb.from_(Timesheet)
+				nts.qb.from_(Timesheet)
 				.select(Timesheet.star)
 				.where(
 					(Timesheet.employee == self.employee)
@@ -368,11 +368,11 @@ class SalarySlip(TransactionBase):
 				self.append("timesheets", {"time_sheet": data.name, "working_hours": data.total_hours})
 
 	def check_sal_struct(self):
-		ss = frappe.qb.DocType("Salary Structure")
-		ssa = frappe.qb.DocType("Salary Structure Assignment")
+		ss = nts.qb.DocType("Salary Structure")
+		ssa = nts.qb.DocType("Salary Structure Assignment")
 
 		query = (
-			frappe.qb.from_(ssa)
+			nts.qb.from_(ssa)
 			.join(ss)
 			.on(ssa.salary_structure == ss.name)
 			.select(ssa.salary_structure)
@@ -402,7 +402,7 @@ class SalarySlip(TransactionBase):
 
 		else:
 			self.salary_structure = None
-			frappe.msgprint(
+			nts.msgprint(
 				_("No active or default Salary Structure found for employee {0} for the given dates").format(
 					self.employee
 				),
@@ -424,7 +424,7 @@ class SalarySlip(TransactionBase):
 		make_salary_slip(self._salary_structure_doc.name, self)
 
 	def get_working_days_details(self, lwp=None, for_preview=0):
-		payroll_settings = frappe.get_cached_value(
+		payroll_settings = nts.get_cached_value(
 			"Payroll Settings",
 			None,
 			(
@@ -458,10 +458,10 @@ class SalarySlip(TransactionBase):
 
 			working_days -= len(holidays)
 			if working_days < 0:
-				frappe.throw(_("There are more holidays than working days this month."))
+				nts.throw(_("There are more holidays than working days this month."))
 
 		if not payroll_settings.payroll_based_on:
-			frappe.throw(_("Please set Payroll based on in Payroll settings"))
+			nts.throw(_("Please set Payroll based on in Payroll settings"))
 
 		if payroll_settings.payroll_based_on == "Attendance":
 			actual_lwp, absent = self.calculate_lwp_ppl_and_absent_days_based_on_attendance(
@@ -476,7 +476,7 @@ class SalarySlip(TransactionBase):
 		if not lwp:
 			lwp = actual_lwp
 		elif lwp != actual_lwp:
-			frappe.msgprint(
+			nts.msgprint(
 				_("Leave Without Pay does not match with approved {} records").format(
 					payroll_settings.payroll_based_on
 				)
@@ -533,9 +533,9 @@ class SalarySlip(TransactionBase):
 		self, include_holidays_in_total_working_days, consider_marked_attendance_on_holidays, holidays
 	):
 		"""Calculates the number of half absent days for an employee within a date range"""
-		Attendance = frappe.qb.DocType("Attendance")
+		Attendance = nts.qb.DocType("Attendance")
 		query = (
-			frappe.qb.from_(Attendance)
+			nts.qb.from_(Attendance)
 			.select(Count("*"))
 			.where(
 				(Attendance.attendance_date.between(self.actual_start_date, self.actual_end_date))
@@ -593,9 +593,9 @@ class SalarySlip(TransactionBase):
 		return no_of_holidays
 
 	def _get_marked_attendance_days(self, holidays: list | None = None) -> float:
-		Attendance = frappe.qb.DocType("Attendance")
+		Attendance = nts.qb.DocType("Attendance")
 		query = (
-			frappe.qb.from_(Attendance)
+			nts.qb.from_(Attendance)
 			.select(Count("*"))
 			.where(
 				(Attendance.attendance_date.between(self.actual_start_date, self.actual_end_date))
@@ -614,9 +614,9 @@ class SalarySlip(TransactionBase):
 			return 0
 
 		if self.relieving_date:
-			employee_status = frappe.db.get_value("Employee", self.employee, "status")
+			employee_status = nts.db.get_value("Employee", self.employee, "status")
 			if self.relieving_date < getdate(self.start_date) and employee_status != "Left":
-				frappe.throw(
+				nts.throw(
 					_("Employee {0} relieved on {1} must be set as 'Left'").format(
 						get_link_to_form("Employee", self.employee), formatdate(self.relieving_date)
 					)
@@ -633,11 +633,11 @@ class SalarySlip(TransactionBase):
 	def get_holidays_for_employee(self, start_date, end_date):
 		holiday_list = get_holiday_list_for_employee(self.employee)
 		key = f"{holiday_list}:{start_date}:{end_date}"
-		holiday_dates = frappe.cache().hget(HOLIDAYS_BETWEEN_DATES, key)
+		holiday_dates = nts.cache().hget(HOLIDAYS_BETWEEN_DATES, key)
 
 		if not holiday_dates:
 			holiday_dates = get_holiday_dates_between(holiday_list, start_date, end_date)
-			frappe.cache().hset(HOLIDAYS_BETWEEN_DATES, key, holiday_dates)
+			nts.cache().hset(HOLIDAYS_BETWEEN_DATES, key, holiday_dates)
 
 		return holiday_dates
 
@@ -685,20 +685,20 @@ class SalarySlip(TransactionBase):
 		"""Returns (partially paid leaves/leave without pay) leave types by name"""
 
 		def _get_leave_type_map():
-			leave_types = frappe.get_all(
+			leave_types = nts.get_all(
 				"Leave Type",
 				or_filters={"is_ppl": 1, "is_lwp": 1},
 				fields=["name", "is_lwp", "is_ppl", "fraction_of_daily_salary_per_leave", "include_holiday"],
 			)
 			return {leave_type.name: leave_type for leave_type in leave_types}
 
-		return frappe.cache().get_value(LEAVE_TYPE_MAP, _get_leave_type_map)
+		return nts.cache().get_value(LEAVE_TYPE_MAP, _get_leave_type_map)
 
 	def get_employee_attendance(self, start_date, end_date):
-		attendance = frappe.qb.DocType("Attendance")
+		attendance = nts.qb.DocType("Attendance")
 
 		attendance_details = (
-			frappe.qb.from_(attendance)
+			nts.qb.from_(attendance)
 			.select(
 				attendance.attendance_date,
 				attendance.status,
@@ -781,7 +781,7 @@ class SalarySlip(TransactionBase):
 		if not row_exists:
 			wages_row = {
 				"salary_component": salary_component,
-				"abbr": frappe.db.get_value(
+				"abbr": nts.db.get_value(
 					"Salary Component", salary_component, "salary_component_abbr", cache=True
 				),
 				"amount": self.hour_rate * self.total_working_hours,
@@ -791,7 +791,7 @@ class SalarySlip(TransactionBase):
 			doc.append("earnings", wages_row)
 
 	def set_salary_structure_assignment(self):
-		self._salary_structure_assignment = frappe.db.get_value(
+		self._salary_structure_assignment = nts.db.get_value(
 			"Salary Structure Assignment",
 			{
 				"employee": self.employee,
@@ -805,12 +805,12 @@ class SalarySlip(TransactionBase):
 		)
 
 		if not self._salary_structure_assignment:
-			frappe.throw(
+			nts.throw(
 				_(
 					"Please assign a Salary Structure for Employee {0} applicable from or before {1} first"
 				).format(
-					frappe.bold(self.employee_name),
-					frappe.bold(formatdate(self.actual_start_date)),
+					nts.bold(self.employee_name),
+					nts.bold(formatdate(self.actual_start_date)),
 				)
 			)
 
@@ -1029,7 +1029,7 @@ class SalarySlip(TransactionBase):
 		return non_taxable_earnings
 
 	def get_future_period_non_taxable_earnings(self):
-		salary_slip = frappe.copy_doc(self)
+		salary_slip = nts.copy_doc(self)
 		# consider full payment days for future period
 		salary_slip.payment_days = salary_slip.total_working_days
 		salary_slip.calculate_net_pay(skip_tax_breakup_computation=True)
@@ -1103,9 +1103,9 @@ class SalarySlip(TransactionBase):
 
 	def get_amount_from_formula(self, struct_row, sub_period=1):
 		if self.payroll_frequency == "Monthly":
-			start_date = frappe.utils.add_months(self.start_date, sub_period)
-			end_date = frappe.utils.add_months(self.end_date, sub_period)
-			posting_date = frappe.utils.add_months(self.posting_date, sub_period)
+			start_date = nts.utils.add_months(self.start_date, sub_period)
+			end_date = nts.utils.add_months(self.end_date, sub_period)
+			posting_date = nts.utils.add_months(self.posting_date, sub_period)
 
 		else:
 			days_to_add = 0
@@ -1118,8 +1118,8 @@ class SalarySlip(TransactionBase):
 			if self.payroll_frequency == "Daily":
 				days_to_add = start_date
 
-			start_date = frappe.utils.add_days(self.start_date, days_to_add)
-			end_date = frappe.utils.add_days(self.end_date, days_to_add)
+			start_date = nts.utils.add_days(self.start_date, days_to_add)
+			end_date = nts.utils.add_days(self.end_date, days_to_add)
 			posting_date = start_date
 
 		local_data = self.data.copy()
@@ -1149,7 +1149,7 @@ class SalarySlip(TransactionBase):
 			self.add_tax_components()
 
 	def set_salary_structure_doc(self) -> None:
-		self._salary_structure_doc = frappe.get_cached_doc("Salary Structure", self.salary_structure)
+		self._salary_structure_doc = nts.get_cached_doc("Salary Structure", self.salary_structure)
 		# sanitize condition and formula fields
 		for table in ("earnings", "deductions"):
 			for row in self._salary_structure_doc.get(table):
@@ -1186,7 +1186,7 @@ class SalarySlip(TransactionBase):
 		else:
 			# default behavior, the system does not add if component amount is zero
 			# if remove_if_zero_valued is unchecked, then ask system to add component row
-			remove_if_zero_valued = frappe.get_cached_value(
+			remove_if_zero_valued = nts.get_cached_value(
 				"Salary Component", struct_row.salary_component, "remove_if_zero_valued"
 			)
 
@@ -1209,8 +1209,8 @@ class SalarySlip(TransactionBase):
 
 	def get_data_for_eval(self):
 		"""Returns data for evaluating formula"""
-		data = frappe._dict()
-		employee = frappe.get_cached_doc("Employee", self.employee).as_dict()
+		data = nts._dict()
+		employee = nts.get_cached_doc("Employee", self.employee).as_dict()
 
 		if not hasattr(self, "_salary_structure_assignment"):
 			self.set_salary_structure_assignment()
@@ -1235,10 +1235,10 @@ class SalarySlip(TransactionBase):
 		def _fetch_component_values():
 			return {
 				component_abbr: 0
-				for component_abbr in frappe.get_all("Salary Component", pluck="salary_component_abbr")
+				for component_abbr in nts.get_all("Salary Component", pluck="salary_component_abbr")
 			}
 
-		return frappe.cache().get_value(SALARY_COMPONENT_VALUES, generator=_fetch_component_values)
+		return nts.cache().get_value(SALARY_COMPONENT_VALUES, generator=_fetch_component_values)
 
 	def eval_condition_and_formula(self, struct_row, data):
 		try:
@@ -1281,7 +1281,7 @@ class SalarySlip(TransactionBase):
 		for struct_row in self._salary_structure_doc.get("earnings"):
 			if struct_row.is_flexible_benefit == 1:
 				if (
-					frappe.db.get_value(
+					nts.db.get_value(
 						"Salary Component",
 						struct_row.salary_component,
 						"pay_against_benefit_claim",
@@ -1317,9 +1317,9 @@ class SalarySlip(TransactionBase):
 				)
 				if last_benefits:
 					for last_benefit in last_benefits:
-						last_benefit = frappe._dict(last_benefit)
+						last_benefit = nts._dict(last_benefit)
 						amount = last_benefit.amount
-						self.update_component_row(frappe._dict(last_benefit.struct_row), amount, "earnings")
+						self.update_component_row(nts._dict(last_benefit.struct_row), amount, "earnings")
 
 	def add_additional_salary_components(self, component_type):
 		additional_salaries = get_additional_salaries(
@@ -1355,7 +1355,7 @@ class SalarySlip(TransactionBase):
 
 		if self.is_new() and not tax_components:
 			tax_components = self.get_tax_components()
-			frappe.msgprint(
+			nts.msgprint(
 				_(
 					"Added tax components from the Salary Component master as the salary structure didn't have any tax component."
 				),
@@ -1381,7 +1381,7 @@ class SalarySlip(TransactionBase):
 		        If no tax components are defined for the company,
 		        it returns the default tax components.
 		"""
-		tax_components = frappe.cache().get_value(
+		tax_components = nts.cache().get_value(
 			TAX_COMPONENTS_BY_COMPANY, self._fetch_tax_components_by_company
 		)
 
@@ -1398,11 +1398,11 @@ class SalarySlip(TransactionBase):
 		"""
 
 		tax_components = {}
-		sc = frappe.qb.DocType("Salary Component")
-		sca = frappe.qb.DocType("Salary Component Account")
+		sc = nts.qb.DocType("Salary Component")
+		sca = nts.qb.DocType("Salary Component Account")
 
 		components = (
-			frappe.qb.from_(sc)
+			nts.qb.from_(sc)
 			.left_join(sca)
 			.on(sca.parent == sc.name)
 			.select(
@@ -1428,7 +1428,7 @@ class SalarySlip(TransactionBase):
 		if not component:
 			return False
 
-		if frappe.db.get_value(
+		if nts.db.get_value(
 			"Additional Salary", component.additional_salary, "overwrite_salary_structure_amount"
 		):
 			return True
@@ -1532,7 +1532,7 @@ class SalarySlip(TransactionBase):
 
 	def calculate_variable_based_on_taxable_salary(self, tax_component):
 		if not self.payroll_period:
-			frappe.msgprint(
+			nts.msgprint(
 				_("Start and end dates not in a valid Payroll Period, cannot calculate {0}.").format(
 					tax_component
 				)
@@ -1587,19 +1587,19 @@ class SalarySlip(TransactionBase):
 		income_tax_slab = self._salary_structure_assignment.income_tax_slab
 
 		if not income_tax_slab:
-			frappe.throw(
+			nts.throw(
 				_("Income Tax Slab not set in Salary Structure Assignment: {0}").format(
 					get_link_to_form("Salary Structure Assignment", self._salary_structure_assignment.name)
 				),
 				title=_("Missing Tax Slab"),
 			)
 
-		income_tax_slab_doc = frappe.get_cached_doc("Income Tax Slab", income_tax_slab)
+		income_tax_slab_doc = nts.get_cached_doc("Income Tax Slab", income_tax_slab)
 		if income_tax_slab_doc.disabled:
-			frappe.throw(_("Income Tax Slab: {0} is disabled").format(income_tax_slab))
+			nts.throw(_("Income Tax Slab: {0} is disabled").format(income_tax_slab))
 
 		if getdate(income_tax_slab_doc.effective_from) > getdate(self.payroll_period.start_date):
-			frappe.throw(
+			nts.throw(
 				_("Income Tax Slab must be effective on or before Payroll Period Start Date: {0}").format(
 					self.payroll_period.start_date
 				)
@@ -1639,8 +1639,8 @@ class SalarySlip(TransactionBase):
 		variable_based_on_taxable_salary=0,
 		field_to_select="amount",
 	):
-		ss = frappe.qb.DocType("Salary Slip")
-		sd = frappe.qb.DocType("Salary Detail")
+		ss = nts.qb.DocType("Salary Slip")
+		sd = nts.qb.DocType("Salary Detail")
 
 		if field_to_select == "amount":
 			field = sd.amount
@@ -1648,7 +1648,7 @@ class SalarySlip(TransactionBase):
 			field = sd.additional_amount
 
 		query = (
-			frappe.qb.from_(ss)
+			nts.qb.from_(ss)
 			.join(sd)
 			.on(sd.parent == ss.name)
 			.select(Sum(field))
@@ -1738,7 +1738,7 @@ class SalarySlip(TransactionBase):
 							ded.additional_salary, ded.additional_amount
 						)  # Used ded.additional_amount to consider the amount for the full month
 
-		return frappe._dict(
+		return nts._dict(
 			{
 				"taxable_earnings": taxable_earnings,
 				"additional_income": additional_income,
@@ -1758,7 +1758,7 @@ class SalarySlip(TransactionBase):
 			to_date = self.relieving_date
 
 		if not to_date:
-			to_date = frappe.db.get_value("Additional Salary", additional_salary, "to_date", cache=True)
+			to_date = nts.db.get_value("Additional Salary", additional_salary, "to_date", cache=True)
 
 		# future month count excluding current
 		from_date, to_date = getdate(self.start_date), getdate(to_date)
@@ -1822,7 +1822,7 @@ class SalarySlip(TransactionBase):
 			amount = flt(row.default_amount) + flt(row.additional_amount)
 
 		# apply rounding
-		if frappe.db.get_value(
+		if nts.db.get_value(
 			"Salary Component", row.salary_component, "round_to_the_nearest_integer", cache=True
 		):
 			amount, additional_amount = rounded(amount or 0), rounded(additional_amount or 0)
@@ -1840,9 +1840,9 @@ class SalarySlip(TransactionBase):
 		)
 
 		# get total benefits claimed
-		BenefitClaim = frappe.qb.DocType("Employee Benefit Claim")
+		BenefitClaim = nts.qb.DocType("Employee Benefit Claim")
 		total_benefits_claimed = (
-			frappe.qb.from_(BenefitClaim)
+			nts.qb.from_(BenefitClaim)
 			.select(Sum(BenefitClaim.claimed_amount))
 			.where(
 				(BenefitClaim.docstatus == 1)
@@ -1861,7 +1861,7 @@ class SalarySlip(TransactionBase):
 		total_exemption_amount = 0
 		if self.tax_slab.allow_tax_exemption:
 			if self.deduct_tax_for_unsubmitted_tax_exemption_proof:
-				exemption_proof = frappe.db.get_value(
+				exemption_proof = nts.db.get_value(
 					"Employee Tax Exemption Proof Submission",
 					{"employee": self.employee, "payroll_period": self.payroll_period.name, "docstatus": 1},
 					"exemption_amount",
@@ -1870,7 +1870,7 @@ class SalarySlip(TransactionBase):
 				if exemption_proof:
 					total_exemption_amount = exemption_proof
 			else:
-				declaration = frappe.db.get_value(
+				declaration = nts.db.get_value(
 					"Employee Tax Exemption Declaration",
 					{"employee": self.employee, "payroll_period": self.payroll_period.name, "docstatus": 1},
 					"total_exemption_amount",
@@ -1886,7 +1886,7 @@ class SalarySlip(TransactionBase):
 
 	def get_income_form_other_sources(self):
 		return (
-			frappe.get_all(
+			nts.get_all(
 				"Employee Other Income",
 				filters={
 					"employee": self.employee,
@@ -1911,16 +1911,16 @@ class SalarySlip(TransactionBase):
 		return total
 
 	def email_salary_slip(self):
-		receiver = frappe.db.get_value("Employee", self.employee, "prefered_email", cache=True)
-		payroll_settings = frappe.get_single("Payroll Settings")
+		receiver = nts.db.get_value("Employee", self.employee, "prefered_email", cache=True)
+		payroll_settings = nts.get_single("Payroll Settings")
 
 		subject = f"Salary Slip - from {self.start_date} to {self.end_date}"
 		message = _("Please see attachment")
 		if payroll_settings.email_template:
-			email_template = frappe.get_doc("Email Template", payroll_settings.email_template)
+			email_template = nts.get_doc("Email Template", payroll_settings.email_template)
 			context = self.as_dict()
-			subject = frappe.render_template(email_template.subject, context)
-			message = frappe.render_template(email_template.response, context)
+			subject = nts.render_template(email_template.subject, context)
+			message = nts.render_template(email_template.response, context)
 
 		password = None
 		if payroll_settings.encrypt_salary_slips_in_emails:
@@ -1937,22 +1937,22 @@ class SalarySlip(TransactionBase):
 				"message": message,
 				"subject": subject,
 				"attachments": [
-					frappe.attach_print(self.doctype, self.name, file_name=self.name, password=password)
+					nts.attach_print(self.doctype, self.name, file_name=self.name, password=password)
 				],
 				"reference_doctype": self.doctype,
 				"reference_name": self.name,
 			}
-			if not frappe.flags.in_test:
-				enqueue(method=frappe.sendmail, queue="short", timeout=300, is_async=True, **email_args)
+			if not nts.flags.in_test:
+				enqueue(method=nts.sendmail, queue="short", timeout=300, is_async=True, **email_args)
 			else:
-				frappe.sendmail(**email_args)
+				nts.sendmail(**email_args)
 		else:
 			msgprint(_("{0}: Employee email not found, hence email not sent").format(self.employee_name))
 
 	def update_status(self, salary_slip=None):
 		for data in self.timesheets:
 			if data.time_sheet:
-				timesheet = frappe.get_doc("Timesheet", data.time_sheet)
+				timesheet = nts.get_doc("Timesheet", data.time_sheet)
 				timesheet.salary_slip = salary_slip
 				timesheet.flags.ignore_validate_update_after_submit = True
 				timesheet.set_status()
@@ -1973,7 +1973,7 @@ class SalarySlip(TransactionBase):
 		self.calculate_net_pay()
 
 	def pull_emp_details(self):
-		account_details = frappe.get_cached_value(
+		account_details = nts.get_cached_value(
 			"Employee", self.employee, ["bank_name", "bank_ac_no", "salary_mode"], as_dict=1
 		)
 		if account_details:
@@ -1981,12 +1981,12 @@ class SalarySlip(TransactionBase):
 			self.bank_name = account_details.bank_name
 			self.bank_account_no = account_details.bank_ac_no
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def process_salary_based_on_working_days(self):
 		self.get_working_days_details(lwp=self.leave_without_pay)
 		self.calculate_net_pay()
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def set_totals(self):
 		self.gross_pay = 0.0
 		if self.salary_slip_based_on_timesheet == 1:
@@ -2022,7 +2022,7 @@ class SalarySlip(TransactionBase):
 
 		wages_amount = self.total_working_hours * self.hour_rate
 		self.base_hour_rate = flt(self.hour_rate) * flt(self.exchange_rate)
-		salary_component = frappe.db.get_value(
+		salary_component = nts.db.get_value(
 			"Salary Structure", {"name": self.salary_structure}, "salary_component", cache=True
 		)
 		if self.earnings:
@@ -2036,7 +2036,7 @@ class SalarySlip(TransactionBase):
 		year_to_date = 0
 		period_start_date, period_end_date = self.get_year_to_date_period()
 
-		salary_slip_sum = frappe.get_list(
+		salary_slip_sum = nts.get_list(
 			"Salary Slip",
 			fields=["sum(net_pay) as net_sum", "sum(gross_pay) as gross_sum"],
 			filters={
@@ -2059,7 +2059,7 @@ class SalarySlip(TransactionBase):
 	def compute_month_to_date(self):
 		month_to_date = 0
 		first_day_of_the_month = get_first_day(self.start_date)
-		salary_slip_sum = frappe.get_list(
+		salary_slip_sum = nts.get_list(
 			"Salary Slip",
 			fields=["sum(net_pay) as sum"],
 			filters={
@@ -2079,14 +2079,14 @@ class SalarySlip(TransactionBase):
 	def compute_component_wise_year_to_date(self):
 		period_start_date, period_end_date = self.get_year_to_date_period()
 
-		ss = frappe.qb.DocType("Salary Slip")
-		sd = frappe.qb.DocType("Salary Detail")
+		ss = nts.qb.DocType("Salary Slip")
+		sd = nts.qb.DocType("Salary Detail")
 
 		for key in ("earnings", "deductions"):
 			for component in self.get(key):
 				year_to_date = 0
 				component_sum = (
-					frappe.qb.from_(sd)
+					nts.qb.from_(sd)
 					.inner_join(ss)
 					.on(sd.parent == ss.name)
 					.select(Sum(sd.amount).as_("sum"))
@@ -2119,7 +2119,7 @@ class SalarySlip(TransactionBase):
 	def add_leave_balances(self):
 		self.set("leave_details", [])
 
-		if frappe.db.get_single_value("Payroll Settings", "show_leave_balances_in_salary_slip"):
+		if nts.db.get_single_value("Payroll Settings", "show_leave_balances_in_salary_slip"):
 			from hrms.hr.doctype.leave_application.leave_application import get_leave_details
 
 			leave_details = get_leave_details(self.employee, self.end_date, True)
@@ -2140,24 +2140,24 @@ class SalarySlip(TransactionBase):
 
 def unlink_ref_doc_from_salary_slip(doc, method=None):
 	"""Unlinks accrual Journal Entry from Salary Slips on cancellation"""
-	linked_ss = frappe.get_all(
+	linked_ss = nts.get_all(
 		"Salary Slip", filters={"journal_entry": doc.name, "docstatus": ["<", 2]}, pluck="name"
 	)
 
 	if linked_ss:
 		for ss in linked_ss:
-			ss_doc = frappe.get_doc("Salary Slip", ss)
-			frappe.db.set_value("Salary Slip", ss_doc.name, "journal_entry", "")
+			ss_doc = nts.get_doc("Salary Slip", ss)
+			nts.db.set_value("Salary Slip", ss_doc.name, "journal_entry", "")
 
 
 def generate_password_for_pdf(policy_template, employee):
-	employee = frappe.get_cached_doc("Employee", employee)
+	employee = nts.get_cached_doc("Employee", employee)
 	return policy_template.format(**employee.as_dict())
 
 
 def get_salary_component_data(component):
 	# get_cached_value doesn't work here due to alias "name as salary_component"
-	return frappe.db.get_value(
+	return nts.db.get_value(
 		"Salary Component",
 		component,
 		(
@@ -2176,11 +2176,11 @@ def get_salary_component_data(component):
 
 def get_payroll_payable_account(company, payroll_entry):
 	if payroll_entry:
-		payroll_payable_account = frappe.db.get_value(
+		payroll_payable_account = nts.db.get_value(
 			"Payroll Entry", payroll_entry, "payroll_payable_account", cache=True
 		)
 	else:
-		payroll_payable_account = frappe.db.get_value(
+		payroll_payable_account = nts.db.get_value(
 			"Company", company, "default_payroll_payable_account", cache=True
 		)
 
@@ -2244,25 +2244,25 @@ def eval_tax_slab_condition(condition, eval_globals=None, eval_locals=None):
 	try:
 		condition = condition.strip()
 		if condition:
-			return frappe.safe_eval(condition, eval_globals, eval_locals)
+			return nts.safe_eval(condition, eval_globals, eval_locals)
 	except NameError as err:
-		frappe.throw(
+		nts.throw(
 			_("{0} <br> This error can be due to missing or deleted field.").format(err),
 			title=_("Name error"),
 		)
 	except SyntaxError as err:
-		frappe.throw(_("Syntax error in condition: {0} in Income Tax Slab").format(err))
+		nts.throw(_("Syntax error in condition: {0} in Income Tax Slab").format(err))
 	except Exception as e:
-		frappe.throw(_("Error in formula or condition: {0} in Income Tax Slab").format(e))
+		nts.throw(_("Error in formula or condition: {0} in Income Tax Slab").format(e))
 		raise
 
 
 def get_lwp_or_ppl_for_date_range(employee, start_date, end_date):
-	LeaveApplication = frappe.qb.DocType("Leave Application")
-	LeaveType = frappe.qb.DocType("Leave Type")
+	LeaveApplication = nts.qb.DocType("Leave Application")
+	LeaveType = nts.qb.DocType("Leave Type")
 
 	leaves = (
-		frappe.qb.from_(LeaveApplication)
+		nts.qb.from_(LeaveApplication)
 		.inner_join(LeaveType)
 		.on(LeaveType.name == LeaveApplication.leave_type)
 		.select(
@@ -2285,7 +2285,7 @@ def get_lwp_or_ppl_for_date_range(employee, start_date, end_date):
 		)
 	).run(as_dict=True)
 
-	leave_date_mapper = frappe._dict()
+	leave_date_mapper = nts._dict()
 	for leave in leaves:
 		if leave.from_date == leave.to_date:
 			leave_date_mapper[leave.from_date] = leave
@@ -2298,9 +2298,9 @@ def get_lwp_or_ppl_for_date_range(employee, start_date, end_date):
 	return leave_date_mapper
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def make_salary_slip_from_timesheet(source_name, target_doc=None):
-	target = frappe.new_doc("Salary Slip")
+	target = nts.new_doc("Salary Slip")
 	set_missing_values(source_name, target)
 	target.run_method("get_emp_and_working_day_details")
 
@@ -2308,7 +2308,7 @@ def make_salary_slip_from_timesheet(source_name, target_doc=None):
 
 
 def set_missing_values(time_sheet, target):
-	doc = frappe.get_doc("Timesheet", time_sheet)
+	doc = nts.get_doc("Timesheet", time_sheet)
 	target.employee = doc.employee
 	target.employee_name = doc.employee_name
 	target.salary_slip_based_on_timesheet = 1
@@ -2320,7 +2320,7 @@ def set_missing_values(time_sheet, target):
 
 
 def throw_error_message(row, error, title, description=None):
-	data = frappe._dict(
+	data = nts._dict(
 		{
 			"doctype": row.parenttype,
 			"name": row.parent,
@@ -2336,17 +2336,17 @@ def throw_error_message(row, error, title, description=None):
 		"Error while evaluating the {doctype} {doclink} at row {row_id}. <br><br> <b>Error:</b> {error} <br><br> <b>Hint:</b> {description}"
 	).format(**data)
 
-	frappe.throw(message, title=title)
+	nts.throw(message, title=title)
 
 
 def on_doctype_update():
-	frappe.db.add_index("Salary Slip", ["employee", "start_date", "end_date"])
+	nts.db.add_index("Salary Slip", ["employee", "start_date", "end_date"])
 
 
 def _safe_eval(code: str, eval_globals: dict | None = None, eval_locals: dict | None = None):
 	"""Old version of safe_eval from framework.
 
-	Note: current frappe.safe_eval transforms code so if you have nested
+	Note: current nts.safe_eval transforms code so if you have nested
 	iterations with too much depth then it can hit recursion limit of python.
 	There's no workaround for this and people need large formulas in some
 	countries so this is alternate implementation for that.
@@ -2369,13 +2369,13 @@ def _safe_eval(code: str, eval_globals: dict | None = None, eval_locals: dict | 
 def _check_attributes(code: str) -> None:
 	import ast
 
-	from frappe.utils.safe_exec import UNSAFE_ATTRIBUTES
+	from nts.utils.safe_exec import UNSAFE_ATTRIBUTES
 
 	unsafe_attrs = set(UNSAFE_ATTRIBUTES).union(["__"]) - {"format"}
 
 	for attribute in unsafe_attrs:
 		if attribute in code:
-			raise SyntaxError(f'Illegal rule {frappe.bold(code)}. Cannot use "{attribute}"')
+			raise SyntaxError(f'Illegal rule {nts.bold(code)}. Cannot use "{attribute}"')
 
 	BLOCKED_NODES = (ast.NamedExpr,)
 
@@ -2384,10 +2384,10 @@ def _check_attributes(code: str) -> None:
 		if isinstance(node, BLOCKED_NODES):
 			raise SyntaxError(f"Operation not allowed: line {node.lineno} column {node.col_offset}")
 		if isinstance(node, ast.Attribute) and isinstance(node.attr, str) and node.attr in UNSAFE_ATTRIBUTES:
-			raise SyntaxError(f'Illegal rule {frappe.bold(code)}. Cannot use "{node.attr}"')
+			raise SyntaxError(f'Illegal rule {nts.bold(code)}. Cannot use "{node.attr}"')
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def enqueue_email_salary_slips(names) -> None:
 	"""enqueue bulk emailing salary slips"""
 	import json
@@ -2395,15 +2395,15 @@ def enqueue_email_salary_slips(names) -> None:
 	if isinstance(names, str):
 		names = json.loads(names)
 
-	frappe.enqueue("hrms.payroll.doctype.salary_slip.salary_slip.email_salary_slips", names=names)
-	frappe.msgprint(
+	nts.enqueue("hrms.payroll.doctype.salary_slip.salary_slip.email_salary_slips", names=names)
+	nts.msgprint(
 		_("Salary slip emails have been enqueued for sending. Check {0} for status.").format(
-			f"""<a href='{frappe.utils.get_url_to_list("Email Queue")}' target='blank'>Email Queue</a>"""
+			f"""<a href='{nts.utils.get_url_to_list("Email Queue")}' target='blank'>Email Queue</a>"""
 		)
 	)
 
 
 def email_salary_slips(names) -> None:
 	for name in names:
-		salary_slip = frappe.get_doc("Salary Slip", name)
+		salary_slip = nts.get_doc("Salary Slip", name)
 		salary_slip.email_salary_slip()

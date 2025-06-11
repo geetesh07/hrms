@@ -1,14 +1,14 @@
-# Copyright (c) 2019, Frappe and Contributors
+# Copyright (c) 2019, nts and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
+import nts
 
 
 def execute():
-	frappe.reload_doc("hr", "doctype", "shift_assignment")
-	if frappe.db.has_column("Shift Assignment", "date"):
-		frappe.db.sql(
+	nts.reload_doc("hr", "doctype", "shift_assignment")
+	if nts.db.has_column("Shift Assignment", "date"):
+		nts.db.sql(
 			"""update `tabShift Assignment`
             set end_date=date, start_date=date
             where date IS NOT NULL and start_date IS NULL and end_date IS NULL;"""

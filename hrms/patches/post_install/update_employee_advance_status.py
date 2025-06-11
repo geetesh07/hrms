@@ -1,12 +1,12 @@
-import frappe
+import nts
 
 
 def execute():
-	frappe.reload_doc("hr", "doctype", "employee_advance")
+	nts.reload_doc("hr", "doctype", "employee_advance")
 
-	advance = frappe.qb.DocType("Employee Advance")
+	advance = nts.qb.DocType("Employee Advance")
 	(
-		frappe.qb.update(advance)
+		nts.qb.update(advance)
 		.set(advance.status, "Returned")
 		.where(
 			(advance.docstatus == 1)
@@ -16,7 +16,7 @@ def execute():
 	).run()
 
 	(
-		frappe.qb.update(advance)
+		nts.qb.update(advance)
 		.set(advance.status, "Partly Claimed and Returned")
 		.where(
 			(advance.docstatus == 1)

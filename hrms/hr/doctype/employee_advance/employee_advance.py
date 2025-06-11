@@ -1,27 +1,27 @@
-# Copyright (c) 2017, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2017, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.query_builder.functions import Sum
-from frappe.utils import flt, nowdate
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.query_builder.functions import Sum
+from nts.utils import flt, nowdate
 
-import erpnext
-from erpnext.accounts.doctype.journal_entry.journal_entry import get_default_bank_cash_account
+import prodman
+from prodman.accounts.doctype.journal_entry.journal_entry import get_default_bank_cash_account
 
 import hrms
 from hrms.hr.utils import validate_active_employee
 
 
-class EmployeeAdvanceOverPayment(frappe.ValidationError):
+class EmployeeAdvanceOverPayment(nts.ValidationError):
 	pass
 
 
 class EmployeeAdvance(Document):
 	def onload(self):
-		self.get("__onload").make_payment_via_journal_entry = frappe.db.get_single_value(
+		self.get("__onload").make_payment_via_journal_entry = nts.db.get_single_value(
 			"Accounts Settings", "make_payment_via_journal_entry"
 		)
 
@@ -43,12 +43,12 @@ class EmployeeAdvance(Document):
 		self.publish_update()
 
 	def publish_update(self):
-		employee_user = frappe.db.get_value("Employee", self.employee, "user_id", cache=True)
+		employee_user = nts.db.get_value("Employee", self.employee, "user_id", cache=True)
 		hrms.refetch_resource("hrms:employee_advance_balance", employee_user)
 
 	def validate_exchange_rate(self):
 		if not self.exchange_rate:
-			frappe.throw(_("Exchange Rate cannot be zero."))
+			nts.throw(_("Exchange Rate cannot be zero."))
 
 	def set_status(self, update=False):
 		precision = self.precision("paid_amount")
@@ -89,10 +89,10 @@ class EmployeeAdvance(Document):
 			self.status = status
 
 	def set_total_advance_paid(self):
-		gle = frappe.qb.DocType("GL Entry")
+		gle = nts.qb.DocType("GL Entry")
 
 		paid_amount = (
-			frappe.qb.from_(gle)
+			nts.qb.from_(gle)
 			.select(Sum(gle.debit).as_("paid_amount"))
 			.where(
 				(gle.against_voucher_type == "Employee Advance")
@@ -105,7 +105,7 @@ class EmployeeAdvance(Document):
 		).run(as_dict=True)[0].paid_amount or 0
 
 		return_amount = (
-			frappe.qb.from_(gle)
+			nts.qb.from_(gle)
 			.select(Sum(gle.credit).as_("return_amount"))
 			.where(
 				(gle.against_voucher_type == "Employee Advance")
@@ -126,7 +126,7 @@ class EmployeeAdvance(Document):
 		precision = self.precision("paid_amount")
 		paid_amount = flt(paid_amount, precision)
 		if paid_amount > flt(self.advance_amount, precision):
-			frappe.throw(
+			nts.throw(
 				_("Row {0}# Paid Amount cannot be greater than requested advance amount"),
 				EmployeeAdvanceOverPayment,
 			)
@@ -135,7 +135,7 @@ class EmployeeAdvance(Document):
 		return_amount = flt(return_amount, precision)
 
 		if return_amount > 0 and return_amount > flt(self.paid_amount - self.claimed_amount, precision):
-			frappe.throw(_("Return amount cannot be greater than unclaimed amount"))
+			nts.throw(_("Return amount cannot be greater than unclaimed amount"))
 
 		self.db_set("paid_amount", paid_amount)
 		self.db_set("return_amount", return_amount)
@@ -143,7 +143,7 @@ class EmployeeAdvance(Document):
 
 	def update_claimed_amount(self):
 		claimed_amount = (
-			frappe.db.sql(
+			nts.db.sql(
 				"""
 			SELECT sum(ifnull(allocated_amount, 0))
 			FROM `tabExpense Claim Advance` eca, `tabExpense Claim` ec
@@ -159,14 +159,14 @@ class EmployeeAdvance(Document):
 			or 0
 		)
 
-		frappe.db.set_value("Employee Advance", self.name, "claimed_amount", flt(claimed_amount))
+		nts.db.set_value("Employee Advance", self.name, "claimed_amount", flt(claimed_amount))
 		self.reload()
 		self.set_status(update=True)
 
 	def set_pending_amount(self):
-		Advance = frappe.qb.DocType("Employee Advance")
+		Advance = nts.qb.DocType("Employee Advance")
 		self.pending_amount = (
-			frappe.qb.from_(Advance)
+			nts.qb.from_(Advance)
 			.select(Sum(Advance.advance_amount - Advance.paid_amount))
 			.where(
 				(Advance.employee == self.employee)
@@ -177,26 +177,26 @@ class EmployeeAdvance(Document):
 		).run()[0][0] or 0.0
 
 	def check_linked_payment_entry(self):
-		from erpnext.accounts.utils import (
+		from prodman.accounts.utils import (
 			remove_ref_doc_link_from_pe,
 			update_accounting_ledgers_after_reference_removal,
 		)
 
-		if frappe.db.get_single_value("HR Settings", "unlink_payment_on_cancellation_of_employee_advance"):
+		if nts.db.get_single_value("HR Settings", "unlink_payment_on_cancellation_of_employee_advance"):
 			remove_ref_doc_link_from_pe(self.doctype, self.name)
 			update_accounting_ledgers_after_reference_removal(self.doctype, self.name)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def make_bank_entry(dt, dn):
-	doc = frappe.get_doc(dt, dn)
+	doc = nts.get_doc(dt, dn)
 	payment_account = get_default_bank_cash_account(
 		doc.company, account_type="Cash", mode_of_payment=doc.mode_of_payment
 	)
 	if not payment_account:
-		frappe.throw(_("Please set a Default Cash Account in Company defaults"))
+		nts.throw(_("Please set a Default Cash Account in Company defaults"))
 
-	advance_account_currency = frappe.db.get_value("Account", doc.advance_account, "account_currency")
+	advance_account_currency = nts.db.get_value("Account", doc.advance_account, "account_currency")
 
 	advance_amount, advance_exchange_rate = get_advance_amount_advance_exchange_rate(
 		advance_account_currency, doc
@@ -204,7 +204,7 @@ def make_bank_entry(dt, dn):
 
 	paying_amount, paying_exchange_rate = get_paying_amount_paying_exchange_rate(payment_account, doc)
 
-	je = frappe.new_doc("Journal Entry")
+	je = nts.new_doc("Journal Entry")
 	je.posting_date = nowdate()
 	je.voucher_type = "Bank Entry"
 	je.company = doc.company
@@ -221,7 +221,7 @@ def make_bank_entry(dt, dn):
 			"reference_type": "Employee Advance",
 			"reference_name": doc.name,
 			"party_type": "Employee",
-			"cost_center": erpnext.get_default_cost_center(doc.company),
+			"cost_center": prodman.get_default_cost_center(doc.company),
 			"party": doc.employee,
 			"is_advance": "Yes",
 		},
@@ -231,7 +231,7 @@ def make_bank_entry(dt, dn):
 		"accounts",
 		{
 			"account": payment_account.account,
-			"cost_center": erpnext.get_default_cost_center(doc.company),
+			"cost_center": prodman.get_default_cost_center(doc.company),
 			"credit_in_account_currency": flt(paying_amount),
 			"account_currency": payment_account.account_currency,
 			"account_type": payment_account.account_type,
@@ -264,14 +264,14 @@ def get_paying_amount_paying_exchange_rate(payment_account, doc):
 	return paying_amount, paying_exchange_rate
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def create_return_through_additional_salary(doc):
 	import json
 
 	if isinstance(doc, str):
-		doc = frappe._dict(json.loads(doc))
+		doc = nts._dict(json.loads(doc))
 
-	additional_salary = frappe.new_doc("Additional Salary")
+	additional_salary = nts.new_doc("Additional Salary")
 	additional_salary.employee = doc.employee
 	additional_salary.currency = doc.currency
 	additional_salary.overwrite_salary_structure_amount = 0
@@ -283,7 +283,7 @@ def create_return_through_additional_salary(doc):
 	return additional_salary
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def make_return_entry(
 	employee,
 	company,
@@ -298,11 +298,11 @@ def make_return_entry(
 		company, account_type="Cash", mode_of_payment=mode_of_payment
 	)
 	if not bank_cash_account:
-		frappe.throw(_("Please set a Default Cash Account in Company defaults"))
+		nts.throw(_("Please set a Default Cash Account in Company defaults"))
 
-	advance_account_currency = frappe.db.get_value("Account", advance_account, "account_currency")
+	advance_account_currency = nts.db.get_value("Account", advance_account, "account_currency")
 
-	je = frappe.new_doc("Journal Entry")
+	je = nts.new_doc("Journal Entry")
 	je.posting_date = nowdate()
 	je.voucher_type = get_voucher_type(mode_of_payment)
 	je.company = company
@@ -327,7 +327,7 @@ def make_return_entry(
 			"party_type": "Employee",
 			"party": employee,
 			"is_advance": "Yes",
-			"cost_center": erpnext.get_default_cost_center(company),
+			"cost_center": prodman.get_default_cost_center(company),
 		},
 	)
 
@@ -345,7 +345,7 @@ def make_return_entry(
 			"account_currency": bank_cash_account.account_currency,
 			"account_type": bank_cash_account.account_type,
 			"exchange_rate": flt(exchange_rate) if bank_cash_account.account_currency == currency else 1,
-			"cost_center": erpnext.get_default_cost_center(company),
+			"cost_center": prodman.get_default_cost_center(company),
 		},
 	)
 
@@ -356,7 +356,7 @@ def get_voucher_type(mode_of_payment=None):
 	voucher_type = "Cash Entry"
 
 	if mode_of_payment:
-		mode_of_payment_type = frappe.get_cached_value("Mode of Payment", mode_of_payment, "type")
+		mode_of_payment_type = nts.get_cached_value("Mode of Payment", mode_of_payment, "type")
 		if mode_of_payment_type == "Bank":
 			voucher_type = "Bank Entry"
 

@@ -7,9 +7,9 @@ import {
 	onMessage as onFCMMessage,
 } from "firebase/messaging"
 
-class FrappePushNotification {
+class ntsPushNotification {
 	static get relayServerBaseURL() {
-		return window.frappe?.boot.push_relay_server_url
+		return window.nts?.boot.push_relay_server_url
 	}
 
 	// Type definitions
@@ -88,7 +88,7 @@ class FrappePushNotification {
 			return this.webConfig
 		}
 		try {
-			let url = `${FrappePushNotification.relayServerBaseURL}/api/method/notification_relay.api.get_config?project_name=${this.projectName}`
+			let url = `${ntsPushNotification.relayServerBaseURL}/api/method/notification_relay.api.get_config?project_name=${this.projectName}`
 			let response = await fetch(url)
 			let response_json = await response.json()
 			this.webConfig = response_json.config
@@ -110,7 +110,7 @@ class FrappePushNotification {
 			return this.vapidPublicKey
 		}
 		try {
-			let url = `${FrappePushNotification.relayServerBaseURL}/api/method/notification_relay.api.get_config?project_name=${this.projectName}`
+			let url = `${ntsPushNotification.relayServerBaseURL}/api/method/notification_relay.api.get_config?project_name=${this.projectName}`
 			let response = await fetch(url)
 			let response_json = await response.json()
 			this.vapidPublicKey = response_json.vapid_public_key
@@ -245,7 +245,7 @@ class FrappePushNotification {
 	async registerTokenHandler(token) {
 		try {
 			let response = await fetch(
-				"/api/method/frappe.push_notification.subscribe?fcm_token=" +
+				"/api/method/nts.push_notification.subscribe?fcm_token=" +
 					token +
 					"&project_name=" +
 					this.projectName,
@@ -272,7 +272,7 @@ class FrappePushNotification {
 	async unregisterTokenHandler(token) {
 		try {
 			let response = await fetch(
-				"/api/method/frappe.push_notification.unsubscribe?fcm_token=" +
+				"/api/method/nts.push_notification.unsubscribe?fcm_token=" +
 					token +
 					"&project_name=" +
 					this.projectName,
@@ -291,4 +291,4 @@ class FrappePushNotification {
 	}
 }
 
-export default FrappePushNotification
+export default ntsPushNotification

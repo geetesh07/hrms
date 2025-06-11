@@ -7,7 +7,7 @@ import {
 	Button,
 	Input,
 	setConfig,
-	frappeRequest,
+	ntsRequest,
 	resourcesPlugin,
 	FormControl,
 } from "frappe-ui"
@@ -23,7 +23,7 @@ import { employeeResource } from "@/data/employee"
 import dayjs from "@/utils/dayjs"
 import getIonicConfig from "@/utils/ionicConfig"
 
-import FrappePushNotification from "../public/frappe-push-notification"
+import ntsPushNotification from "../public/nts-push-notification"
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/vue/css/core.css"
@@ -36,7 +36,7 @@ import "./main.css"
 const app = createApp(App)
 const socket = initSocket()
 
-setConfig("resourceFetcher", frappeRequest)
+setConfig("resourceFetcher", ntsRequest)
 app.use(resourcesPlugin)
 app.use(translationsPlugin)
 
@@ -59,14 +59,14 @@ app.provide("$socket", socket)
 app.provide("$dayjs", dayjs)
 
 const registerServiceWorker = async () => {
-	window.frappePushNotification = new FrappePushNotification("hrms")
+	window.ntsPushNotification = new ntsPushNotification("hrms")
 
 	if ("serviceWorker" in navigator) {
 		let serviceWorkerURL = "/assets/hrms/frontend/sw.js"
 		let config = ""
 
 		try {
-			config = await window.frappePushNotification.fetchWebConfig()
+			config = await window.ntsPushNotification.fetchWebConfig()
 			serviceWorkerURL = `${serviceWorkerURL}?config=${encodeURIComponent(
 				JSON.stringify(config)
 			)}`
@@ -80,8 +80,8 @@ const registerServiceWorker = async () => {
 			})
 			.then((registration) => {
 				if (config) {
-					window.frappePushNotification.initialize(registration).then(() => {
-						console.log("Frappe Push Notification initialized")
+					window.ntsPushNotification.initialize(registration).then(() => {
+						console.log("nts Push Notification initialized")
 					})
 				}
 			})
@@ -95,11 +95,11 @@ const registerServiceWorker = async () => {
 
 router.isReady().then(async () => {
 	if (import.meta.env.DEV) {
-		await frappeRequest({
+		await ntsRequest({
 			url: "/api/method/hrms.www.hrms.get_context_for_dev",
 		}).then(async (values) => {
-			if (!window.frappe) window.frappe = {}
-			window.frappe.boot = values
+			if (!window.nts) window.nts = {}
+			window.nts.boot = values
 		})
 	}
 

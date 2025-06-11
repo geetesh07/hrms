@@ -1,4 +1,4 @@
-frappe.listview_settings["Job Requisition"] = {
+nts.listview_settings["Job Requisition"] = {
 	get_indicator: function (doc) {
 		const status_color = {
 			Pending: "yellow",

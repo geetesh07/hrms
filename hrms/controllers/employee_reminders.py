@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
-from frappe import _
-from frappe.utils import add_days, add_months, comma_sep, getdate, today
+import nts
+from nts import _
+from nts.utils import add_days, add_months, comma_sep, getdate, today
 
-from erpnext.setup.doctype.employee.employee import get_all_employee_emails, get_employee_email
+from prodman.setup.doctype.employee.employee import get_all_employee_emails, get_employee_email
 
 from hrms.hr.utils import get_holidays_for_employee
 
@@ -14,8 +14,8 @@ from hrms.hr.utils import get_holidays_for_employee
 # HOLIDAY REMINDERS
 # -----------------
 def send_reminders_in_advance_weekly():
-	to_send_in_advance = int(frappe.db.get_single_value("HR Settings", "send_holiday_reminders"))
-	frequency = frappe.db.get_single_value("HR Settings", "frequency")
+	to_send_in_advance = int(nts.db.get_single_value("HR Settings", "send_holiday_reminders"))
+	frequency = nts.db.get_single_value("HR Settings", "frequency")
 	if not (to_send_in_advance and frequency == "Weekly"):
 		return
 
@@ -23,8 +23,8 @@ def send_reminders_in_advance_weekly():
 
 
 def send_reminders_in_advance_monthly():
-	to_send_in_advance = int(frappe.db.get_single_value("HR Settings", "send_holiday_reminders"))
-	frequency = frappe.db.get_single_value("HR Settings", "frequency")
+	to_send_in_advance = int(nts.db.get_single_value("HR Settings", "send_holiday_reminders"))
+	frequency = nts.db.get_single_value("HR Settings", "frequency")
 	if not (to_send_in_advance and frequency == "Monthly"):
 		return
 
@@ -45,7 +45,7 @@ def send_advance_holiday_reminders(frequency):
 	else:
 		return
 
-	employees = frappe.db.get_all("Employee", filters={"status": "Active"}, pluck="name")
+	employees = nts.db.get_all("Employee", filters={"status": "Active"}, pluck="name")
 	for employee in employees:
 		holidays = get_holidays_for_employee(
 			employee, start_date, end_date, only_non_weekly=True, raise_exception=False
@@ -58,12 +58,12 @@ def send_holidays_reminder_in_advance(employee, holidays):
 	if not holidays:
 		return
 
-	employee_doc = frappe.get_doc("Employee", employee)
+	employee_doc = nts.get_doc("Employee", employee)
 	employee_email = get_employee_email(employee_doc)
-	frequency = frappe.db.get_single_value("HR Settings", "frequency")
+	frequency = nts.db.get_single_value("HR Settings", "frequency")
 	sender_email = get_sender_email()
 	email_header = _("Holidays this Month.") if frequency == "Monthly" else _("Holidays this Week.")
-	frappe.sendmail(
+	nts.sendmail(
 		sender=sender_email,
 		recipients=[employee_email],
 		subject=_("Upcoming Holidays Reminder"),
@@ -87,7 +87,7 @@ def send_holidays_reminder_in_advance(employee, holidays):
 def send_birthday_reminders():
 	"""Send Employee birthday reminders if no 'Stop Birthday Reminders' is not set."""
 
-	to_send = int(frappe.db.get_single_value("HR Settings", "send_birthday_reminders"))
+	to_send = int(nts.db.get_single_value("HR Settings", "send_birthday_reminders"))
 	if not to_send:
 		return
 
@@ -117,7 +117,7 @@ def get_birthday_reminder_text_and_message(birthday_persons):
 	else:
 		# converts ["Jim", "Rim", "Dim"] to Jim, Rim & Dim
 		person_names = [d["name"] for d in birthday_persons]
-		birthday_person_text = comma_sep(person_names, frappe._("{0} & {1}"), False)
+		birthday_person_text = comma_sep(person_names, nts._("{0} & {1}"), False)
 
 	reminder_text = _("Today is {0}'s birthday 🎉").format(birthday_person_text)
 	message = _("A friendly reminder of an important date for our team.")
@@ -128,7 +128,7 @@ def get_birthday_reminder_text_and_message(birthday_persons):
 
 
 def send_birthday_reminder(recipients, reminder_text, birthday_persons, message, sender=None):
-	frappe.sendmail(
+	nts.sendmail(
 		sender=sender,
 		recipients=recipients,
 		subject=_("Birthday Reminder"),
@@ -162,7 +162,7 @@ def get_employees_having_an_event_today(event_type):
 	else:
 		return
 
-	employees_born_today = frappe.db.multisql(
+	employees_born_today = nts.db.multisql(
 		{
 			"mariadb": f"""
 			SELECT `personal_email`, `company`, `company_email`, `user_id`, `employee_name` AS 'name', `image`, `date_of_joining`
@@ -206,7 +206,7 @@ def get_employees_having_an_event_today(event_type):
 # --------------------------
 def send_work_anniversary_reminders():
 	"""Send Employee Work Anniversary Reminders if 'Send Work Anniversary Reminders' is checked"""
-	to_send = int(frappe.db.get_single_value("HR Settings", "send_work_anniversary_reminders"))
+	to_send = int(nts.db.get_single_value("HR Settings", "send_work_anniversary_reminders"))
 	if not to_send:
 		return
 
@@ -266,7 +266,7 @@ def send_work_anniversary_reminder(
 	message,
 	sender=None,
 ):
-	frappe.sendmail(
+	nts.sendmail(
 		sender=sender,
 		recipients=recipients,
 		subject=_("Work Anniversary Reminder"),
@@ -281,4 +281,4 @@ def send_work_anniversary_reminder(
 
 
 def get_sender_email() -> str | None:
-	return frappe.db.get_single_value("HR Settings", "sender_email")
+	return nts.db.get_single_value("HR Settings", "sender_email")

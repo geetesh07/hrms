@@ -249,7 +249,7 @@ const defaultFilters = computed(() => {
 
 // resources
 const documents = createResource({
-	url: "frappe.desk.reportview.get",
+	url: "nts.desk.reportview.get",
 	onSuccess: (data) => {
 		if (data.values?.length < listOptions.value.page_length) {
 			hasNextPage.value = false
@@ -283,7 +283,7 @@ const documents = createResource({
 })
 
 const createPermission = createResource({
-	url: "frappe.client.has_permission",
+	url: "nts.client.has_permission",
 	params: { doctype: props.doctype, docname: null, perm_type: "create" },
 	auto: true,
 })

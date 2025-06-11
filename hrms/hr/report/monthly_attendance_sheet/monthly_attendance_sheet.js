@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.query_reports["Monthly Attendance Sheet"] = {
+nts.query_reports["Monthly Attendance Sheet"] = {
 	filters: [
 		{
 			fieldname: "month",
@@ -22,7 +22,7 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 				{ value: 11, label: __("Nov") },
 				{ value: 12, label: __("Dec") },
 			],
-			default: frappe.datetime.str_to_obj(frappe.datetime.get_today()).getMonth() + 1,
+			default: nts.datetime.str_to_obj(nts.datetime.get_today()).getMonth() + 1,
 		},
 		{
 			fieldname: "year",
@@ -36,7 +36,7 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			fieldtype: "Link",
 			options: "Employee",
 			get_query: () => {
-				var company = frappe.query_report.get_filter_value("company");
+				var company = nts.query_report.get_filter_value("company");
 				return {
 					filters: {
 						company: company,
@@ -49,7 +49,7 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			label: __("Company"),
 			fieldtype: "Link",
 			options: "Company",
-			default: frappe.defaults.get_user_default("Company"),
+			default: nts.defaults.get_user_default("Company"),
 			reqd: 1,
 		},
 		{
@@ -72,10 +72,10 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 		},
 	],
 	onload: function () {
-		return frappe.call({
+		return nts.call({
 			method: "hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",
 			callback: function (r) {
-				var year_filter = frappe.query_report.get_filter("year");
+				var year_filter = nts.query_report.get_filter("year");
 				year_filter.df.options = r.message;
 				year_filter.df.default = r.message.split("\n")[0];
 				year_filter.refresh();
@@ -85,8 +85,8 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 	},
 	formatter: function (value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
-		const summarized_view = frappe.query_report.get_filter_value("summarized_view");
-		const group_by = frappe.query_report.get_filter_value("group_by");
+		const summarized_view = nts.query_report.get_filter_value("summarized_view");
+		const group_by = nts.query_report.get_filter_value("group_by");
 
 		if (group_by && column.colIndex === 1) {
 			value = "<strong>" + value + "</strong>";

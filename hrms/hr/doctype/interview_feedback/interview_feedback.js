@@ -1,7 +1,7 @@
-// Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Interview Feedback", {
+nts.ui.form.on("Interview Feedback", {
 	onload: function (frm) {
 		frm.ignore_doctypes_on_cancel_all = ["Interview"];
 
@@ -15,7 +15,7 @@ frappe.ui.form.on("Interview Feedback", {
 	},
 
 	interview_round: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.interview.interview.get_expected_skill_set",
 			args: {
 				interview_round: frm.doc.interview_round,
@@ -27,7 +27,7 @@ frappe.ui.form.on("Interview Feedback", {
 	},
 
 	interview: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.interview_feedback.interview_feedback.get_applicable_interviewers",
 			args: {
 				interview: frm.doc.interview || "",
@@ -46,7 +46,7 @@ frappe.ui.form.on("Interview Feedback", {
 
 	interviewer: function (frm) {
 		if (!frm.doc.interview) {
-			frappe.throw(__("Select Interview first"));
+			nts.throw(__("Select Interview first"));
 			frm.set_value("interviewer", "");
 		}
 	},

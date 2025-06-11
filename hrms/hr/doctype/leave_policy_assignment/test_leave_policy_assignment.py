@@ -1,8 +1,8 @@
-# Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2020, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.utils import add_days, add_months, get_first_day, get_year_ending, get_year_start, getdate
+import nts
+from nts.utils import add_days, add_months, get_first_day, get_year_ending, get_year_start, getdate
 
 from hrms.hr.doctype.leave_application.test_leave_application import get_employee, get_leave_period
 from hrms.hr.doctype.leave_period.test_leave_period import create_leave_period
@@ -30,14 +30,14 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 			"Leave Policy Assignment",
 			"Leave Ledger Entry",
 		]:
-			frappe.db.delete(doctype)
+			nts.db.delete(doctype)
 
 		employee = get_employee()
 		self.original_doj = employee.date_of_joining
 		self.employee = employee
 
 	def tearDown(self):
-		frappe.db.set_value("Employee", self.employee.name, "date_of_joining", self.original_doj)
+		nts.db.set_value("Employee", self.employee.name, "date_of_joining", self.original_doj)
 
 	def test_grant_leaves(self):
 		leave_period = get_leave_period()
@@ -47,7 +47,7 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 		self.employee.date_of_joining = get_first_day(leave_period.from_date)
 		self.employee.save()
 
-		data = frappe._dict(
+		data = nts._dict(
 			{
 				"assignment_based_on": "Leave Period",
 				"leave_policy": leave_policy.name,
@@ -56,15 +56,15 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 		)
 		assignments = create_assignment_for_multiple_employees([self.employee.name], data)
 		self.assertEqual(
-			frappe.db.get_value("Leave Policy Assignment", assignments[0], "leaves_allocated"),
+			nts.db.get_value("Leave Policy Assignment", assignments[0], "leaves_allocated"),
 			1,
 		)
 
-		allocation = frappe.db.get_value(
+		allocation = nts.db.get_value(
 			"Leave Allocation", {"leave_policy_assignment": assignments[0]}, "name"
 		)
 
-		leave_alloc_doc = frappe.get_doc("Leave Allocation", allocation)
+		leave_alloc_doc = nts.get_doc("Leave Allocation", allocation)
 
 		self.assertEqual(leave_alloc_doc.new_leaves_allocated, 10)
 		self.assertEqual(leave_alloc_doc.leave_type, "_Test Leave Type")
@@ -78,7 +78,7 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 		leave_policy = create_leave_policy(annual_allocation=10)
 		leave_policy.submit()
 
-		data = frappe._dict(
+		data = nts._dict(
 			{
 				"assignment_based_on": "Leave Period",
 				"leave_policy": leave_policy.name,
@@ -89,19 +89,19 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 
 		# every leave is allocated no more leave can be granted now
 		self.assertEqual(
-			frappe.db.get_value("Leave Policy Assignment", assignments[0], "leaves_allocated"),
+			nts.db.get_value("Leave Policy Assignment", assignments[0], "leaves_allocated"),
 			1,
 		)
 
-		allocation = frappe.db.get_value(
+		allocation = nts.db.get_value(
 			"Leave Allocation", {"leave_policy_assignment": assignments[0]}, "name"
 		)
 
-		leave_alloc_doc = frappe.get_doc("Leave Allocation", allocation)
+		leave_alloc_doc = nts.get_doc("Leave Allocation", allocation)
 		leave_alloc_doc.cancel()
 		leave_alloc_doc.delete()
 		self.assertEqual(
-			frappe.db.get_value("Leave Policy Assignment", assignments[0], "leaves_allocated"),
+			nts.db.get_value("Leave Policy Assignment", assignments[0], "leaves_allocated"),
 			0,
 		)
 
@@ -118,9 +118,9 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 			"leave_policy": leave_policy.name,
 			"leave_period": leave_period.name,
 		}
-		assignments = create_assignment_for_multiple_employees([self.employee.name], frappe._dict(data))
+		assignments = create_assignment_for_multiple_employees([self.employee.name], nts._dict(data))
 
-		allocation = frappe.db.get_value(
+		allocation = nts.db.get_value(
 			"Leave Allocation", {"leave_policy_assignment": assignments[0]}, "new_leaves_allocated"
 		)
 
@@ -144,7 +144,7 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 
 		self.employee.date_of_joining = add_months(first_day, -5)
 		self.employee.save()
-		assignment = create_assignment(self.employee.name, frappe._dict(data))
+		assignment = create_assignment(self.employee.name, nts._dict(data))
 		new_leaves_allocated = assignment.get_leaves_for_passed_months(
 			annual_allocation, leave_type, self.employee.date_of_joining
 		)
@@ -152,7 +152,7 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 
 		self.employee.date_of_joining = add_months(first_day, -35)
 		self.employee.save()
-		assignment = create_assignment(self.employee.name, frappe._dict(data))
+		assignment = create_assignment(self.employee.name, nts._dict(data))
 		new_leaves_allocated = assignment.get_leaves_for_passed_months(
 			annual_allocation, leave_type, self.employee.date_of_joining
 		)
@@ -164,14 +164,14 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 			"leave_policy": leave_policy.name,
 			"leave_period": leave_period.name,
 		}
-		assignment = create_assignment(self.employee.name, frappe._dict(data))
+		assignment = create_assignment(self.employee.name, nts._dict(data))
 		new_leaves_allocated = assignment.get_leaves_for_passed_months(
 			annual_allocation, leave_type, self.employee.date_of_joining
 		)
 		self.assertEqual(new_leaves_allocated, 20)
 
 	def test_pro_rated_leave_allocation_for_custom_date_range(self):
-		leave_type = frappe.get_doc(
+		leave_type = nts.get_doc(
 			{
 				"doctype": "Leave Type",
 				"leave_type_name": "_Test Leave Type_",
@@ -181,7 +181,7 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 			}
 		).submit()
 
-		leave_policy = frappe.get_doc(
+		leave_policy = nts.get_doc(
 			{
 				"doctype": "Leave Policy",
 				"title": "Test Leave Policy",
@@ -196,14 +196,14 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 
 		today_date = getdate()
 
-		leave_policy_assignment = frappe.new_doc("Leave Policy Assignment")
+		leave_policy_assignment = nts.new_doc("Leave Policy Assignment")
 		leave_policy_assignment.employee = self.employee
 		leave_policy_assignment.leave_policy = leave_policy.name
 		leave_policy_assignment.effective_from = getdate(get_first_day(today_date))
 		leave_policy_assignment.effective_to = getdate(get_year_ending(today_date))
 		leave_policy_assignment.submit()
 
-		new_leaves_allocated = frappe.db.get_value(
+		new_leaves_allocated = nts.db.get_value(
 			"Leave Allocation",
 			{
 				"employee": leave_policy_assignment.employee,
@@ -220,7 +220,7 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 		leave_period = create_leave_period(year_start_date, year_end_date)
 
 		# assignment 10 days after the leave period
-		frappe.flags.current_date = add_days(year_end_date, 10)
+		nts.flags.current_date = add_days(year_end_date, 10)
 		leave_type = create_leave_type(
 			leave_type_name="_Test Earned Leave", is_earned_leave=True, allocate_on_day="Last Day"
 		)
@@ -233,10 +233,10 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 			"leave_policy": leave_policy.name,
 			"leave_period": leave_period.name,
 		}
-		assignment = create_assignment(self.employee.name, frappe._dict(data))
+		assignment = create_assignment(self.employee.name, nts._dict(data))
 		assignment.submit()
 
-		earned_leave_allocation = frappe.get_value(
+		earned_leave_allocation = nts.get_value(
 			"Leave Allocation", {"leave_policy_assignment": assignment.name}, "new_leaves_allocated"
 		)
 		self.assertEqual(earned_leave_allocation, annual_earned_leaves)
@@ -247,7 +247,7 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 		leave_period = create_leave_period(first_year_start_date, second_year_end_date)
 
 		# assignment during mid second year
-		frappe.flags.current_date = add_months(second_year_end_date, -6)
+		nts.flags.current_date = add_months(second_year_end_date, -6)
 		leave_type = create_leave_type(
 			leave_type_name="_Test Earned Leave", is_earned_leave=True, allocate_on_day="Last Day"
 		)
@@ -260,10 +260,10 @@ class TestLeavePolicyAssignment(HRMSTestSuite):
 			"leave_policy": leave_policy.name,
 			"leave_period": leave_period.name,
 		}
-		assignment = create_assignment(self.employee.name, frappe._dict(data))
+		assignment = create_assignment(self.employee.name, nts._dict(data))
 		assignment.submit()
 
-		earned_leave_allocation = frappe.get_value(
+		earned_leave_allocation = nts.get_value(
 			"Leave Allocation", {"leave_policy_assignment": assignment.name}, "new_leaves_allocated"
 		)
 		# months passed (18) are calculated correctly but total allocation of 36 exceeds 24 hence 24

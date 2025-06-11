@@ -1,20 +1,20 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: frappe\n"
-"Report-Msgid-Bugs-To: contact@frappe.io\n"
+"Project-Id-Version: nts\n"
+"Report-Msgid-Bugs-To: contact@nts.io\n"
 "POT-Creation-Date: 2025-05-04 09:34+0000\n"
 "PO-Revision-Date: 2025-05-05 18:11\n"
-"Last-Translator: contact@frappe.io\n"
+"Last-Translator: contact@nts.io\n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.13.1\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Crowdin-Project: frappe\n"
+"X-Crowdin-Project: nts\n"
 "X-Crowdin-Project-ID: 639578\n"
 "X-Crowdin-Language: fr\n"
-"X-Crowdin-File: /[frappe.hrms] develop/hrms/locale/main.pot\n"
+"X-Crowdin-File: /[nts.hrms] develop/hrms/locale/main.pot\n"
 "X-Crowdin-File-ID: 58\n"
 "Language: fr_FR\n"
 
@@ -2817,7 +2817,7 @@ msgstr "Lettre de Motivation"
 #: hrms/payroll/doctype/salary_structure/salary_structure.js:152
 #: hrms/payroll/doctype/salary_structure_assignment/salary_structure_assignment.js:68
 #: hrms/payroll/doctype/salary_structure_assignment/salary_structure_assignment.js:70
-#: hrms/public/js/erpnext/delivery_trip.js:15
+#: hrms/public/js/prodman/delivery_trip.js:15
 msgid "Create"
 msgstr "Créer"
 
@@ -2861,7 +2861,7 @@ msgstr "Créer un nouvel identifiant d'employé"
 msgid "Create Payment Entry"
 msgstr "Créer une entrée de paiement"
 
-#: hrms/public/js/erpnext/timesheet.js:8
+#: hrms/public/js/prodman/timesheet.js:8
 msgid "Create Salary Slip"
 msgstr "Créer une Fiche de Paie"
 
@@ -5425,7 +5425,7 @@ msgstr "Approbateur obligatoire pour les notes de frais"
 #: hrms/hr/report/unpaid_expense_claim/unpaid_expense_claim.py:20
 #: hrms/hr/workspace/expense_claims/expense_claims.json
 #: hrms/hr/workspace/overview/overview.json
-#: hrms/public/js/erpnext/delivery_trip.js:8
+#: hrms/public/js/prodman/delivery_trip.js:8
 msgid "Expense Claim"
 msgstr "Note de Frais"
 
@@ -5894,7 +5894,7 @@ msgid "Fractional Cost"
 msgstr "Coût fractionnaire"
 
 #: frontend/src/components/BaseLayout.vue:9
-msgid "Frappe HR"
+msgid "nts HR"
 msgstr ""
 
 #. Label of the frequency (Select) field in DocType 'Shift Schedule'
@@ -6823,8 +6823,8 @@ msgid "If set, the job opening will be closed automatically after this date"
 msgstr "Si défini, l'ouverture de la tâche sera fermée automatiquement après cette date"
 
 #: hrms/patches/v15_0/notify_about_loan_app_separation.py:17
-msgid "If you are using loans in salary slips, please install the {0} app from Frappe Cloud Marketplace or GitHub to continue using loan integration with payroll."
-msgstr "Si vous utilisez des prêts dans des feuillets de salaire, veuillez installer l'application {0} à partir de Frappe Cloud Marketplace ou GitHub pour continuer à utiliser l'intégration de crédit avec la paie."
+msgid "If you are using loans in salary slips, please install the {0} app from nts Cloud Marketplace or GitHub to continue using loan integration with payroll."
+msgstr "Si vous utilisez des prêts dans des feuillets de salaire, veuillez installer l'application {0} à partir de nts Cloud Marketplace ou GitHub pour continuer à utiliser l'intégration de crédit avec la paie."
 
 #. Label of the upload_attendance_data (Section Break) field in DocType 'Upload
 #. Attendance'
@@ -7032,7 +7032,7 @@ msgstr ""
 
 #: frontend/src/components/InstallPrompt.vue:5
 #: frontend/src/components/InstallPrompt.vue:28
-msgid "Install Frappe HR"
+msgid "Install nts HR"
 msgstr ""
 
 #: hrms/hr/doctype/leave_application/leave_application.py:436
@@ -8250,7 +8250,7 @@ msgid "Login Failed"
 msgstr ""
 
 #: frontend/src/views/Login.vue:8
-msgid "Login to Frappe HR"
+msgid "Login to nts HR"
 msgstr ""
 
 #. Label of the longitude (Float) field in DocType 'Employee Checkin'
@@ -14132,8 +14132,8 @@ msgid "Violet"
 msgstr ""
 
 #: hrms/patches/v15_0/notify_about_loan_app_separation.py:16
-msgid "WARNING: Loan Management module has been separated from ERPNext."
-msgstr "AVERTISSEMENT : Le module de gestion des prêts a été séparé d'ERPNext."
+msgid "WARNING: Loan Management module has been separated from prodman."
+msgstr "AVERTISSEMENT : Le module de gestion des prêts a été séparé d'prodman."
 
 #: hrms/setup.py:392
 msgid "Walk In"

@@ -1,16 +1,16 @@
-# Copyright (c) 2017, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2017, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 import json
 
 from dateutil.relativedelta import relativedelta
 
-import frappe
-from frappe import _
-from frappe.desk.reportview import get_match_cond
-from frappe.model.document import Document
-from frappe.query_builder.functions import Coalesce, Count
-from frappe.utils import (
+import nts
+from nts import _
+from nts.desk.reportview import get_match_cond
+from nts.model.document import Document
+from nts.query_builder.functions import Coalesce, Count
+from nts.utils import (
 	DATE_FORMAT,
 	add_days,
 	add_to_date,
@@ -22,11 +22,11 @@ from frappe.utils import (
 	getdate,
 )
 
-import erpnext
-from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
+import prodman
+from prodman.accounts.doctype.accounting_dimension.accounting_dimension import (
 	get_accounting_dimensions,
 )
-from erpnext.accounts.utils import get_fiscal_year
+from prodman.accounts.utils import get_fiscal_year
 
 from hrms.payroll.doctype.salary_slip.salary_slip_loan_utils import if_lending_app_installed
 from hrms.payroll.doctype.salary_withholding.salary_withholding import link_bank_entry_in_salary_withholdings
@@ -38,7 +38,7 @@ class PayrollEntry(Document):
 			return
 
 		# check if salary slips were manually submitted
-		entries = frappe.db.count("Salary Slip", {"payroll_entry": self.name, "docstatus": 1}, ["name"])
+		entries = nts.db.count("Salary Slip", {"payroll_entry": self.name, "docstatus": 1}, ["name"])
 		if cint(entries) == len(self.employees):
 			self.set_onload("submitted_ss", True)
 
@@ -59,7 +59,7 @@ class PayrollEntry(Document):
 		self.validate_existing_salary_slips()
 		self.validate_payroll_payable_account()
 		if self.get_employees_with_unmarked_attendance():
-			frappe.throw(_("Cannot submit. Attendance is not marked for some employees."))
+			nts.throw(_("Cannot submit. Attendance is not marked for some employees."))
 
 	def on_submit(self):
 		self.set_status(update=True, status="Submitted")
@@ -70,10 +70,10 @@ class PayrollEntry(Document):
 			return
 
 		existing_salary_slips = []
-		SalarySlip = frappe.qb.DocType("Salary Slip")
+		SalarySlip = nts.qb.DocType("Salary Slip")
 
 		existing_salary_slips = (
-			frappe.qb.from_(SalarySlip)
+			nts.qb.from_(SalarySlip)
 			.select(SalarySlip.employee, SalarySlip.name)
 			.where(
 				(SalarySlip.employee.isin([emp.employee for emp in self.employees]))
@@ -85,23 +85,23 @@ class PayrollEntry(Document):
 
 		if len(existing_salary_slips):
 			msg = _("Salary Slip already exists for {0} for the given dates").format(
-				comma_and([frappe.bold(d.employee) for d in existing_salary_slips])
+				comma_and([nts.bold(d.employee) for d in existing_salary_slips])
 			)
 			msg += "<br><br>"
 			msg += _("Reference: {0}").format(
 				comma_and([get_link_to_form("Salary Slip", d.name) for d in existing_salary_slips])
 			)
-			frappe.throw(
+			nts.throw(
 				msg,
 				title=_("Duplicate Entry"),
 			)
 
 	def validate_payroll_payable_account(self):
-		if frappe.db.get_value("Account", self.payroll_payable_account, "account_type"):
-			frappe.throw(
+		if nts.db.get_value("Account", self.payroll_payable_account, "account_type"):
+			nts.throw(
 				_(
 					"Account type cannot be set for payroll payable account {0}, please remove and try again"
-				).format(frappe.bold(get_link_to_form("Account", self.payroll_payable_account)))
+				).format(nts.bold(get_link_to_form("Account", self.payroll_payable_account)))
 			)
 
 	def on_cancel(self):
@@ -123,7 +123,7 @@ class PayrollEntry(Document):
 			msg += _(
 				"In case of any error during this background process, the system will add a comment about the error on this Payroll Entry and revert to the Submitted status"
 			)
-			frappe.msgprint(
+			nts.msgprint(
 				msg,
 				indicator="blue",
 				title=_("Cancellation Queued"),
@@ -138,11 +138,11 @@ class PayrollEntry(Document):
 		# cancel & delete salary slips
 		for salary_slip in salary_slips:
 			if salary_slip.docstatus == 1:
-				frappe.get_doc("Salary Slip", salary_slip.name).cancel()
-			frappe.delete_doc("Salary Slip", salary_slip.name)
+				nts.get_doc("Salary Slip", salary_slip.name).cancel()
+			nts.delete_doc("Salary Slip", salary_slip.name)
 
 	def cancel_linked_journal_entries(self):
-		journal_entries = frappe.get_all(
+		journal_entries = nts.get_all(
 			"Journal Entry Account",
 			{"reference_type": self.doctype, "reference_name": self.name, "docstatus": 1},
 			pluck="parent",
@@ -151,13 +151,13 @@ class PayrollEntry(Document):
 
 		# cancel Journal Entries
 		for je in journal_entries:
-			frappe.get_doc("Journal Entry", je).cancel()
+			nts.get_doc("Journal Entry", je).cancel()
 
 	def get_linked_salary_slips(self):
-		return frappe.get_all("Salary Slip", {"payroll_entry": self.name}, ["name", "docstatus"])
+		return nts.get_all("Salary Slip", {"payroll_entry": self.name}, ["name", "docstatus"])
 
 	def make_filters(self):
-		filters = frappe._dict(
+		filters = nts._dict(
 			company=self.company,
 			branch=self.branch,
 			department=self.department,
@@ -175,7 +175,7 @@ class PayrollEntry(Document):
 
 		return filters
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def fill_employee_details(self):
 		filters = self.make_filters()
 		employees = get_employee_list(filters=filters, as_dict=True, ignore_match_conditions=True)
@@ -185,21 +185,21 @@ class PayrollEntry(Document):
 			error_msg = _(
 				"No employees found for the mentioned criteria:<br>Company: {0}<br> Currency: {1}<br>Payroll Payable Account: {2}"
 			).format(
-				frappe.bold(self.company),
-				frappe.bold(self.currency),
-				frappe.bold(self.payroll_payable_account),
+				nts.bold(self.company),
+				nts.bold(self.currency),
+				nts.bold(self.payroll_payable_account),
 			)
 			if self.branch:
-				error_msg += "<br>" + _("Branch: {0}").format(frappe.bold(self.branch))
+				error_msg += "<br>" + _("Branch: {0}").format(nts.bold(self.branch))
 			if self.department:
-				error_msg += "<br>" + _("Department: {0}").format(frappe.bold(self.department))
+				error_msg += "<br>" + _("Department: {0}").format(nts.bold(self.department))
 			if self.designation:
-				error_msg += "<br>" + _("Designation: {0}").format(frappe.bold(self.designation))
+				error_msg += "<br>" + _("Designation: {0}").format(nts.bold(self.designation))
 			if self.start_date:
-				error_msg += "<br>" + _("Start date: {0}").format(frappe.bold(self.start_date))
+				error_msg += "<br>" + _("Start date: {0}").format(nts.bold(self.start_date))
 			if self.end_date:
-				error_msg += "<br>" + _("End date: {0}").format(frappe.bold(self.end_date))
-			frappe.throw(error_msg, title=_("No employees found"))
+				error_msg += "<br>" + _("End date: {0}").format(nts.bold(self.end_date))
+			nts.throw(error_msg, title=_("No employees found"))
 
 		self.set("employees", employees)
 		self.number_of_employees = len(self.employees)
@@ -214,7 +214,7 @@ class PayrollEntry(Document):
 			if employee.employee in withheld_salaries:
 				employee.is_salary_withheld = 1
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def create_salary_slips(self):
 		"""
 		Creates salary slip for selected employees if already not created
@@ -223,7 +223,7 @@ class PayrollEntry(Document):
 		employees = [emp.employee for emp in self.employees]
 
 		if employees:
-			args = frappe._dict(
+			args = nts._dict(
 				{
 					"salary_slip_based_on_timesheet": self.salary_slip_based_on_timesheet,
 					"payroll_frequency": self.payroll_frequency,
@@ -238,16 +238,16 @@ class PayrollEntry(Document):
 					"currency": self.currency,
 				}
 			)
-			if len(employees) > 30 or frappe.flags.enqueue_payroll_entry:
+			if len(employees) > 30 or nts.flags.enqueue_payroll_entry:
 				self.db_set("status", "Queued")
-				frappe.enqueue(
+				nts.enqueue(
 					create_salary_slips_for_employees,
 					timeout=3000,
 					employees=employees,
 					args=args,
 					publish_progress=False,
 				)
-				frappe.msgprint(
+				nts.msgprint(
 					_("Salary Slip creation is queued. It may take a few minutes"),
 					alert=True,
 					indicator="blue",
@@ -262,9 +262,9 @@ class PayrollEntry(Document):
 		Returns list of salary slips based on selected criteria
 		"""
 
-		ss = frappe.qb.DocType("Salary Slip")
+		ss = nts.qb.DocType("Salary Slip")
 		ss_list = (
-			frappe.qb.from_(ss)
+			nts.qb.from_(ss)
 			.select(ss.name, ss.salary_structure)
 			.where(
 				(ss.docstatus == ss_status)
@@ -278,21 +278,21 @@ class PayrollEntry(Document):
 
 		return ss_list
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def submit_salary_slips(self):
 		self.check_permission("write")
 		salary_slips = self.get_sal_slip_list(ss_status=0)
 
-		if len(salary_slips) > 30 or frappe.flags.enqueue_payroll_entry:
+		if len(salary_slips) > 30 or nts.flags.enqueue_payroll_entry:
 			self.db_set("status", "Queued")
-			frappe.enqueue(
+			nts.enqueue(
 				submit_salary_slips_for_employees,
 				timeout=3000,
 				payroll_entry=self,
 				salary_slips=salary_slips,
 				publish_progress=False,
 			)
-			frappe.msgprint(
+			nts.msgprint(
 				_("Salary Slip submission is queued. It may take a few minutes"),
 				alert=True,
 				indicator="blue",
@@ -301,12 +301,12 @@ class PayrollEntry(Document):
 			submit_salary_slips_for_employees(self, salary_slips, publish_progress=False)
 
 	def email_salary_slip(self, submitted_ss):
-		if frappe.db.get_single_value("Payroll Settings", "email_salary_slip_to_employee"):
+		if nts.db.get_single_value("Payroll Settings", "email_salary_slip_to_employee"):
 			for ss in submitted_ss:
 				ss.email_salary_slip()
 
 	def get_salary_component_account(self, salary_component):
-		account = frappe.db.get_value(
+		account = nts.db.get_value(
 			"Salary Component Account",
 			{"parent": salary_component, "company": self.company},
 			"account",
@@ -314,7 +314,7 @@ class PayrollEntry(Document):
 		)
 
 		if not account:
-			frappe.throw(
+			nts.throw(
 				_("Please set account in Salary Component {0}").format(
 					get_link_to_form("Salary Component", salary_component)
 				)
@@ -326,10 +326,10 @@ class PayrollEntry(Document):
 		salary_slips = self.get_sal_slip_list(ss_status=1, as_dict=True)
 
 		if salary_slips:
-			ss = frappe.qb.DocType("Salary Slip")
-			ssd = frappe.qb.DocType("Salary Detail")
+			ss = nts.qb.DocType("Salary Slip")
+			ssd = nts.qb.DocType("Salary Detail")
 			salary_components = (
-				frappe.qb.from_(ss)
+				nts.qb.from_(ss)
 				.join(ssd)
 				.on(ss.name == ssd.parent)
 				.select(
@@ -386,7 +386,7 @@ class PayrollEntry(Document):
 	def should_add_component_to_accrual_jv(self, component_type: str, item: dict) -> bool:
 		add_component_to_accrual_jv = True
 		if component_type == "earnings":
-			is_flexible_benefit, only_tax_impact = frappe.get_cached_value(
+			is_flexible_benefit, only_tax_impact = nts.get_cached_value(
 				"Salary Component", item["salary_component"], ["is_flexible_benefit", "only_tax_impact"]
 			)
 			if cint(is_flexible_benefit) and cint(only_tax_impact):
@@ -396,7 +396,7 @@ class PayrollEntry(Document):
 
 	def get_advance_deduction(self, component_type: str, item: dict) -> str | None:
 		if component_type == "deductions" and item.additional_salary:
-			ref_doctype, ref_docname = frappe.db.get_value(
+			ref_doctype, ref_docname = nts.db.get_value(
 				"Additional Salary",
 				item.additional_salary,
 				["ref_doctype", "ref_docname"],
@@ -469,10 +469,10 @@ class PayrollEntry(Document):
 			self.employee_cost_centers = {}
 
 		if not self.employee_cost_centers.get(employee):
-			SalaryStructureAssignment = frappe.qb.DocType("Salary Structure Assignment")
-			EmployeeCostCenter = frappe.qb.DocType("Employee Cost Center")
+			SalaryStructureAssignment = nts.qb.DocType("Salary Structure Assignment")
+			EmployeeCostCenter = nts.qb.DocType("Employee Cost Center")
 			assignment_subquery = (
-				frappe.qb.from_(SalaryStructureAssignment)
+				nts.qb.from_(SalaryStructureAssignment)
 				.select(SalaryStructureAssignment.name)
 				.where(
 					(SalaryStructureAssignment.employee == employee)
@@ -480,24 +480,24 @@ class PayrollEntry(Document):
 					& (SalaryStructureAssignment.docstatus == 1)
 					& (SalaryStructureAssignment.from_date <= self.end_date)
 				)
-				.orderby(SalaryStructureAssignment.from_date, order=frappe.qb.desc)
+				.orderby(SalaryStructureAssignment.from_date, order=nts.qb.desc)
 				.limit(1)
 			)
 			cost_centers = dict(
 				(
-					frappe.qb.from_(EmployeeCostCenter)
+					nts.qb.from_(EmployeeCostCenter)
 					.select(EmployeeCostCenter.cost_center, EmployeeCostCenter.percentage)
 					.where(EmployeeCostCenter.parent == assignment_subquery)
 				).run(as_list=True)
 			)
 
 			if not cost_centers:
-				default_cost_center, department = frappe.get_cached_value(
+				default_cost_center, department = nts.get_cached_value(
 					"Employee", employee, ["payroll_cost_center", "department"]
 				)
 
 				if not default_cost_center and department:
-					default_cost_center = frappe.get_cached_value(
+					default_cost_center = nts.get_cached_value(
 						"Department", department, "payroll_cost_center"
 					)
 
@@ -523,7 +523,7 @@ class PayrollEntry(Document):
 
 	def make_accrual_jv_entry(self, submitted_salary_slips):
 		self.check_permission("write")
-		employee_wise_accounting_enabled = frappe.db.get_single_value(
+		employee_wise_accounting_enabled = nts.db.get_single_value(
 			"Payroll Settings", "process_payroll_accounting_entry_based_on_employee"
 		)
 		self.employee_based_payroll_payable_entries = {}
@@ -545,14 +545,14 @@ class PayrollEntry(Document):
 			or {}
 		)
 
-		precision = frappe.get_precision("Journal Entry Account", "debit_in_account_currency")
+		precision = nts.get_precision("Journal Entry Account", "debit_in_account_currency")
 
 		if earnings or deductions:
 			accounts = []
 			currencies = []
 			payable_amount = 0
 			accounting_dimensions = get_accounting_dimensions() or []
-			company_currency = erpnext.get_company_currency(self.company)
+			company_currency = prodman.get_company_currency(self.company)
 
 			payable_amount = self.get_payable_amount_for_earnings_and_deductions(
 				accounts,
@@ -611,7 +611,7 @@ class PayrollEntry(Document):
 		if len(currencies) > 1:
 			multi_currency = 1
 
-		journal_entry = frappe.new_doc("Journal Entry")
+		journal_entry = nts.new_doc("Journal Entry")
 		journal_entry.voucher_type = voucher_type
 		journal_entry.user_remark = user_remark
 		journal_entry.company = self.company
@@ -634,7 +634,7 @@ class PayrollEntry(Document):
 
 		except Exception as e:
 			if type(e) in (str, list, tuple):
-				frappe.msgprint(e)
+				nts.msgprint(e)
 
 			self.log_error("Journal Entry creation against Salary Slip failed")
 			raise
@@ -828,7 +828,7 @@ class PayrollEntry(Document):
 	def get_amount_and_exchange_rate_for_journal_entry(self, account, amount, company_currency, currencies):
 		conversion_rate = 1
 		exchange_rate = self.exchange_rate
-		account_currency = frappe.db.get_value("Account", account, "account_currency")
+		account_currency = nts.db.get_value("Account", account, "account_currency")
 
 		if account_currency not in currencies:
 			currencies.append(account_currency)
@@ -841,13 +841,13 @@ class PayrollEntry(Document):
 
 		return exchange_rate, amount
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def has_bank_entries(self) -> dict[str, bool]:
-		je = frappe.qb.DocType("Journal Entry")
-		jea = frappe.qb.DocType("Journal Entry Account")
+		je = nts.qb.DocType("Journal Entry")
+		jea = nts.qb.DocType("Journal Entry Account")
 
 		bank_entries = (
-			frappe.qb.from_(je)
+			nts.qb.from_(je)
 			.inner_join(jea)
 			.on(je.name == jea.parent)
 			.select(je.name)
@@ -865,11 +865,11 @@ class PayrollEntry(Document):
 			),
 		}
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def make_bank_entry(self, for_withheld_salaries=False):
 		self.check_permission("write")
 		self.employee_based_payroll_payable_entries = {}
-		employee_wise_accounting_enabled = frappe.db.get_single_value(
+		employee_wise_accounting_enabled = nts.db.get_single_value(
 			"Payroll Settings", "process_payroll_accounting_entry_based_on_employee"
 		)
 
@@ -883,7 +883,7 @@ class PayrollEntry(Document):
 					only_tax_impact,
 					create_separate_je,
 					statistical_component,
-				) = frappe.db.get_value(
+				) = nts.db.get_value(
 					"Salary Component",
 					salary_detail.salary_component,
 					(
@@ -911,7 +911,7 @@ class PayrollEntry(Document):
 						salary_slip_total += salary_detail.amount
 
 			if salary_detail.parentfield == "deductions":
-				statistical_component = frappe.db.get_value(
+				statistical_component = nts.db.get_value(
 					"Salary Component", salary_detail.salary_component, "statistical_component", cache=True
 				)
 
@@ -940,11 +940,11 @@ class PayrollEntry(Document):
 		return bank_entry
 
 	def get_salary_slip_details(self, for_withheld_salaries=False):
-		SalarySlip = frappe.qb.DocType("Salary Slip")
-		SalaryDetail = frappe.qb.DocType("Salary Detail")
+		SalarySlip = nts.qb.DocType("Salary Slip")
+		SalaryDetail = nts.qb.DocType("Salary Detail")
 
 		query = (
-			frappe.qb.from_(SalarySlip)
+			nts.qb.from_(SalarySlip)
 			.join(SalaryDetail)
 			.on(SalarySlip.name == SalaryDetail.parent)
 			.select(
@@ -964,7 +964,7 @@ class PayrollEntry(Document):
 			)
 		)
 
-		if "lending" in frappe.get_installed_apps():
+		if "lending" in nts.get_installed_apps():
 			query = query.select(SalarySlip.total_loan_repayment)
 
 		if for_withheld_salaries:
@@ -992,11 +992,11 @@ class PayrollEntry(Document):
 
 	def set_accounting_entries_for_bank_entry(self, je_payment_amount, user_remark):
 		payroll_payable_account = self.payroll_payable_account
-		precision = frappe.get_precision("Journal Entry Account", "debit_in_account_currency")
+		precision = nts.get_precision("Journal Entry Account", "debit_in_account_currency")
 
 		accounts = []
 		currencies = []
-		company_currency = erpnext.get_company_currency(self.company)
+		company_currency = prodman.get_company_currency(self.company)
 		accounting_dimensions = get_accounting_dimensions() or []
 
 		exchange_rate, amount = self.get_amount_and_exchange_rate_for_journal_entry(
@@ -1079,9 +1079,9 @@ class PayrollEntry(Document):
 		)
 
 	def set_journal_entry_in_salary_slips(self, submitted_salary_slips, jv_name=None):
-		SalarySlip = frappe.qb.DocType("Salary Slip")
+		SalarySlip = nts.qb.DocType("Salary Slip")
 		(
-			frappe.qb.update(SalarySlip)
+			nts.qb.update(SalarySlip)
 			.set(SalarySlip.journal_entry, jv_name)
 			.where(SalarySlip.name.isin([salary_slip.name for salary_slip in submitted_salary_slips]))
 		).run()
@@ -1091,14 +1091,14 @@ class PayrollEntry(Document):
 			get_start_end_dates(self.payroll_frequency, self.start_date or self.posting_date, self.company)
 		)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_employees_with_unmarked_attendance(self) -> list[dict] | None:
 		if not self.validate_attendance:
 			return
 
 		unmarked_attendance = []
 		employee_details = self.get_employee_and_attendance_details()
-		default_holiday_list = frappe.db.get_value(
+		default_holiday_list = nts.db.get_value(
 			"Company", self.company, "default_holiday_list", cache=True
 		)
 
@@ -1139,11 +1139,11 @@ class PayrollEntry(Document):
 		"""
 		employees = [emp.employee for emp in self.employees]
 
-		Employee = frappe.qb.DocType("Employee")
-		Attendance = frappe.qb.DocType("Attendance")
+		Employee = nts.qb.DocType("Employee")
+		Attendance = nts.qb.DocType("Attendance")
 
 		return (
-			frappe.qb.from_(Employee)
+			nts.qb.from_(Employee)
 			.left_join(Attendance)
 			.on(
 				(Employee.name == Attendance.employee)
@@ -1181,7 +1181,7 @@ class PayrollEntry(Document):
 		if key in self._holidays_between_dates:
 			return self._holidays_between_dates[key]
 
-		holidays = frappe.db.get_all(
+		holidays = nts.db.get_all(
 			"Holiday",
 			filters={"parent": holiday_list, "holiday_date": ("between", [start_date, end_date])},
 			fields=["COUNT(*) as holidays_count"],
@@ -1196,10 +1196,10 @@ class PayrollEntry(Document):
 def get_salary_structure(
 	company: str, currency: str, salary_slip_based_on_timesheet: int, payroll_frequency: str
 ) -> list[str]:
-	SalaryStructure = frappe.qb.DocType("Salary Structure")
+	SalaryStructure = nts.qb.DocType("Salary Structure")
 
 	query = (
-		frappe.qb.from_(SalaryStructure)
+		nts.qb.from_(SalaryStructure)
 		.select(SalaryStructure.name)
 		.where(
 			(SalaryStructure.docstatus == 1)
@@ -1227,11 +1227,11 @@ def get_filtered_employees(
 	offset=None,
 	ignore_match_conditions=False,
 ) -> list:
-	SalaryStructureAssignment = frappe.qb.DocType("Salary Structure Assignment")
-	Employee = frappe.qb.DocType("Employee")
+	SalaryStructureAssignment = nts.qb.DocType("Salary Structure Assignment")
+	Employee = nts.qb.DocType("Employee")
 
 	query = (
-		frappe.qb.from_(Employee)
+		nts.qb.from_(Employee)
 		.join(SalaryStructureAssignment)
 		.on(Employee.name == SalaryStructureAssignment.employee)
 		.where(
@@ -1310,10 +1310,10 @@ def set_match_conditions(query, qb_object):
 
 
 def remove_payrolled_employees(emp_list, start_date, end_date):
-	SalarySlip = frappe.qb.DocType("Salary Slip")
+	SalarySlip = nts.qb.DocType("Salary Slip")
 
 	employees_with_payroll = (
-		frappe.qb.from_(SalarySlip)
+		nts.qb.from_(SalarySlip)
 		.select(SalarySlip.employee)
 		.where(
 			(SalarySlip.docstatus == 1)
@@ -1325,7 +1325,7 @@ def remove_payrolled_employees(emp_list, start_date, end_date):
 	return [emp_list[emp] for emp in emp_list if emp not in employees_with_payroll]
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_start_end_dates(payroll_frequency, start_date=None, company=None):
 	"""Returns dict of start and end dates for given payroll frequency based on start_date"""
 
@@ -1353,7 +1353,7 @@ def get_start_end_dates(payroll_frequency, start_date=None, company=None):
 	if payroll_frequency == "Daily":
 		end_date = start_date
 
-	return frappe._dict({"start_date": start_date, "end_date": end_date})
+	return nts._dict({"start_date": start_date, "end_date": end_date})
 
 
 def get_frequency_kwargs(frequency_name):
@@ -1366,7 +1366,7 @@ def get_frequency_kwargs(frequency_name):
 	return frequency_dict.get(frequency_name)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_end_date(start_date, frequency):
 	start_date = getdate(start_date)
 	frequency = frequency.lower() if frequency else "monthly"
@@ -1382,7 +1382,7 @@ def get_end_date(start_date, frequency):
 
 
 def get_month_details(year, month):
-	ysd = frappe.db.get_value("Fiscal Year", year, "year_start_date")
+	ysd = nts.db.get_value("Fiscal Year", year, "year_start_date")
 	if ysd:
 		import calendar
 		import datetime
@@ -1395,7 +1395,7 @@ def get_month_details(year, month):
 		mid_start = datetime.date(msd.year, cint(month), 16)  # month mid start date
 		mid_end = datetime.date(msd.year, cint(month), 15)  # month mid end date
 		med = datetime.date(msd.year, cint(month), month_days)  # month end date
-		return frappe._dict(
+		return nts._dict(
 			{
 				"year": msd.year,
 				"month_start_date": msd,
@@ -1406,14 +1406,14 @@ def get_month_details(year, month):
 			}
 		)
 	else:
-		frappe.throw(_("Fiscal Year {0} not found").format(year))
+		nts.throw(_("Fiscal Year {0} not found").format(year))
 
 
 def log_payroll_failure(process, payroll_entry, error):
-	error_log = frappe.log_error(
+	error_log = nts.log_error(
 		title=_("Salary Slip {0} failed for Payroll Entry {1}").format(process, payroll_entry.name)
 	)
-	message_log = frappe.message_log.pop() if frappe.message_log else str(error)
+	message_log = nts.message_log.pop() if nts.message_log else str(error)
 
 	try:
 		if isinstance(message_log, str):
@@ -1431,7 +1431,7 @@ def log_payroll_failure(process, payroll_entry, error):
 
 
 def create_salary_slips_for_employees(employees, args, publish_progress=True):
-	payroll_entry = frappe.get_cached_doc("Payroll Entry", args.payroll_entry)
+	payroll_entry = nts.get_cached_doc("Payroll Entry", args.payroll_entry)
 
 	try:
 		salary_slips_exist_for = get_existing_salary_slips(employees, args)
@@ -1440,11 +1440,11 @@ def create_salary_slips_for_employees(employees, args, publish_progress=True):
 		employees = list(set(employees) - set(salary_slips_exist_for))
 		for emp in employees:
 			args.update({"doctype": "Salary Slip", "employee": emp})
-			frappe.get_doc(args).insert()
+			nts.get_doc(args).insert()
 
 			count += 1
 			if publish_progress:
-				frappe.publish_progress(
+				nts.publish_progress(
 					count * 100 / len(employees),
 					title=_("Creating Salary Slips..."),
 				)
@@ -1452,32 +1452,32 @@ def create_salary_slips_for_employees(employees, args, publish_progress=True):
 		payroll_entry.db_set({"status": "Submitted", "salary_slips_created": 1, "error_message": ""})
 
 		if salary_slips_exist_for:
-			frappe.msgprint(
+			nts.msgprint(
 				_(
 					"Salary Slips already exist for employees {}, and will not be processed by this payroll."
-				).format(frappe.bold(", ".join(emp for emp in salary_slips_exist_for))),
+				).format(nts.bold(", ".join(emp for emp in salary_slips_exist_for))),
 				title=_("Message"),
 				indicator="orange",
 			)
 
 	except Exception as e:
-		frappe.db.rollback()
+		nts.db.rollback()
 		log_payroll_failure("creation", payroll_entry, e)
 
 	finally:
-		frappe.db.commit()  # nosemgrep
-		frappe.publish_realtime("completed_salary_slip_creation", user=frappe.session.user)
+		nts.db.commit()  # nosemgrep
+		nts.publish_realtime("completed_salary_slip_creation", user=nts.session.user)
 
 
 def show_payroll_submission_status(submitted, unsubmitted, payroll_entry):
 	if not submitted and not unsubmitted:
-		frappe.msgprint(
+		nts.msgprint(
 			_(
 				"No salary slip found to submit for the above selected criteria OR salary slip already submitted"
 			)
 		)
 	elif submitted and not unsubmitted:
-		frappe.msgprint(
+		nts.msgprint(
 			_("Salary Slips submitted for period from {0} to {1}").format(
 				payroll_entry.start_date, payroll_entry.end_date
 			),
@@ -1485,7 +1485,7 @@ def show_payroll_submission_status(submitted, unsubmitted, payroll_entry):
 			indicator="green",
 		)
 	elif unsubmitted:
-		frappe.msgprint(
+		nts.msgprint(
 			_("Could not submit some Salary Slips: {}").format(
 				", ".join(get_link_to_form("Salary Slip", entry) for entry in unsubmitted)
 			),
@@ -1495,10 +1495,10 @@ def show_payroll_submission_status(submitted, unsubmitted, payroll_entry):
 
 
 def get_existing_salary_slips(employees, args):
-	SalarySlip = frappe.qb.DocType("Salary Slip")
+	SalarySlip = nts.qb.DocType("Salary Slip")
 
 	return (
-		frappe.qb.from_(SalarySlip)
+		nts.qb.from_(SalarySlip)
 		.select(SalarySlip.employee)
 		.distinct()
 		.where(
@@ -1516,23 +1516,23 @@ def submit_salary_slips_for_employees(payroll_entry, salary_slips, publish_progr
 	try:
 		submitted = []
 		unsubmitted = []
-		frappe.flags.via_payroll_entry = True
+		nts.flags.via_payroll_entry = True
 		count = 0
 
 		for entry in salary_slips:
-			salary_slip = frappe.get_doc("Salary Slip", entry[0])
+			salary_slip = nts.get_doc("Salary Slip", entry[0])
 			if salary_slip.net_pay < 0:
 				unsubmitted.append(entry[0])
 			else:
 				try:
 					salary_slip.submit()
 					submitted.append(salary_slip)
-				except frappe.ValidationError:
+				except nts.ValidationError:
 					unsubmitted.append(entry[0])
 
 			count += 1
 			if publish_progress:
-				frappe.publish_progress(
+				nts.publish_progress(
 					count * 100 / len(salary_slips), title=_("Submitting Salary Slips...")
 				)
 
@@ -1544,21 +1544,21 @@ def submit_salary_slips_for_employees(payroll_entry, salary_slips, publish_progr
 		show_payroll_submission_status(submitted, unsubmitted, payroll_entry)
 
 	except Exception as e:
-		frappe.db.rollback()
+		nts.db.rollback()
 		log_payroll_failure("submission", payroll_entry, e)
 
 	finally:
-		frappe.db.commit()  # nosemgrep
-		frappe.publish_realtime("completed_salary_slip_submission", user=frappe.session.user)
+		nts.db.commit()  # nosemgrep
+		nts.publish_realtime("completed_salary_slip_submission", user=nts.session.user)
 
-	frappe.flags.via_payroll_entry = False
+	nts.flags.via_payroll_entry = False
 
 
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
+@nts.whitelist()
+@nts.validate_and_sanitize_search_inputs
 def get_payroll_entries_for_jv(doctype, txt, searchfield, start, page_len, filters):
-	# nosemgrep: frappe-semgrep-rules.rules.frappe-using-db-sql
-	return frappe.db.sql(
+	# nosemgrep: nts-semgrep-rules.rules.nts-using-db-sql
+	return nts.db.sql(
 		f"""
 		select name from `tabPayroll Entry`
 		where `{searchfield}` LIKE %(txt)s
@@ -1571,7 +1571,7 @@ def get_payroll_entries_for_jv(doctype, txt, searchfield, start, page_len, filte
 
 
 def get_employee_list(
-	filters: frappe._dict,
+	filters: nts._dict,
 	searchfield=None,
 	search_string=None,
 	fields: list[str] | None = None,
@@ -1610,13 +1610,13 @@ def get_employee_list(
 	return remove_payrolled_employees(employees_to_check, filters.start_date, filters.end_date)
 
 
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
+@nts.whitelist()
+@nts.validate_and_sanitize_search_inputs
 def employee_query(doctype, txt, searchfield, start, page_len, filters):
-	filters = frappe._dict(filters)
+	filters = nts._dict(filters)
 
 	if not filters.payroll_frequency:
-		frappe.throw(_("Select Payroll Frequency."))
+		nts.throw(_("Select Payroll Frequency."))
 
 	employee_list = get_employee_list(
 		filters,
@@ -1637,10 +1637,10 @@ def get_salary_withholdings(
 	employee: str | None = None,
 	pluck: str | None = None,
 ) -> list[str] | list[dict]:
-	Withholding = frappe.qb.DocType("Salary Withholding")
-	WithholdingCycle = frappe.qb.DocType("Salary Withholding Cycle")
+	Withholding = nts.qb.DocType("Salary Withholding")
+	WithholdingCycle = nts.qb.DocType("Salary Withholding Cycle")
 	withheld_salaries = (
-		frappe.qb.from_(Withholding)
+		nts.qb.from_(Withholding)
 		.join(WithholdingCycle)
 		.on(WithholdingCycle.parent == Withholding.name)
 		.select(

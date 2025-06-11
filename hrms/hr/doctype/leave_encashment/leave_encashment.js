@@ -1,13 +1,13 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.provide("erpnext.accounts.dimensions");
+nts.provide("prodman.accounts.dimensions");
 
-frappe.ui.form.on("Leave Encashment", {
+nts.ui.form.on("Leave Encashment", {
 	onload: function (frm) {
 		// Ignore cancellation of doctype on cancel all.
 		frm.ignore_doctypes_on_cancel_all = ["Leave Ledger Entry"];
-		erpnext.accounts.dimensions.setup_dimension_filters(frm, frm.doctype);
+		prodman.accounts.dimensions.setup_dimension_filters(frm, frm.doctype);
 	},
 	setup: function (frm) {
 		frm.set_query("leave_type", function () {
@@ -27,9 +27,9 @@ frappe.ui.form.on("Leave Encashment", {
 
 		frm.set_query("payable_account", function () {
 			if (!frm.doc.employee) {
-				frappe.msgprint(__("Please select employee first"));
+				nts.msgprint(__("Please select employee first"));
 			}
-			let company_currency = erpnext.get_currency(frm.doc.company);
+			let company_currency = prodman.get_currency(frm.doc.company);
 			let currencies = [company_currency];
 			if (frm.doc.currency && frm.doc.currency != company_currency) {
 				currencies.push(frm.doc.currency);
@@ -45,7 +45,7 @@ frappe.ui.form.on("Leave Encashment", {
 	},
 	refresh: function (frm) {
 		cur_frm.set_intro("");
-		if (frm.doc.__islocal && !frappe.user_roles.includes("Employee")) {
+		if (frm.doc.__islocal && !nts.user_roles.includes("Employee")) {
 			frm.set_intro(__("Fill the form and save it"));
 		}
 
@@ -67,14 +67,14 @@ frappe.ui.form.on("Leave Encashment", {
 	},
 	employee: function (frm) {
 		if (frm.doc.employee) {
-			frappe.run_serially([
+			nts.run_serially([
 				() => frm.trigger("get_employee_currency"),
 				() => frm.trigger("get_leave_details_for_encashment"),
 			]);
 		}
 	},
 	company: function (frm) {
-		erpnext.accounts.dimensions.update_dimension(frm, frm.doctype);
+		prodman.accounts.dimensions.update_dimension(frm, frm.doctype);
 	},
 	leave_type: function (frm) {
 		frm.trigger("get_leave_details_for_encashment");
@@ -87,7 +87,7 @@ frappe.ui.form.on("Leave Encashment", {
 		frm.set_value("encashment_days", 0);
 
 		if (frm.doc.docstatus === 0 && frm.doc.employee && frm.doc.leave_type) {
-			return frappe.call({
+			return nts.call({
 				method: "get_leave_details_for_encashment",
 				doc: frm.doc,
 				callback: function (r) {
@@ -98,7 +98,7 @@ frappe.ui.form.on("Leave Encashment", {
 	},
 
 	get_employee_currency: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment.get_employee_currency",
 			args: {
 				employee: frm.doc.employee,
@@ -112,15 +112,15 @@ frappe.ui.form.on("Leave Encashment", {
 		});
 	},
 	make_payment_entry: function (frm) {
-		return frappe.call({
+		return nts.call({
 			method: "hrms.overrides.employee_payment_entry.get_payment_entry_for_employee",
 			args: {
 				dt: frm.doc.doctype,
 				dn: frm.doc.name,
 			},
 			callback: function (r) {
-				var doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				var doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},

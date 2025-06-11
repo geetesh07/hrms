@@ -1,11 +1,11 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import getdate
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import getdate
 
 from hrms.hr.utils import validate_active_employee
 
@@ -14,14 +14,14 @@ class RetentionBonus(Document):
 	def validate(self):
 		validate_active_employee(self.employee)
 		if getdate(self.bonus_payment_date) < getdate():
-			frappe.throw(_("Bonus Payment Date cannot be a past date"))
+			nts.throw(_("Bonus Payment Date cannot be a past date"))
 
 	def on_submit(self):
-		company = frappe.db.get_value("Employee", self.employee, "company")
+		company = nts.db.get_value("Employee", self.employee, "company")
 		additional_salary = self.get_additional_salary()
 
 		if not additional_salary:
-			additional_salary = frappe.new_doc("Additional Salary")
+			additional_salary = nts.new_doc("Additional Salary")
 			additional_salary.employee = self.employee
 			additional_salary.salary_component = self.salary_component
 			additional_salary.amount = self.bonus_amount
@@ -35,26 +35,26 @@ class RetentionBonus(Document):
 
 		else:
 			bonus_added = (
-				frappe.db.get_value("Additional Salary", additional_salary, "amount") + self.bonus_amount
+				nts.db.get_value("Additional Salary", additional_salary, "amount") + self.bonus_amount
 			)
-			frappe.db.set_value("Additional Salary", additional_salary, "amount", bonus_added)
+			nts.db.set_value("Additional Salary", additional_salary, "amount", bonus_added)
 			self.db_set("additional_salary", additional_salary)
 
 	def on_cancel(self):
 		additional_salary = self.get_additional_salary()
 		if additional_salary:
 			bonus_removed = (
-				frappe.db.get_value("Additional Salary", additional_salary, "amount") - self.bonus_amount
+				nts.db.get_value("Additional Salary", additional_salary, "amount") - self.bonus_amount
 			)
 			if bonus_removed == 0:
-				frappe.get_doc("Additional Salary", additional_salary).cancel()
+				nts.get_doc("Additional Salary", additional_salary).cancel()
 			else:
-				frappe.db.set_value("Additional Salary", additional_salary, "amount", bonus_removed)
+				nts.db.set_value("Additional Salary", additional_salary, "amount", bonus_removed)
 
 			# self.db_set('additional_salary', '')
 
 	def get_additional_salary(self):
-		return frappe.db.exists(
+		return nts.db.exists(
 			"Additional Salary",
 			{
 				"employee": self.employee,

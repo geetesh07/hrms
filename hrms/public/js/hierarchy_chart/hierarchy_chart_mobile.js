@@ -17,7 +17,7 @@ hrms.HierarchyChartMobile = class {
 			overflow: "auto",
 			position: "relative",
 		});
-		this.page.main.addClass("frappe-card");
+		this.page.main.addClass("nts-card");
 
 		this.nodes = {};
 		this.setup_node_class();
@@ -51,7 +51,7 @@ hrms.HierarchyChartMobile = class {
 	}
 
 	make_node_element(node) {
-		let node_card = frappe.render_template("node_card", {
+		let node_card = nts.render_template("node_card", {
 			id: node.id,
 			name: node.name,
 			title: node.title,
@@ -75,7 +75,7 @@ hrms.HierarchyChartMobile = class {
 			options: "Company",
 			fieldname: "company",
 			placeholder: __("Select Company"),
-			default: frappe.defaults.get_default("company"),
+			default: nts.defaults.get_default("company"),
 			only_select: true,
 			reqd: 1,
 			change: () => {
@@ -146,7 +146,7 @@ hrms.HierarchyChartMobile = class {
 	render_root_nodes() {
 		let me = this;
 
-		frappe
+		nts
 			.call({
 				method: me.method,
 				args: {
@@ -214,7 +214,7 @@ hrms.HierarchyChartMobile = class {
 
 			node_parent.find(".collapsed-level").append(node.$link);
 
-			frappe.run_serially([
+			nts.run_serially([
 				() => this.get_child_nodes(node.parent_id, node.id),
 				(child_nodes) => this.get_node_group(child_nodes, node.parent_id),
 				(node_group) => node_parent.find(".collapsed-level").append(node_group),
@@ -230,10 +230,10 @@ hrms.HierarchyChartMobile = class {
 
 	load_children(node) {
 		if (!this.company) {
-			frappe.throw(__("Please select a company first"));
+			nts.throw(__("Please select a company first"));
 		}
 
-		frappe.run_serially([
+		nts.run_serially([
 			() => this.get_child_nodes(node.id),
 			(child_nodes) => this.render_child_nodes(node, child_nodes),
 		]);
@@ -242,7 +242,7 @@ hrms.HierarchyChartMobile = class {
 	get_child_nodes(node_id, exclude_node = null) {
 		let me = this;
 		return new Promise((resolve) => {
-			frappe
+			nts
 				.call({
 					method: me.method,
 					args: {
@@ -424,7 +424,7 @@ hrms.HierarchyChartMobile = class {
 		let me = this;
 
 		node_element.find(".btn-edit-node").click(function () {
-			frappe.set_route("Form", me.doctype, node.id);
+			nts.set_route("Form", me.doctype, node.id);
 		});
 	}
 
@@ -507,7 +507,7 @@ hrms.HierarchyChartMobile = class {
 		this.nodes[node.id] = node_object;
 
 		// show parent's siblings and expand parent node
-		frappe.run_serially([
+		nts.run_serially([
 			() => this.get_child_nodes(node_object.parent_id, node_object.id),
 			(child_nodes) => this.get_node_group(child_nodes, node_object.parent_id, false),
 			(node_group) => {

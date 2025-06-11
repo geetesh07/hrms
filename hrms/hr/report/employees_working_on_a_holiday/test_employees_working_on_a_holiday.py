@@ -1,10 +1,10 @@
 from dateutil.relativedelta import relativedelta
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import add_days, get_year_ending, get_year_start, getdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import add_days, get_year_ending, get_year_start, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.attendance.attendance import mark_attendance
 from hrms.hr.report.employees_working_on_a_holiday.employees_working_on_a_holiday import execute
@@ -15,7 +15,7 @@ from hrms.tests.test_utils import get_first_sunday
 class TestEmployeesWorkingOnAHoliday(IntegrationTestCase):
 	def setUp(self):
 		self.company = "_Test Company"
-		frappe.db.delete("Attendance")
+		nts.db.delete("Attendance")
 
 	def test_report(self):
 		date = getdate()
@@ -47,7 +47,7 @@ class TestEmployeesWorkingOnAHoliday(IntegrationTestCase):
 		mark_attendance(emp2, first_sunday, "Present")
 		mark_attendance(emp3, first_monday, "Present")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": from_date,
 				"to_date": to_date,

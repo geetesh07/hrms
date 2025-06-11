@@ -1,9 +1,9 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _, msgprint
+import nts
+from nts import _, msgprint
 
 
 def execute(filters=None):
@@ -94,7 +94,7 @@ def get_conditions(filters):
 
 def get_advances(filters):
 	conditions = get_conditions(filters)
-	return frappe.db.sql(
+	return nts.db.sql(
 		"""select name, employee, paid_amount, status, advance_amount, claimed_amount, company,
 		posting_date, purpose
 		from `tabEmployee Advance`

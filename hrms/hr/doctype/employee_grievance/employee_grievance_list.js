@@ -1,4 +1,4 @@
-frappe.listview_settings["Employee Grievance"] = {
+nts.listview_settings["Employee Grievance"] = {
 	has_indicator_for_draft: 1,
 	get_indicator: function (doc) {
 		var colors = {

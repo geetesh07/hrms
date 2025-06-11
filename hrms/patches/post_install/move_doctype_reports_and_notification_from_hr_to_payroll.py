@@ -1,12 +1,12 @@
-# Copyright (c) 2019, Frappe and Contributors
+# Copyright (c) 2019, nts and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
+import nts
 
 
 def execute():
-	frappe.db.sql(
+	nts.db.sql(
 		"""UPDATE `tabPrint Format`
 		SET module = 'Payroll'
 		WHERE name IN ('Salary Slip Based On Timesheet', 'Salary Slip Standard')"""
@@ -42,4 +42,4 @@ def execute():
 	]
 
 	for doctype in doctypes_moved:
-		frappe.delete_doc_if_exists("DocType", {"name": doctype, "module": "HR"})
+		nts.delete_doc_if_exists("DocType", {"name": doctype, "module": "HR"})

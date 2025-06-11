@@ -1,14 +1,14 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 import datetime
 
-import frappe
-from frappe import _, qb
-from frappe.model.document import Document
-from frappe.query_builder import Criterion
-from frappe.query_builder.custom import ConstantColumn
-from frappe.utils import (
+import nts
+from nts import _, qb
+from nts.model.document import Document
+from nts.query_builder import Criterion
+from nts.query_builder.custom import ConstantColumn
+from nts.utils import (
 	add_days,
 	comma_and,
 	cstr,
@@ -24,9 +24,9 @@ from frappe.utils import (
 	nowdate,
 )
 
-import erpnext
-from erpnext import get_company_currency
-from erpnext.setup.doctype.employee.employee import (
+import prodman
+from prodman import get_company_currency
+from prodman.setup.doctype.employee.employee import (
 	InactiveEmployeeStatusError,
 	get_holiday_list_for_employee,
 )
@@ -38,13 +38,13 @@ from hrms.hr.doctype.leave_policy_assignment.leave_policy_assignment import (
 DateTimeLikeObject = str | datetime.date | datetime.datetime
 
 
-class DuplicateDeclarationError(frappe.ValidationError):
+class DuplicateDeclarationError(nts.ValidationError):
 	pass
 
 
 def set_employee_name(doc):
 	if doc.employee and not doc.employee_name:
-		doc.employee_name = frappe.db.get_value("Employee", doc.employee, "employee_name")
+		doc.employee_name = nts.db.get_value("Employee", doc.employee, "employee_name")
 
 
 def update_employee_work_history(employee, details, date=None, cancel=False):
@@ -64,7 +64,7 @@ def update_employee_work_history(employee, details, date=None, cancel=False):
 
 	internal_work_history = {}
 	for item in details:
-		field = frappe.get_meta("Employee").get_field(item.fieldname)
+		field = nts.get_meta("Employee").get_field(item.fieldname)
 		if not field:
 			continue
 
@@ -102,7 +102,7 @@ def get_formatted_value(value, fieldtype):
 	elif fieldtype in ["Currency", "Float"]:
 		# in case of currency/float, the value might be in user's prefered number format
 		# instead of machine readable format. Convert it into a machine readable format
-		number_format = frappe.db.get_default("number_format") or "#,###.##"
+		number_format = nts.db.get_default("number_format") or "#,###.##"
 		decimal_str, comma_str, _number_format_precision = get_number_format_info(number_format)
 
 		if comma_str == "." and decimal_str == ",":
@@ -131,7 +131,7 @@ def delete_employee_work_history(details, employee, date):
 			if date and date == history.from_date:
 				filters["from_date"] = date
 	if filters:
-		frappe.db.delete("Employee Internal Work History", filters)
+		nts.db.delete("Employee Internal Work History", filters)
 		employee.save()
 
 
@@ -151,16 +151,16 @@ def update_to_date_in_work_history(employee, cancel):
 		employee.internal_work_history[-1].to_date = None
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_employee_field_property(employee, fieldname):
 	if not (employee and fieldname):
 		return
 
-	field = frappe.get_meta("Employee").get_field(fieldname)
+	field = nts.get_meta("Employee").get_field(fieldname)
 	if not field:
 		return
 
-	value = frappe.db.get_value("Employee", employee, fieldname)
+	value = nts.db.get_value("Employee", employee, fieldname)
 	if field.fieldtype == "Date":
 		value = formatdate(value)
 	elif field.fieldtype == "Datetime":
@@ -175,17 +175,17 @@ def get_employee_field_property(employee, fieldname):
 
 
 def validate_dates(doc, from_date, to_date, restrict_future_dates=True):
-	date_of_joining, relieving_date = frappe.db.get_value(
+	date_of_joining, relieving_date = nts.db.get_value(
 		"Employee", doc.employee, ["date_of_joining", "relieving_date"]
 	)
 	if getdate(from_date) > getdate(to_date):
-		frappe.throw(_("To date can not be less than from date"))
+		nts.throw(_("To date can not be less than from date"))
 	elif getdate(from_date) > getdate(nowdate()) and restrict_future_dates:
-		frappe.throw(_("Future dates not allowed"))
+		nts.throw(_("Future dates not allowed"))
 	elif date_of_joining and getdate(from_date) < getdate(date_of_joining):
-		frappe.throw(_("From date can not be less than employee's joining date"))
+		nts.throw(_("From date can not be less than employee's joining date"))
 	elif relieving_date and getdate(to_date) > getdate(relieving_date):
-		frappe.throw(_("To date can not greater than employee's relieving date"))
+		nts.throw(_("To date can not greater than employee's relieving date"))
 
 
 def validate_overlap(doc, from_date, to_date, company=None):
@@ -200,7 +200,7 @@ def validate_overlap(doc, from_date, to_date, company=None):
 		# hack! if name is null, it could cause problems with !=
 		doc.name = "New " + doc.doctype
 
-	overlap_doc = frappe.db.sql(
+	overlap_doc = nts.db.sql(
 		query.format(doc.doctype),
 		{
 			"employee": doc.get("employee"),
@@ -240,11 +240,11 @@ def throw_overlap_error(doc, exists_for, overlap_doc, from_date, to_date):
 		+ f""" <b><a href="/app/Form/{doc.doctype}/{overlap_doc}">{overlap_doc}</a></b>"""
 		+ _(") for {0}").format(exists_for)
 	)
-	frappe.throw(msg)
+	nts.throw(msg)
 
 
 def validate_duplicate_exemption_for_payroll_period(doctype, docname, payroll_period, employee):
-	existing_record = frappe.db.exists(
+	existing_record = nts.db.exists(
 		doctype,
 		{
 			"payroll_period": payroll_period,
@@ -254,7 +254,7 @@ def validate_duplicate_exemption_for_payroll_period(doctype, docname, payroll_pe
 		},
 	)
 	if existing_record:
-		frappe.throw(
+		nts.throw(
 			_("{0} already exists for employee {1} and period {2}").format(doctype, employee, payroll_period),
 			DuplicateDeclarationError,
 		)
@@ -264,17 +264,17 @@ def validate_tax_declaration(declarations):
 	subcategories = []
 	for d in declarations:
 		if d.exemption_sub_category in subcategories:
-			frappe.throw(_("More than one selection for {0} not allowed").format(d.exemption_sub_category))
+			nts.throw(_("More than one selection for {0} not allowed").format(d.exemption_sub_category))
 		subcategories.append(d.exemption_sub_category)
 
 
 def get_total_exemption_amount(declarations):
-	exemptions = frappe._dict()
+	exemptions = nts._dict()
 	for d in declarations:
-		exemptions.setdefault(d.exemption_category, frappe._dict())
+		exemptions.setdefault(d.exemption_category, nts._dict())
 		category_max_amount = exemptions.get(d.exemption_category).max_amount
 		if not category_max_amount:
-			category_max_amount = frappe.db.get_value(
+			category_max_amount = nts.db.get_value(
 				"Employee Tax Exemption Category", d.exemption_category, "max_amount"
 			)
 			exemptions.get(d.exemption_category).max_amount = category_max_amount
@@ -295,9 +295,9 @@ def get_total_exemption_amount(declarations):
 	return total_exemption_amount
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_leave_period(from_date, to_date, company):
-	leave_period = frappe.db.sql(
+	leave_period = nts.db.sql(
 		"""
 		select name, from_date, to_date
 		from `tabLeave Period`
@@ -318,11 +318,11 @@ def generate_leave_encashment():
 	"""Generates a draft leave encashment on allocation expiry"""
 	from hrms.hr.doctype.leave_encashment.leave_encashment import create_leave_encashment
 
-	if frappe.db.get_single_value("HR Settings", "auto_leave_encashment"):
-		leave_type = frappe.get_all("Leave Type", filters={"allow_encashment": 1}, fields=["name"])
+	if nts.db.get_single_value("HR Settings", "auto_leave_encashment"):
+		leave_type = nts.get_all("Leave Type", filters={"allow_encashment": 1}, fields=["name"])
 		leave_type = [l["name"] for l in leave_type]
 
-		leave_allocation = frappe.get_all(
+		leave_allocation = nts.get_all(
 			"Leave Allocation",
 			filters={"to_date": add_days(getdate(), -1), "leave_type": ("in", leave_type)},
 			fields=[
@@ -341,7 +341,7 @@ def generate_leave_encashment():
 def allocate_earned_leaves():
 	"""Allocate earned leaves to Employees"""
 	e_leave_types = get_earned_leaves()
-	today = frappe.flags.current_date or getdate()
+	today = nts.flags.current_date or getdate()
 
 	for e_leave_type in e_leave_types:
 		leave_allocations = get_leave_allocations(today, e_leave_type.name)
@@ -352,17 +352,17 @@ def allocate_earned_leaves():
 			leave_policy = (
 				allocation.leave_policy
 				if allocation.leave_policy
-				else frappe.db.get_value(
+				else nts.db.get_value(
 					"Leave Policy Assignment", allocation.leave_policy_assignment, ["leave_policy"]
 				)
 			)
 
-			annual_allocation = frappe.db.get_value(
+			annual_allocation = nts.db.get_value(
 				"Leave Policy Detail",
 				filters={"parent": leave_policy, "leave_type": e_leave_type.name},
 				fieldname=["annual_allocation"],
 			)
-			date_of_joining = frappe.db.get_value("Employee", allocation.employee, "date_of_joining")
+			date_of_joining = nts.db.get_value("Employee", allocation.employee, "date_of_joining")
 
 			from_date = allocation.from_date
 
@@ -376,7 +376,7 @@ def allocate_earned_leaves():
 
 
 def update_previous_leave_allocation(allocation, annual_allocation, e_leave_type, date_of_joining):
-	allocation = frappe.get_doc("Leave Allocation", allocation.name)
+	allocation = nts.get_doc("Leave Allocation", allocation.name)
 	annual_allocation = flt(annual_allocation, allocation.precision("total_leaves_allocated"))
 
 	earned_leaves = get_monthly_earned_leave(
@@ -400,7 +400,7 @@ def update_previous_leave_allocation(allocation, annual_allocation, e_leave_type
 		# annual allocation as per policy should not be exceeded
 		and new_allocation_without_cf <= annual_allocation
 	):
-		today_date = frappe.flags.current_date or getdate()
+		today_date = nts.flags.current_date or getdate()
 
 		allocation.db_set("total_leaves_allocated", new_allocation, update_modified=False)
 		create_additional_leave_ledger_entry(allocation, earned_leaves, today_date)
@@ -409,13 +409,13 @@ def update_previous_leave_allocation(allocation, annual_allocation, e_leave_type
 			text = _(
 				"Allocated {0} leave(s) via scheduler on {1} based on the 'Allocate on Day' option set to {2}"
 			).format(
-				frappe.bold(earned_leaves), frappe.bold(formatdate(today_date)), e_leave_type.allocate_on_day
+				nts.bold(earned_leaves), nts.bold(formatdate(today_date)), e_leave_type.allocate_on_day
 			)
 
 		allocation.add_comment(comment_type="Info", text=text)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_monthly_earned_leave(
 	date_of_joining,
 	annual_leaves,
@@ -432,7 +432,7 @@ def get_monthly_earned_leave(
 
 		if pro_rated:
 			if not (period_start_date or period_end_date):
-				today_date = frappe.flags.current_date or getdate()
+				today_date = nts.flags.current_date or getdate()
 				period_end_date = get_last_day(today_date)
 				period_start_date = get_first_day(today_date)
 
@@ -460,10 +460,10 @@ def round_earned_leaves(earned_leaves, rounding):
 
 
 def get_leave_allocations(date, leave_type):
-	employee = frappe.qb.DocType("Employee")
-	leave_allocation = frappe.qb.DocType("Leave Allocation")
+	employee = nts.qb.DocType("Employee")
+	leave_allocation = nts.qb.DocType("Leave Allocation")
 	query = (
-		frappe.qb.from_(leave_allocation)
+		nts.qb.from_(leave_allocation)
 		.join(employee)
 		.on(leave_allocation.employee == employee.name)
 		.select(
@@ -486,7 +486,7 @@ def get_leave_allocations(date, leave_type):
 
 
 def get_earned_leaves():
-	return frappe.get_all(
+	return nts.get_all(
 		"Leave Type",
 		fields=[
 			"name",
@@ -511,7 +511,7 @@ def check_effective_date(from_date, today, frequency, allocate_on_day):
 	from dateutil import relativedelta
 
 	from_date = get_datetime(from_date)
-	today = frappe.flags.current_date or get_datetime(today)
+	today = nts.flags.current_date or get_datetime(today)
 	rd = relativedelta.relativedelta(today, from_date)
 
 	expected_date = {
@@ -534,8 +534,8 @@ def check_effective_date(from_date, today, frequency, allocate_on_day):
 
 
 def get_salary_assignments(employee, payroll_period):
-	start_date, end_date = frappe.db.get_value("Payroll Period", payroll_period, ["start_date", "end_date"])
-	assignments = frappe.get_all(
+	start_date, end_date = nts.db.get_value("Payroll Period", payroll_period, ["start_date", "end_date"])
+	assignments = nts.get_all(
 		"Salary Structure Assignment",
 		filters={"employee": employee, "docstatus": 1, "from_date": ["between", (start_date, end_date)]},
 		fields=["*"],
@@ -546,7 +546,7 @@ def get_salary_assignments(employee, payroll_period):
 		# if no assignments found for the given period
 		# or the latest assignment hast started in the middle of the period
 		# get the last one assigned before the period start date
-		past_assignment = frappe.get_all(
+		past_assignment = nts.get_all(
 			"Salary Structure Assignment",
 			filters={"employee": employee, "docstatus": 1, "from_date": ["<", start_date]},
 			fields=["*"],
@@ -577,7 +577,7 @@ def get_sal_slip_total_benefit_given(employee, payroll_period, component=False):
 	if component:
 		query += "and sd.salary_component = %(component)s"
 
-	sum_of_given_benefit = frappe.db.sql(
+	sum_of_given_benefit = nts.db.sql(
 		query,
 		{
 			"employee": employee,
@@ -622,28 +622,28 @@ def get_holidays_for_employee(employee, start_date, end_date, raise_exception=Tr
 	if only_non_weekly:
 		filters["weekly_off"] = False
 
-	holidays = frappe.get_all(
+	holidays = nts.get_all(
 		"Holiday", fields=["description", "holiday_date"], filters=filters, order_by="holiday_date"
 	)
 
 	return holidays
 
 
-@erpnext.allow_regional
+@prodman.allow_regional
 def calculate_annual_eligible_hra_exemption(doc):
 	# Don't delete this method, used for localization
 	# Indian HRA Exemption Calculation
 	return {}
 
 
-@erpnext.allow_regional
+@prodman.allow_regional
 def calculate_hra_exemption_for_period(doc):
 	# Don't delete this method, used for localization
 	# Indian HRA Exemption Calculation
 	return {}
 
 
-@erpnext.allow_regional
+@prodman.allow_regional
 def calculate_tax_with_marginal_relief(tax_slab, tax_amount, annual_taxable_earning):
 	# Don't delete this method, used for localization
 	# Indian TDS Calculation
@@ -664,7 +664,7 @@ def get_previous_claimed_amount(employee, payroll_period, non_pro_rata=False, co
 	if component:
 		query += "and earning_component = %(component)s"
 
-	sum_of_claimed_amount = frappe.db.sql(
+	sum_of_claimed_amount = nts.db.sql(
 		query,
 		{
 			"employee": employee,
@@ -684,12 +684,12 @@ def share_doc_with_approver(doc, user):
 		return
 
 	# if approver does not have permissions, share
-	if not frappe.has_permission(doc=doc, ptype="submit", user=user):
-		frappe.share.add_docshare(
+	if not nts.has_permission(doc=doc, ptype="submit", user=user):
+		nts.share.add_docshare(
 			doc.doctype, doc.name, user, submit=1, flags={"ignore_share_permission": True}
 		)
 
-		frappe.msgprint(
+		nts.msgprint(
 			_("Shared document with the user {0} with 'Submit' permission").format(user), alert=True
 		)
 
@@ -704,15 +704,15 @@ def share_doc_with_approver(doc, user):
 
 		approver = approvers.get(doc.doctype)
 		if doc_before_save.get(approver) != doc.get(approver):
-			frappe.share.remove(doc.doctype, doc.name, doc_before_save.get(approver))
+			nts.share.remove(doc.doctype, doc.name, doc_before_save.get(approver))
 
 
 def validate_active_employee(employee, method=None):
 	if isinstance(employee, dict | Document):
 		employee = employee.get("employee")
 
-	if employee and frappe.db.get_value("Employee", employee, "status") == "Inactive":
-		frappe.throw(
+	if employee and nts.db.get_value("Employee", employee, "status") == "Inactive":
+		nts.throw(
 			_("Transactions cannot be created for an Inactive Employee {0}.").format(
 				get_link_to_form("Employee", employee)
 			),
@@ -727,22 +727,22 @@ def validate_loan_repay_from_salary(doc, method=None):
 		)
 
 		if not doc.applicant:
-			frappe.throw(_("Please select an Applicant"))
+			nts.throw(_("Please select an Applicant"))
 
 		if not doc.company:
-			frappe.throw(_("Please select a Company"))
+			nts.throw(_("Please select a Company"))
 
 		employee_currency = get_employee_currency(doc.applicant)
-		company_currency = erpnext.get_company_currency(doc.company)
+		company_currency = prodman.get_company_currency(doc.company)
 		if employee_currency != company_currency:
-			frappe.throw(
+			nts.throw(
 				_(
 					"Loan cannot be repayed from salary for Employee {0} because salary is processed in currency {1}"
 				).format(doc.applicant, employee_currency)
 			)
 
 	if not doc.is_term_loan and doc.repay_from_salary:
-		frappe.throw(_("Repay From Salary can be selected only for term loans"))
+		nts.throw(_("Repay From Salary can be selected only for term loans"))
 
 
 def get_matching_queries(
@@ -780,7 +780,7 @@ def get_ec_matching_query(
 
 	mode_of_payments = [
 		x["parent"]
-		for x in frappe.db.get_all(
+		for x in nts.db.get_all(
 			"Mode of Payment Account", filters={"default_account": bank_account}, fields=["parent"]
 		)
 	]
@@ -793,7 +793,7 @@ def get_ec_matching_query(
 		filters.append(ec.mode_of_payment.isin(mode_of_payments))
 
 	if common_filters:
-		ref_rank = frappe.qb.terms.Case().when(ec.employee == common_filters.party, 1).else_(0) + 1
+		ref_rank = nts.qb.terms.Case().when(ec.employee == common_filters.party, 1).else_(0) + 1
 
 		if exact_match:
 			filters.append(ec.total_amount_reimbursed == common_filters.amount)
@@ -833,18 +833,18 @@ def validate_bulk_tool_fields(
 ) -> None:
 	for d in fields:
 		if not self.get(d):
-			frappe.throw(_("{0} is required").format(self.meta.get_label(d)), title=_("Missing Field"))
+			nts.throw(_("{0} is required").format(self.meta.get_label(d)), title=_("Missing Field"))
 	if self.get(from_date) and self.get(to_date):
 		self.validate_from_to_dates(from_date, to_date)
 	if not employees:
-		frappe.throw(
+		nts.throw(
 			_("Please select at least one employee to perform this action."),
 			title=_("No Employees Selected"),
 		)
 
 
 def notify_bulk_action_status(doctype: str, failure: list, success: list) -> None:
-	frappe.clear_messages()
+	nts.clear_messages()
 
 	msg = ""
 	title = ""
@@ -874,7 +874,7 @@ def notify_bulk_action_status(doctype: str, failure: list, success: list) -> Non
 	else:
 		indicator = "green"
 
-	frappe.msgprint(
+	nts.msgprint(
 		msg,
 		indicator=indicator,
 		title=title,
@@ -882,15 +882,15 @@ def notify_bulk_action_status(doctype: str, failure: list, success: list) -> Non
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def set_geolocation_from_coordinates(doc):
-	if not frappe.db.get_single_value("HR Settings", "allow_geolocation_tracking"):
+	if not nts.db.get_single_value("HR Settings", "allow_geolocation_tracking"):
 		return
 
 	if not (doc.latitude and doc.longitude):
 		return
 
-	doc.geolocation = frappe.json.dumps(
+	doc.geolocation = nts.json.dumps(
 		{
 			"type": "FeatureCollection",
 			"features": [
@@ -917,10 +917,10 @@ def get_distance_between_coordinates(lat1, long1, lat2, long2):
 
 def check_app_permission():
 	"""Check if user has permission to access the app (for showing the app on app screen)"""
-	if frappe.session.user == "Administrator":
+	if nts.session.user == "Administrator":
 		return True
 
-	if frappe.has_permission("Employee", ptype="read"):
+	if nts.has_permission("Employee", ptype="read"):
 		return True
 
 	return False

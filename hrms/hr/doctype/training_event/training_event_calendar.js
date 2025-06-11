@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.views.calendar["Training Event"] = {
+nts.views.calendar["Training Event"] = {
 	field_map: {
 		start: "start_time",
 		end: "end_time",
@@ -10,5 +10,5 @@ frappe.views.calendar["Training Event"] = {
 		allDay: "allDay",
 	},
 	gantt: true,
-	get_events_method: "frappe.desk.calendar.get_events",
+	get_events_method: "nts.desk.calendar.get_events",
 };

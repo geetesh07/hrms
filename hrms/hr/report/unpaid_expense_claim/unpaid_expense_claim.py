@@ -1,9 +1,9 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 
 def execute(filters=None):
@@ -29,8 +29,8 @@ def get_unclaimed_expese_claims(filters):
 	if filters.get("employee"):
 		cond = "ec.employee = %(employee)s"
 
-	# nosemgrep: frappe-semgrep-rules.rules.frappe-using-db-sql
-	return frappe.db.sql(
+	# nosemgrep: nts-semgrep-rules.rules.nts-using-db-sql
+	return nts.db.sql(
 		f"""
 		select
 			ec.employee, ec.employee_name, ec.name, ec.total_sanctioned_amount, ec.total_amount_reimbursed,

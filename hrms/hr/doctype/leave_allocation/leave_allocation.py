@@ -1,11 +1,11 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import add_days, date_diff, flt, formatdate, get_link_to_form, getdate
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import add_days, date_diff, flt, formatdate, get_link_to_form, getdate
 
 from hrms.hr.doctype.leave_application.leave_application import get_approved_leaves_for_period
 from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import (
@@ -17,23 +17,23 @@ from hrms.hr.utils import create_additional_leave_ledger_entry, get_leave_period
 from hrms.hr.utils import get_monthly_earned_leave as _get_monthly_earned_leave
 
 
-class OverlapError(frappe.ValidationError):
+class OverlapError(nts.ValidationError):
 	pass
 
 
-class BackDatedAllocationError(frappe.ValidationError):
+class BackDatedAllocationError(nts.ValidationError):
 	pass
 
 
-class OverAllocationError(frappe.ValidationError):
+class OverAllocationError(nts.ValidationError):
 	pass
 
 
-class LessAllocationError(frappe.ValidationError):
+class LessAllocationError(nts.ValidationError):
 	pass
 
 
-class ValueMultiplierError(frappe.ValidationError):
+class ValueMultiplierError(nts.ValidationError):
 	pass
 
 
@@ -53,9 +53,9 @@ class LeaveAllocation(Document):
 		self.validate_leave_allocation_days()
 
 	def validate_leave_allocation_days(self):
-		company = frappe.db.get_value("Employee", self.employee, "company")
+		company = nts.db.get_value("Employee", self.employee, "company")
 		leave_period = get_leave_period(self.from_date, self.to_date, company)
-		max_leaves_allowed = frappe.db.get_value("Leave Type", self.leave_type, "max_leaves_allowed")
+		max_leaves_allowed = nts.db.get_value("Leave Type", self.leave_type, "max_leaves_allowed")
 
 		if max_leaves_allowed > 0:
 			leave_allocated = 0
@@ -69,7 +69,7 @@ class LeaveAllocation(Document):
 				)
 			leave_allocated += flt(self.new_leaves_allocated)
 			if leave_allocated > max_leaves_allowed:
-				frappe.throw(
+				nts.throw(
 					_(
 						"Total allocated leaves are more than maximum allocation allowed for {0} leave type for employee {1} in the period"
 					).format(self.leave_type, self.employee),
@@ -91,7 +91,7 @@ class LeaveAllocation(Document):
 		if self.carry_forward:
 			self.set_carry_forwarded_leaves_in_previous_allocation(on_cancel=True)
 
-	# nosemgrep: frappe-semgrep-rules.rules.frappe-modifying-but-not-comitting
+	# nosemgrep: nts-semgrep-rules.rules.nts-modifying-but-not-comitting
 	def on_update_after_submit(self):
 		if self.has_value_changed("new_leaves_allocated"):
 			self.validate_earned_leave_update()
@@ -117,7 +117,7 @@ class LeaveAllocation(Document):
 			self.db_update()
 
 	def get_existing_leave_count(self):
-		ledger_entries = frappe.get_all(
+		ledger_entries = nts.get_all(
 			"Leave Ledger Entry",
 			filters={
 				"transaction_type": "Leave Allocation",
@@ -134,31 +134,31 @@ class LeaveAllocation(Document):
 		return ledger_entries[0].total_leaves if ledger_entries else 0
 
 	def validate_earned_leave_update(self):
-		if self.leave_policy_assignment and frappe.db.get_value(
+		if self.leave_policy_assignment and nts.db.get_value(
 			"Leave Type", self.leave_type, "is_earned_leave"
 		):
 			msg = _("Cannot update allocation for {0} after submission").format(
-				frappe.bold(_("Earned Leaves"))
+				nts.bold(_("Earned Leaves"))
 			)
 			msg += "<br><br>"
 			msg += _(
 				"Earned Leaves are auto-allocated via scheduler based on the annual allocation set in the Leave Policy: {0}"
 			).format(get_link_to_form("Leave Policy", self.leave_policy))
-			frappe.throw(msg, title=_("Not Allowed"))
+			nts.throw(msg, title=_("Not Allowed"))
 
 	def validate_against_leave_applications(self):
 		leaves_taken = get_approved_leaves_for_period(
 			self.employee, self.leave_type, self.from_date, self.to_date
 		)
 		if flt(leaves_taken) > flt(self.total_leaves_allocated):
-			if frappe.db.get_value("Leave Type", self.leave_type, "allow_negative"):
-				frappe.msgprint(
+			if nts.db.get_value("Leave Type", self.leave_type, "allow_negative"):
+				nts.msgprint(
 					_(
 						"Note: Total allocated leaves {0} shouldn't be less than already approved leaves {1} for the period"
 					).format(self.total_leaves_allocated, leaves_taken)
 				)
 			else:
-				frappe.throw(
+				nts.throw(
 					_(
 						"Total allocated leaves {0} cannot be less than already approved leaves {1} for the period"
 					).format(self.total_leaves_allocated, leaves_taken),
@@ -166,27 +166,27 @@ class LeaveAllocation(Document):
 				)
 
 	def update_leave_policy_assignments_when_no_allocations_left(self):
-		allocations = frappe.db.get_list(
+		allocations = nts.db.get_list(
 			"Leave Allocation",
 			filters={"docstatus": 1, "leave_policy_assignment": self.leave_policy_assignment},
 		)
 		if len(allocations) == 0:
-			frappe.db.set_value(
+			nts.db.set_value(
 				"Leave Policy Assignment", self.leave_policy_assignment, "leaves_allocated", 0
 			)
 
 	def validate_period(self):
 		if date_diff(self.to_date, self.from_date) <= 0:
-			frappe.throw(_("To date cannot be before from date"))
+			nts.throw(_("To date cannot be before from date"))
 
 	def validate_lwp(self):
-		if frappe.db.get_value("Leave Type", self.leave_type, "is_lwp"):
-			frappe.throw(
+		if nts.db.get_value("Leave Type", self.leave_type, "is_lwp"):
+			nts.throw(
 				_("Leave Type {0} cannot be allocated since it is leave without pay").format(self.leave_type)
 			)
 
 	def validate_allocation_overlap(self):
-		leave_allocation = frappe.db.sql(
+		leave_allocation = nts.db.sql(
 			"""
 			SELECT
 				name
@@ -199,20 +199,20 @@ class LeaveAllocation(Document):
 		)
 
 		if leave_allocation:
-			frappe.msgprint(
+			nts.msgprint(
 				_("{0} already allocated for Employee {1} for period {2} to {3}").format(
 					self.leave_type, self.employee, formatdate(self.from_date), formatdate(self.to_date)
 				)
 			)
 
-			frappe.throw(
+			nts.throw(
 				_("Reference")
 				+ f': <a href="/app/Form/Leave Allocation/{leave_allocation[0][0]}">{leave_allocation[0][0]}</a>',
 				OverlapError,
 			)
 
 	def validate_back_dated_allocation(self):
-		future_allocation = frappe.db.sql(
+		future_allocation = nts.db.sql(
 			"""select name, from_date from `tabLeave Allocation`
 			where employee=%s and leave_type=%s and docstatus=1 and from_date > %s
 			and carry_forward=1""",
@@ -221,14 +221,14 @@ class LeaveAllocation(Document):
 		)
 
 		if future_allocation:
-			frappe.throw(
+			nts.throw(
 				_(
 					"Leave cannot be allocated before {0}, as leave balance has already been carry-forwarded in the future leave allocation record {1}"
 				).format(formatdate(future_allocation[0].from_date), future_allocation[0].name),
 				BackDatedAllocationError,
 			)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def set_total_leaves_allocated(self):
 		self.unused_leaves = flt(
 			get_carry_forwarded_leaves(self.employee, self.leave_type, self.from_date, self.carry_forward),
@@ -247,13 +247,13 @@ class LeaveAllocation(Document):
 
 		if (
 			not self.total_leaves_allocated
-			and not frappe.db.get_value("Leave Type", self.leave_type, "is_earned_leave")
-			and not frappe.db.get_value("Leave Type", self.leave_type, "is_compensatory")
+			and not nts.db.get_value("Leave Type", self.leave_type, "is_earned_leave")
+			and not nts.db.get_value("Leave Type", self.leave_type, "is_compensatory")
 		):
-			frappe.throw(_("Total leaves allocated is mandatory for Leave Type {0}").format(self.leave_type))
+			nts.throw(_("Total leaves allocated is mandatory for Leave Type {0}").format(self.leave_type))
 
 	def limit_carry_forward_based_on_max_allowed_leaves(self):
-		max_leaves_allowed = frappe.db.get_value("Leave Type", self.leave_type, "max_leaves_allowed")
+		max_leaves_allowed = nts.db.get_value("Leave Type", self.leave_type, "max_leaves_allowed")
 		if max_leaves_allowed and self.total_leaves_allocated > max_leaves_allowed:
 			self.total_leaves_allocated = max_leaves_allowed
 			self.unused_leaves = max_leaves_allowed - flt(self.new_leaves_allocated)
@@ -264,7 +264,7 @@ class LeaveAllocation(Document):
 		if on_cancel:
 			self.unused_leaves = 0.0
 		if previous_allocation:
-			frappe.db.set_value(
+			nts.db.set_value(
 				"Leave Allocation",
 				previous_allocation.name,
 				"carry_forwarded_leaves_count",
@@ -275,8 +275,8 @@ class LeaveAllocation(Document):
 		# Adding a day to include To Date in the difference
 		date_difference = date_diff(self.to_date, self.from_date) + 1
 		if date_difference < self.total_leaves_allocated:
-			if frappe.db.get_value("Leave Type", self.leave_type, "allow_over_allocation"):
-				frappe.msgprint(
+			if nts.db.get_value("Leave Type", self.leave_type, "allow_over_allocation"):
+				nts.msgprint(
 					_(
 						"<b>Total Leaves Allocated</b> are more than the number of days in the allocation period"
 					),
@@ -284,7 +284,7 @@ class LeaveAllocation(Document):
 					alert=True,
 				)
 			else:
-				frappe.throw(
+				nts.throw(
 					_(
 						"<b>Total Leaves Allocated</b> are more than the number of days in the allocation period"
 					),
@@ -294,7 +294,7 @@ class LeaveAllocation(Document):
 
 	def create_leave_ledger_entry(self, submit=True):
 		if self.unused_leaves:
-			expiry_days = frappe.db.get_value(
+			expiry_days = nts.db.get_value(
 				"Leave Type", self.leave_type, "expire_carry_forwarded_leaves_after_days"
 			)
 			end_date = add_days(self.from_date, expiry_days - 1) if expiry_days else self.to_date
@@ -316,12 +316,12 @@ class LeaveAllocation(Document):
 		)
 		create_leave_ledger_entry(self, args, submit)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def allocate_leaves_manually(self, new_leaves, from_date=None):
 		if from_date and not (getdate(self.from_date) <= getdate(from_date) <= getdate(self.to_date)):
-			frappe.throw(
+			nts.throw(
 				_("Cannot allocate leaves outside the allocation period {0} - {1}").format(
-					frappe.bold(formatdate(self.from_date)), frappe.bold(formatdate(self.to_date))
+					nts.bold(formatdate(self.from_date)), nts.bold(formatdate(self.to_date))
 				),
 				title=_("Invalid Dates"),
 			)
@@ -332,11 +332,11 @@ class LeaveAllocation(Document):
 			self.precision("total_leaves_allocated"),
 		)
 
-		max_leaves_allowed = frappe.db.get_value("Leave Type", self.leave_type, "max_leaves_allowed")
+		max_leaves_allowed = nts.db.get_value("Leave Type", self.leave_type, "max_leaves_allowed")
 		if new_allocation > max_leaves_allowed and max_leaves_allowed > 0:
 			new_allocation = max_leaves_allowed
 
-		annual_allocation = frappe.db.get_value(
+		annual_allocation = nts.db.get_value(
 			"Leave Policy Detail",
 			{"parent": self.leave_policy, "leave_type": self.leave_type},
 			"annual_allocation",
@@ -350,32 +350,32 @@ class LeaveAllocation(Document):
 		):
 			self.db_set("total_leaves_allocated", new_allocation, update_modified=False)
 
-			date = from_date or frappe.flags.current_date or getdate()
+			date = from_date or nts.flags.current_date or getdate()
 			create_additional_leave_ledger_entry(self, new_leaves, date)
 
 			text = _("{0} leaves were manually allocated by {1} on {2}").format(
-				frappe.bold(new_leaves), frappe.session.user, frappe.bold(formatdate(date))
+				nts.bold(new_leaves), nts.session.user, nts.bold(formatdate(date))
 			)
 			self.add_comment(comment_type="Info", text=text)
-			frappe.msgprint(
-				_("{0} leaves allocated successfully").format(frappe.bold(new_leaves)),
+			nts.msgprint(
+				_("{0} leaves allocated successfully").format(nts.bold(new_leaves)),
 				indicator="green",
 				alert=True,
 			)
 
 		else:
 			msg = _("Total leaves allocated cannot exceed annual allocation of {0}.").format(
-				frappe.bold(_(annual_allocation))
+				nts.bold(_(annual_allocation))
 			)
 			msg += "<br><br>"
 			msg += _("Reference: {0}").format(get_link_to_form("Leave Policy", self.leave_policy))
-			frappe.throw(msg, title=_("Annual Allocation Exceeded"))
+			nts.throw(msg, title=_("Annual Allocation Exceeded"))
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_monthly_earned_leave(self):
-		doj = frappe.db.get_value("Employee", self.employee, "date_of_joining")
+		doj = nts.db.get_value("Employee", self.employee, "date_of_joining")
 
-		annual_allocation = frappe.db.get_value(
+		annual_allocation = nts.db.get_value(
 			"Leave Policy Detail",
 			{
 				"parent": self.leave_policy,
@@ -384,7 +384,7 @@ class LeaveAllocation(Document):
 			"annual_allocation",
 		)
 
-		frequency, rounding = frappe.db.get_value(
+		frequency, rounding = nts.db.get_value(
 			"Leave Type",
 			self.leave_type,
 			[
@@ -398,9 +398,9 @@ class LeaveAllocation(Document):
 
 def get_previous_allocation(from_date, leave_type, employee):
 	"""Returns document properties of previous allocation"""
-	Allocation = frappe.qb.DocType("Leave Allocation")
+	Allocation = nts.qb.DocType("Leave Allocation")
 	allocations = (
-		frappe.qb.from_(Allocation)
+		nts.qb.from_(Allocation)
 		.select(
 			Allocation.name,
 			Allocation.from_date,
@@ -414,7 +414,7 @@ def get_previous_allocation(from_date, leave_type, employee):
 			& (Allocation.to_date < from_date)
 			& (Allocation.docstatus == 1)
 		)
-		.orderby(Allocation.to_date, order=frappe.qb.desc)
+		.orderby(Allocation.to_date, order=nts.qb.desc)
 		.limit(1)
 	).run(as_dict=True)
 
@@ -422,11 +422,11 @@ def get_previous_allocation(from_date, leave_type, employee):
 
 
 def get_leave_allocation_for_period(employee, leave_type, from_date, to_date, exclude_allocation=None):
-	from frappe.query_builder.functions import Sum
+	from nts.query_builder.functions import Sum
 
-	Allocation = frappe.qb.DocType("Leave Allocation")
+	Allocation = nts.qb.DocType("Leave Allocation")
 	return (
-		frappe.qb.from_(Allocation)
+		nts.qb.from_(Allocation)
 		.select(Sum(Allocation.total_leaves_allocated).as_("total_allocated_leaves"))
 		.where(
 			(Allocation.employee == employee)
@@ -452,7 +452,7 @@ def get_carry_forwarded_leaves(employee, leave_type, date, carry_forward=None):
 			employee, leave_type, previous_allocation.from_date, previous_allocation.to_date
 		)
 		if unused_leaves:
-			max_carry_forwarded_leaves = frappe.db.get_value(
+			max_carry_forwarded_leaves = nts.db.get_value(
 				"Leave Type", leave_type, "maximum_carry_forwarded_leaves"
 			)
 			if max_carry_forwarded_leaves and unused_leaves > flt(max_carry_forwarded_leaves):
@@ -463,7 +463,7 @@ def get_carry_forwarded_leaves(employee, leave_type, date, carry_forward=None):
 
 def get_unused_leaves(employee, leave_type, from_date, to_date):
 	"""Returns unused leaves between the given period while skipping leave allocation expiry"""
-	leaves = frappe.get_all(
+	leaves = nts.get_all(
 		"Leave Ledger Entry",
 		filters={
 			"employee": employee,
@@ -478,16 +478,16 @@ def get_unused_leaves(employee, leave_type, from_date, to_date):
 
 
 def validate_carry_forward(leave_type):
-	if not frappe.db.get_value("Leave Type", leave_type, "is_carry_forward"):
-		frappe.throw(_("Leave Type {0} cannot be carry-forwarded").format(leave_type))
+	if not nts.db.get_value("Leave Type", leave_type, "is_carry_forward"):
+		nts.throw(_("Leave Type {0} cannot be carry-forwarded").format(leave_type))
 
 
 def show_expire_leave_dialog(expired_leaves, leave_type):
-	frappe.msgprint(
+	nts.msgprint(
 		title=_("Leaves Expired"),
 		msg=_(
 			"{0} leaves from allocation for {1} leave type have expired and will be processed during the next scheduled job. It is recommended to expire them now before creating new leave policy assignments."
-		).format(frappe.bold(expired_leaves), frappe.bold(leave_type)),
+		).format(nts.bold(expired_leaves), nts.bold(leave_type)),
 		indicator="orange",
 		primary_action={
 			"label": _("Expire Leaves"),
@@ -497,9 +497,9 @@ def show_expire_leave_dialog(expired_leaves, leave_type):
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def expire_carried_forward_allocation():
-	if frappe.has_permission(doctype="Leave Allocation", ptype="submit", user=frappe.session.user):
+	if nts.has_permission(doctype="Leave Allocation", ptype="submit", user=nts.session.user):
 		process_expired_allocation()
 	else:
-		frappe.throw(_("You do not have permission to complete this action"), frappe.PermissionError)
+		nts.throw(_("You do not have permission to complete this action"), nts.PermissionError)

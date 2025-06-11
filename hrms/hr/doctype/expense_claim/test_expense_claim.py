@@ -1,12 +1,12 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors and Contributors
 # See license.txt
 
-import frappe
-from frappe.utils import flt, nowdate, random_string
+import nts
+from nts.utils import flt, nowdate, random_string
 
-from erpnext.accounts.doctype.account.test_account import create_account
-from erpnext.accounts.doctype.payment_entry.test_payment_entry import get_payment_entry
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.accounts.doctype.account.test_account import create_account
+from prodman.accounts.doctype.payment_entry.test_payment_entry import get_payment_entry
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.expense_claim.expense_claim import (
 	MismatchError,
@@ -26,8 +26,8 @@ class TestExpenseClaim(HRMSTestSuite):
 		cls.make_employees()
 
 	def setUp(self):
-		if not frappe.db.get_value("Cost Center", {"company": company_name}):
-			cost_center = frappe.new_doc("Cost Center")
+		if not nts.db.get_value("Cost Center", {"company": company_name}):
+			cost_center = nts.new_doc("Cost Center")
 			cost_center.update(
 				{
 					"doctype": "Cost Center",
@@ -38,16 +38,16 @@ class TestExpenseClaim(HRMSTestSuite):
 				}
 			).insert()
 
-			frappe.db.set_value("Company", company_name, "default_cost_center", cost_center)
+			nts.db.set_value("Company", company_name, "default_cost_center", cost_center)
 
 	def test_total_expense_claim_for_project(self):
-		frappe.db.delete("Task")
-		frappe.db.delete("Project")
-		frappe.db.sql("update `tabExpense Claim` set project = '', task = ''")
+		nts.db.delete("Task")
+		nts.db.delete("Project")
+		nts.db.sql("update `tabExpense Claim` set project = '', task = ''")
 
 		project = create_project("_Test Project 1")
 
-		task = frappe.new_doc("Task")
+		task = nts.new_doc("Task")
 		task.update(
 			dict(doctype="Task", subject="_Test Project Task 1", status="Open", project=project)
 		).insert()
@@ -57,20 +57,20 @@ class TestExpenseClaim(HRMSTestSuite):
 
 		make_expense_claim(payable_account, 300, 200, company_name, "Travel Expenses - _TC3", project, task)
 
-		self.assertEqual(frappe.db.get_value("Task", task, "total_expense_claim"), 200)
-		self.assertEqual(frappe.db.get_value("Project", project, "total_expense_claim"), 200)
+		self.assertEqual(nts.db.get_value("Task", task, "total_expense_claim"), 200)
+		self.assertEqual(nts.db.get_value("Project", project, "total_expense_claim"), 200)
 
 		expense_claim2 = make_expense_claim(
 			payable_account, 600, 500, company_name, "Travel Expenses - _TC3", project, task
 		)
 
-		self.assertEqual(frappe.db.get_value("Task", task, "total_expense_claim"), 700)
-		self.assertEqual(frappe.db.get_value("Project", project, "total_expense_claim"), 700)
+		self.assertEqual(nts.db.get_value("Task", task, "total_expense_claim"), 700)
+		self.assertEqual(nts.db.get_value("Project", project, "total_expense_claim"), 700)
 
 		expense_claim2.cancel()
 
-		self.assertEqual(frappe.db.get_value("Task", task, "total_expense_claim"), 200)
-		self.assertEqual(frappe.db.get_value("Project", project, "total_expense_claim"), 200)
+		self.assertEqual(nts.db.get_value("Task", task, "total_expense_claim"), 200)
+		self.assertEqual(nts.db.get_value("Project", project, "total_expense_claim"), 200)
 
 	def test_expense_claim_status_as_payment_from_journal_entry(self):
 		# Via Journal Entry
@@ -92,7 +92,7 @@ class TestExpenseClaim(HRMSTestSuite):
 		self.assertEqual(claim.status, "Submitted")
 
 		# no gl entries created
-		gl_entry = frappe.get_all("GL Entry", {"voucher_type": "Expense Claim", "voucher_no": claim.name})
+		gl_entry = nts.get_all("GL Entry", {"voucher_type": "Expense Claim", "voucher_no": claim.name})
 		self.assertEqual(len(gl_entry), 0)
 
 	def test_expense_claim_status_as_payment_from_payment_entry(self):
@@ -114,7 +114,7 @@ class TestExpenseClaim(HRMSTestSuite):
 		# Allocation via Payment Reconciliation Tool for mutiple employees using journal entry
 		payable_account = get_payable_account(company_name)
 		# Make employee
-		employee = frappe.db.get_value(
+		employee = nts.db.get_value(
 			"Employee",
 			{"status": "Active", "company": company_name, "first_name": "test_employee1@expenseclaim.com"},
 			"name",
@@ -172,7 +172,7 @@ class TestExpenseClaim(HRMSTestSuite):
 			make_journal_entry_for_advance,
 		)
 
-		frappe.db.delete("Employee Advance")
+		nts.db.delete("Employee Advance")
 
 		payable_account = get_payable_account("_Test Company")
 		claim = make_expense_claim(
@@ -198,7 +198,7 @@ class TestExpenseClaim(HRMSTestSuite):
 			make_journal_entry_for_advance,
 		)
 
-		frappe.db.delete("Employee Advance")
+		nts.db.delete("Employee Advance")
 
 		payable_account = get_payable_account("_Test Company")
 		taxes = generate_taxes("_Test Company")
@@ -232,7 +232,7 @@ class TestExpenseClaim(HRMSTestSuite):
 			make_journal_entry_for_advance,
 		)
 
-		frappe.db.delete("Employee Advance")
+		nts.db.delete("Employee Advance")
 
 		payable_account = get_payable_account("_Test Company")
 		claim = make_expense_claim(
@@ -330,7 +330,7 @@ class TestExpenseClaim(HRMSTestSuite):
 		)
 		expense_claim.submit()
 
-		gl_entries = frappe.db.sql(
+		gl_entries = nts.db.sql(
 			"""select account, debit, credit
 			from `tabGL Entry` where voucher_type='Expense Claim' and voucher_no=%s
 			order by account asc""",
@@ -378,7 +378,7 @@ class TestExpenseClaim(HRMSTestSuite):
 		self.assertEqual(pe.references[0].exchange_rate, 1.0)
 		# Invalid gain/loss JE shouldn't be created for base currency Expense Claims
 		self.assertEqual(
-			frappe.db.get_all(
+			nts.db.get_all(
 				"Journal Entry Account",
 				filters={
 					"reference_type": expense_claim.doctype,
@@ -391,7 +391,7 @@ class TestExpenseClaim(HRMSTestSuite):
 
 	def test_rejected_expense_claim(self):
 		payable_account = get_payable_account(company_name)
-		expense_claim = frappe.get_doc(
+		expense_claim = nts.get_doc(
 			{
 				"doctype": "Expense Claim",
 				"employee": "_T-Employee-00001",
@@ -412,7 +412,7 @@ class TestExpenseClaim(HRMSTestSuite):
 		self.assertEqual(expense_claim.status, "Rejected")
 		self.assertEqual(expense_claim.total_sanctioned_amount, 0.0)
 
-		gl_entry = frappe.get_all(
+		gl_entry = nts.get_all(
 			"GL Entry", {"voucher_type": "Expense Claim", "voucher_no": expense_claim.name}
 		)
 		self.assertEqual(len(gl_entry), 0)
@@ -428,23 +428,23 @@ class TestExpenseClaim(HRMSTestSuite):
 		)
 		expense_claim.expense_approver = user
 		expense_claim.save()
-		self.assertTrue(expense_claim.name in frappe.share.get_shared("Expense Claim", user))
+		self.assertTrue(expense_claim.name in nts.share.get_shared("Expense Claim", user))
 
 		# check shared doc revoked
 		expense_claim.reload()
 		expense_claim.expense_approver = "test@example.com"
 		expense_claim.save()
-		self.assertTrue(expense_claim.name not in frappe.share.get_shared("Expense Claim", user))
+		self.assertTrue(expense_claim.name not in nts.share.get_shared("Expense Claim", user))
 
 		expense_claim.reload()
 		expense_claim.expense_approver = user
 		expense_claim.save()
 
-		frappe.set_user(user)
+		nts.set_user(user)
 		expense_claim.reload()
 		expense_claim.status = "Approved"
 		expense_claim.submit()
-		frappe.set_user("Administrator")
+		nts.set_user("Administrator")
 
 	def test_multiple_payment_entries_against_expense(self):
 		# Creating expense claim
@@ -486,13 +486,13 @@ class TestExpenseClaim(HRMSTestSuite):
 		self.assertEqual(expense_claim.total_amount_reimbursed, 5500)
 
 	def test_expense_claim_against_delivery_trip(self):
-		from erpnext.stock.doctype.delivery_trip.test_delivery_trip import (
+		from prodman.stock.doctype.delivery_trip.test_delivery_trip import (
 			create_address,
 			create_delivery_trip,
 			create_driver,
 			create_vehicle,
 		)
-		from erpnext.tests.utils import create_test_contact_and_address
+		from prodman.tests.utils import create_test_contact_and_address
 
 		driver = create_driver()
 		create_vehicle()
@@ -537,7 +537,7 @@ class TestExpenseClaim(HRMSTestSuite):
 		expense_claim.expenses[0].project = project
 		expense_claim.submit()
 
-		dimensions = frappe.db.get_value(
+		dimensions = nts.db.get_value(
 			"GL Entry",
 			{
 				"voucher_type": "Expense Claim",
@@ -579,7 +579,7 @@ class TestExpenseClaim(HRMSTestSuite):
 	def test_repost(self):
 		# Update repost settings
 		allowed_types = ["Expense Claim"]
-		repost_settings = frappe.get_doc("Repost Accounting Ledger Settings")
+		repost_settings = nts.get_doc("Repost Accounting Ledger Settings")
 		for x in allowed_types:
 			repost_settings.append("allowed_types", {"document_type": x, "allowed": True})
 		repost_settings.save()
@@ -597,20 +597,20 @@ class TestExpenseClaim(HRMSTestSuite):
 		expected_data = [{"total_debit": 110.0, "total_credit": 110.0}]
 
 		# assert ledger entries
-		ledger_balance = frappe.db.get_all(
+		ledger_balance = nts.db.get_all(
 			"GL Entry",
 			filters={"voucher_no": expense_claim.name, "is_cancelled": 0},
 			fields=["sum(debit) as total_debit", "sum(credit) as total_credit"],
 		)
 		self.assertEqual(ledger_balance, expected_data)
 
-		gl_entries = frappe.db.get_all(
+		gl_entries = nts.db.get_all(
 			"GL Entry", filters={"account": expense_claim.payable_account, "voucher_no": expense_claim.name}
 		)
 		self.assertEqual(len(gl_entries), 1)
-		frappe.db.set_value("GL Entry", gl_entries[0].name, "credit", 0)
+		nts.db.set_value("GL Entry", gl_entries[0].name, "credit", 0)
 
-		ledger_balance = frappe.db.get_all(
+		ledger_balance = nts.db.get_all(
 			"GL Entry",
 			filters={"voucher_no": expense_claim.name, "is_cancelled": 0},
 			fields=["sum(debit) as total_debit", "sum(credit) as total_credit"],
@@ -618,13 +618,13 @@ class TestExpenseClaim(HRMSTestSuite):
 		self.assertNotEqual(ledger_balance, expected_data)
 
 		# Do a repost
-		repost_doc = frappe.new_doc("Repost Accounting Ledger")
+		repost_doc = nts.new_doc("Repost Accounting Ledger")
 		repost_doc.company = expense_claim.company
 		repost_doc.append(
 			"vouchers", {"voucher_type": expense_claim.doctype, "voucher_no": expense_claim.name}
 		)
 		repost_doc.save().submit()
-		ledger_balance = frappe.db.get_all(
+		ledger_balance = nts.db.get_all(
 			"GL Entry",
 			filters={"voucher_no": expense_claim.name, "is_cancelled": 0},
 			fields=["sum(debit) as total_debit", "sum(credit) as total_credit"],
@@ -633,19 +633,19 @@ class TestExpenseClaim(HRMSTestSuite):
 
 	def test_company_department_validation(self):
 		# validate company and department
-		expense_claim = frappe.new_doc("Expense Claim")
+		expense_claim = nts.new_doc("Expense Claim")
 		expense_claim.company = "_Test Company 3"
 		expense_claim.department = "Accounts - _TC2"
 		self.assertRaises(MismatchError, expense_claim.save)
 
 
 def get_payable_account(company):
-	return frappe.get_cached_value("Company", company, "default_payable_account")
+	return nts.get_cached_value("Company", company, "default_payable_account")
 
 
 def generate_taxes(company=None, rate=None) -> dict:
 	company = company or company_name
-	parent_account = frappe.db.get_value(
+	parent_account = nts.db.get_value(
 		"Account", filters={"account_name": "Duties and Taxes", "company": company}
 	)
 	account = create_account(
@@ -655,7 +655,7 @@ def generate_taxes(company=None, rate=None) -> dict:
 		parent_account=parent_account,
 	)
 
-	cost_center = frappe.db.get_value("Company", company, "cost_center")
+	cost_center = nts.db.get_value("Company", company, "cost_center")
 
 	return {
 		"taxes": [
@@ -682,11 +682,11 @@ def make_expense_claim(
 	employee=None,
 ):
 	if not employee:
-		employee = frappe.db.get_value("Employee", {"status": "Active", "company": company})
+		employee = nts.db.get_value("Employee", {"status": "Active", "company": company})
 		if not employee:
 			employee = make_employee("test_employee@expenseclaim.com", company=company)
 
-	currency, cost_center = frappe.db.get_value("Company", company, ["default_currency", "cost_center"])
+	currency, cost_center = nts.db.get_value("Company", company, ["default_currency", "cost_center"])
 	expense_claim = {
 		"doctype": "Expense Claim",
 		"employee": employee,
@@ -708,7 +708,7 @@ def make_expense_claim(
 	if taxes:
 		expense_claim.update(taxes)
 
-	expense_claim = frappe.get_doc(expense_claim)
+	expense_claim = nts.get_doc(expense_claim)
 
 	if project:
 		expense_claim.project = project
@@ -737,7 +737,7 @@ def make_payment_entry(expense_claim, amount):
 
 def make_journal_entry(expense_claim, do_not_submit=False):
 	je_dict = make_bank_entry("Expense Claim", expense_claim.name)
-	je = frappe.get_doc(je_dict)
+	je = nts.get_doc(je_dict)
 	je.posting_date = nowdate()
 	je.cheque_no = random_string(5)
 	je.cheque_date = nowdate()
@@ -749,7 +749,7 @@ def make_journal_entry(expense_claim, do_not_submit=False):
 
 
 def create_payment_reconciliation(company, employee, payable_account):
-	pr = frappe.new_doc("Payment Reconciliation")
+	pr = nts.new_doc("Payment Reconciliation")
 	pr.company = company
 	pr.party_type = "Employee"
 	pr.party = employee
@@ -764,16 +764,16 @@ def allocate_using_payment_reconciliation(expense_claim, employee, journal_entry
 	invoices = [x.as_dict() for x in pr.get("invoices") if x.invoice_number == expense_claim.name]
 	payments = [x.as_dict() for x in pr.get("payments") if x.reference_name == journal_entry.name]
 
-	pr.allocate_entries(frappe._dict({"invoices": invoices, "payments": payments}))
+	pr.allocate_entries(nts._dict({"invoices": invoices, "payments": payments}))
 	pr.reconcile()
 
 
 def create_project(project_name):
-	project = frappe.db.exists("Project", {"project_name": project_name})
+	project = nts.db.exists("Project", {"project_name": project_name})
 	if project:
 		return project
 
-	doc = frappe.new_doc("Project")
+	doc = nts.new_doc("Project")
 	doc.project_name = project_name
 	doc.insert()
 	return doc.name

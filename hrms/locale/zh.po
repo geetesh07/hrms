@@ -1,20 +1,20 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: frappe\n"
-"Report-Msgid-Bugs-To: contact@frappe.io\n"
+"Project-Id-Version: nts\n"
+"Report-Msgid-Bugs-To: contact@nts.io\n"
 "POT-Creation-Date: 2025-05-04 09:34+0000\n"
 "PO-Revision-Date: 2025-05-05 18:11\n"
-"Last-Translator: contact@frappe.io\n"
+"Last-Translator: contact@nts.io\n"
 "Language-Team: Chinese Simplified\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.13.1\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Crowdin-Project: frappe\n"
+"X-Crowdin-Project: nts\n"
 "X-Crowdin-Project-ID: 639578\n"
 "X-Crowdin-Language: zh-CN\n"
-"X-Crowdin-File: /[frappe.hrms] develop/hrms/locale/main.pot\n"
+"X-Crowdin-File: /[nts.hrms] develop/hrms/locale/main.pot\n"
 "X-Crowdin-File-ID: 58\n"
 "Language: zh_CN\n"
 
@@ -2817,7 +2817,7 @@ msgstr "求职信"
 #: hrms/payroll/doctype/salary_structure/salary_structure.js:152
 #: hrms/payroll/doctype/salary_structure_assignment/salary_structure_assignment.js:68
 #: hrms/payroll/doctype/salary_structure_assignment/salary_structure_assignment.js:70
-#: hrms/public/js/erpnext/delivery_trip.js:15
+#: hrms/public/js/prodman/delivery_trip.js:15
 msgid "Create"
 msgstr "创建"
 
@@ -2861,7 +2861,7 @@ msgstr "创建新员工编号"
 msgid "Create Payment Entry"
 msgstr "创建付款分录"
 
-#: hrms/public/js/erpnext/timesheet.js:8
+#: hrms/public/js/prodman/timesheet.js:8
 msgid "Create Salary Slip"
 msgstr "创建工资条"
 
@@ -5425,7 +5425,7 @@ msgstr "费用报销必须指定审批人"
 #: hrms/hr/report/unpaid_expense_claim/unpaid_expense_claim.py:20
 #: hrms/hr/workspace/expense_claims/expense_claims.json
 #: hrms/hr/workspace/overview/overview.json
-#: hrms/public/js/erpnext/delivery_trip.js:8
+#: hrms/public/js/prodman/delivery_trip.js:8
 msgid "Expense Claim"
 msgstr "费用报销"
 
@@ -5894,8 +5894,8 @@ msgid "Fractional Cost"
 msgstr "分摊成本"
 
 #: frontend/src/components/BaseLayout.vue:9
-msgid "Frappe HR"
-msgstr "Frappe HR系统"
+msgid "nts HR"
+msgstr "nts HR系统"
 
 #. Label of the frequency (Select) field in DocType 'Shift Schedule'
 #. Label of the frequency (Select) field in DocType 'Vehicle Service'
@@ -6823,8 +6823,8 @@ msgid "If set, the job opening will be closed automatically after this date"
 msgstr "设置后，该职位空缺将在该日期后自动关闭"
 
 #: hrms/patches/v15_0/notify_about_loan_app_separation.py:17
-msgid "If you are using loans in salary slips, please install the {0} app from Frappe Cloud Marketplace or GitHub to continue using loan integration with payroll."
-msgstr "若在工资条中使用贷款功能，请从Frappe云端市场或GitHub安装{0}应用以继续使用薪资集成贷款功能。"
+msgid "If you are using loans in salary slips, please install the {0} app from nts Cloud Marketplace or GitHub to continue using loan integration with payroll."
+msgstr "若在工资条中使用贷款功能，请从nts云端市场或GitHub安装{0}应用以继续使用薪资集成贷款功能。"
 
 #. Label of the upload_attendance_data (Section Break) field in DocType 'Upload
 #. Attendance'
@@ -7032,8 +7032,8 @@ msgstr "安装"
 
 #: frontend/src/components/InstallPrompt.vue:5
 #: frontend/src/components/InstallPrompt.vue:28
-msgid "Install Frappe HR"
-msgstr "安装Frappe HR系统"
+msgid "Install nts HR"
+msgstr "安装nts HR系统"
 
 #: hrms/hr/doctype/leave_application/leave_application.py:436
 msgid "Insufficient Balance"
@@ -8250,8 +8250,8 @@ msgid "Login Failed"
 msgstr "登录失败"
 
 #: frontend/src/views/Login.vue:8
-msgid "Login to Frappe HR"
-msgstr "登录Frappe HR系统"
+msgid "Login to nts HR"
+msgstr "登录nts HR系统"
 
 #. Label of the longitude (Float) field in DocType 'Employee Checkin'
 #. Label of the longitude (Float) field in DocType 'Shift Location'
@@ -14132,8 +14132,8 @@ msgid "Violet"
 msgstr "紫色"
 
 #: hrms/patches/v15_0/notify_about_loan_app_separation.py:16
-msgid "WARNING: Loan Management module has been separated from ERPNext."
-msgstr "警告：贷款管理模块已从ERPNext中分离"
+msgid "WARNING: Loan Management module has been separated from prodman."
+msgstr "警告：贷款管理模块已从prodman中分离"
 
 #: hrms/setup.py:392
 msgid "Walk In"

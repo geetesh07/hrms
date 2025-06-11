@@ -1,20 +1,20 @@
 import math
 
-import frappe
-from frappe import _
-from frappe.utils import add_days, date_diff, flt, get_link_to_form, month_diff
+import nts
+from nts import _
+from nts.utils import add_days, date_diff, flt, get_link_to_form, month_diff
 
 from hrms.hr.utils import get_salary_assignments
 from hrms.payroll.doctype.salary_structure.salary_structure import make_salary_slip
 
 
 def calculate_annual_eligible_hra_exemption(doc):
-	basic_component, hra_component = frappe.db.get_value(
+	basic_component, hra_component = nts.db.get_value(
 		"Company", doc.company, ["basic_component", "hra_component"]
 	)
 
 	if not (basic_component and hra_component):
-		frappe.throw(
+		nts.throw(
 			_("Please set Basic and HRA component in Company {0}").format(
 				get_link_to_form("Company", doc.company)
 			)
@@ -26,9 +26,9 @@ def calculate_annual_eligible_hra_exemption(doc):
 		assignments = get_salary_assignments(doc.employee, doc.payroll_period)
 
 		if not assignments and doc.docstatus == 1:
-			frappe.throw(_("Salary Structure must be submitted before submission of {0}").format(doc.doctype))
+			nts.throw(_("Salary Structure must be submitted before submission of {0}").format(doc.doctype))
 
-		period_start_date = frappe.db.get_value("Payroll Period", doc.payroll_period, "start_date")
+		period_start_date = nts.db.get_value("Payroll Period", doc.payroll_period, "start_date")
 
 		assignment_dates = []
 		for assignment in assignments:
@@ -47,7 +47,7 @@ def calculate_annual_eligible_hra_exemption(doc):
 				)
 				to_date = get_end_date_for_assignment(assignment_dates, idx, doc.payroll_period)
 
-				frequency = frappe.get_value(
+				frequency = nts.get_value(
 					"Salary Structure", assignment.salary_structure, "payroll_frequency"
 				)
 				basic_amount += get_component_pay(frequency, basic_salary_amt, assignment.from_date, to_date)
@@ -67,7 +67,7 @@ def calculate_annual_eligible_hra_exemption(doc):
 				else:
 					annual_exemption = 0
 
-	return frappe._dict(
+	return nts._dict(
 		{
 			"hra_amount": hra_amount,
 			"annual_exemption": annual_exemption,
@@ -77,7 +77,7 @@ def calculate_annual_eligible_hra_exemption(doc):
 
 
 def has_hra_component(salary_structure, hra_component):
-	return frappe.db.exists(
+	return nts.db.exists(
 		"Salary Detail",
 		{
 			"parent": salary_structure,
@@ -98,7 +98,7 @@ def get_end_date_for_assignment(assignment_dates, idx, payroll_period):
 		pass
 
 	if not end_date:
-		end_date = frappe.db.get_value("Payroll Period", payroll_period, "end_date")
+		end_date = nts.db.get_value("Payroll Period", payroll_period, "end_date")
 
 	return end_date
 
@@ -159,12 +159,12 @@ def get_component_pay(frequency, amount, from_date, to_date):
 
 def validate_house_rent_dates(doc):
 	if not doc.rented_to_date or not doc.rented_from_date:
-		frappe.throw(_("House rented dates required for exemption calculation"))
+		nts.throw(_("House rented dates required for exemption calculation"))
 
 	if date_diff(doc.rented_to_date, doc.rented_from_date) < 14:
-		frappe.throw(_("House rented dates should be atleast 15 days apart"))
+		nts.throw(_("House rented dates should be atleast 15 days apart"))
 
-	proofs = frappe.db.sql(
+	proofs = nts.db.sql(
 		"""
 		select name
 		from `tabEmployee Tax Exemption Proof Submission`
@@ -181,7 +181,7 @@ def validate_house_rent_dates(doc):
 	)
 
 	if proofs:
-		frappe.throw(_("House rent paid days overlapping with {0}").format(proofs[0][0]))
+		nts.throw(_("House rent paid days overlapping with {0}").format(proofs[0][0]))
 
 
 def calculate_hra_exemption_for_period(doc):

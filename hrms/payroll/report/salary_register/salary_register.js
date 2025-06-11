@@ -1,13 +1,13 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Salary Register"] = {
+nts.query_reports["Salary Register"] = {
 	filters: [
 		{
 			fieldname: "from_date",
 			label: __("From"),
 			fieldtype: "Date",
-			default: frappe.datetime.add_months(frappe.datetime.get_today(), -1),
+			default: nts.datetime.add_months(nts.datetime.get_today(), -1),
 			reqd: 1,
 			width: "100px",
 		},
@@ -15,7 +15,7 @@ frappe.query_reports["Salary Register"] = {
 			fieldname: "to_date",
 			label: __("To"),
 			fieldtype: "Date",
-			default: frappe.datetime.get_today(),
+			default: nts.datetime.get_today(),
 			reqd: 1,
 			width: "100px",
 		},
@@ -24,7 +24,7 @@ frappe.query_reports["Salary Register"] = {
 			fieldtype: "Link",
 			options: "Currency",
 			label: __("Currency"),
-			default: erpnext.get_currency(frappe.defaults.get_default("Company")),
+			default: prodman.get_currency(nts.defaults.get_default("Company")),
 			width: "50px",
 		},
 		{
@@ -39,7 +39,7 @@ frappe.query_reports["Salary Register"] = {
 			label: __("Company"),
 			fieldtype: "Link",
 			options: "Company",
-			default: frappe.defaults.get_user_default("Company"),
+			default: nts.defaults.get_user_default("Company"),
 			width: "100px",
 			reqd: 1,
 		},

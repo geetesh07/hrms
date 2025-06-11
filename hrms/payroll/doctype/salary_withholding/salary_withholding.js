@@ -1,11 +1,11 @@
-// Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Salary Withholding", {
+nts.ui.form.on("Salary Withholding", {
 	employee(frm) {
 		if (!frm.doc.employee) return;
 
-		frappe
+		nts
 			.call({
 				method: "hrms.payroll.doctype.salary_withholding.salary_withholding.get_payroll_frequency",
 				args: {
@@ -22,7 +22,7 @@ frappe.ui.form.on("Salary Withholding", {
 
 	from_date(frm) {
 		if (!frm.doc.from_date || !frm.doc.payroll_frequency)
-			frappe.msgprint(__("Please select From Date and Payroll Frequency first"));
+			nts.msgprint(__("Please select From Date and Payroll Frequency first"));
 
 		frm.call({
 			method: "set_withholding_cycles_and_to_date",

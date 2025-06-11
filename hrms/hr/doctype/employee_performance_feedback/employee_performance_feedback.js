@@ -1,7 +1,7 @@
-// Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2022, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Employee Performance Feedback", {
+nts.ui.form.on("Employee Performance Feedback", {
 	onload(frm) {
 		frm.trigger("set_reviewer");
 	},
@@ -42,8 +42,8 @@ frappe.ui.form.on("Employee Performance Feedback", {
 
 	set_reviewer(frm) {
 		if (!frm.doc.reviewer) {
-			frappe.db
-				.get_value("Employee", { user_id: frappe.session.user }, "name")
+			nts.db
+				.get_value("Employee", { user_id: nts.session.user }, "name")
 				.then((employee_record) => {
 					const session_employee = employee_record?.message?.name;
 					if (session_employee) frm.set_value("reviewer", session_employee);

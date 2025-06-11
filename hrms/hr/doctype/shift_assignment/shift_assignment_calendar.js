@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.views.calendar["Shift Assignment"] = {
+nts.views.calendar["Shift Assignment"] = {
 	field_map: {
 		start: "start_date",
 		end: "end_date",

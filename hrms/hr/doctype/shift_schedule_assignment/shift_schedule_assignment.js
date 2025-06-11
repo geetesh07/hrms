@@ -1,7 +1,7 @@
-// Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-// frappe.ui.form.on("Shift Schedule Assignment", {
+// nts.ui.form.on("Shift Schedule Assignment", {
 // 	refresh(frm) {
 
 // 	},

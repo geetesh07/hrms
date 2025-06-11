@@ -70,7 +70,7 @@ const employeeCurrency = createResource({
 })
 
 const exchangeRate = createResource({
-	url: "erpnext.setup.utils.get_exchange_rate",
+	url: "prodman.setup.utils.get_exchange_rate",
 	onSuccess(data) {
 		employeeAdvance.value.exchange_rate = data
 	},

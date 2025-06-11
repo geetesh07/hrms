@@ -1,12 +1,12 @@
-# Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2020, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase, change_settings
-from frappe.utils import add_days, add_months, floor, flt, get_datetime, get_first_day, getdate
+import nts
+from nts.tests import IntegrationTestCase, change_settings
+from nts.utils import add_days, add_months, floor, flt, get_datetime, get_first_day, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 
 from hrms.hr.doctype.attendance.attendance import mark_attendance
 from hrms.hr.doctype.expense_claim.test_expense_claim import get_payable_account
@@ -25,7 +25,7 @@ test_dependencies = ["Salary Component", "Salary Slip", "Account"]
 class TestGratuity(IntegrationTestCase):
 	def setUp(self):
 		for dt in ["Gratuity", "Salary Slip", "Additional Salary"]:
-			frappe.db.delete(dt)
+			nts.db.delete(dt)
 
 		self.date_of_joining = add_days(getdate(), -(6 * 365))
 		self.relieving_date = getdate()
@@ -61,7 +61,7 @@ class TestGratuity(IntegrationTestCase):
 		self.assertEqual(gratuity.current_work_experience, experience)
 
 		# amount calculation
-		component_amount = frappe.get_all(
+		component_amount = nts.get_all(
 			"Salary Detail",
 			filters={
 				"docstatus": 1,
@@ -76,7 +76,7 @@ class TestGratuity(IntegrationTestCase):
 		self.assertEqual(flt(gratuity_amount, 2), flt(gratuity.amount, 2))
 
 		# additional salary creation (Pay via salary slip)
-		self.assertTrue(frappe.db.exists("Additional Salary", {"ref_docname": gratuity.name}))
+		self.assertTrue(nts.db.exists("Additional Salary", {"ref_docname": gratuity.name}))
 
 		# gratuity should be marked "Paid" on the next salary slip submission
 		salary_slip = make_salary_slip("Test Gratuity", employee=self.employee)
@@ -106,7 +106,7 @@ class TestGratuity(IntegrationTestCase):
 			{"from_year": 3, "to_year": 6, "fraction_of_applicable_earnings": 1.0},
 			{"from_year": 6, "to_year": 9, "fraction_of_applicable_earnings": 1.5},
 		]:
-			new_slab = frappe.get_doc(
+			new_slab = nts.get_doc(
 				{
 					"doctype": "Gratuity Rule Slab",
 					"from_year": slab["from_year"],
@@ -135,7 +135,7 @@ class TestGratuity(IntegrationTestCase):
 		self.assertEqual(gratuity.current_work_experience, experience)
 
 		# amount calculation
-		component_amount = frappe.get_all(
+		component_amount = nts.get_all(
 			"Salary Detail",
 			filters={
 				"docstatus": 1,
@@ -186,7 +186,7 @@ class TestGratuity(IntegrationTestCase):
 		self.assertEqual(gratuity.amount, 190000.0)
 
 		# gratuity amount should be unaffected inspite of marking the employee absent for a day
-		frappe.db.delete("Gratuity", gratuity.name)
+		nts.db.delete("Gratuity", gratuity.name)
 		mark_attendance(self.employee, date, "Absent")
 		gratuity = create_gratuity(
 			expense_account="Payment Account - _TC", mode_of_payment="Cash", employee=self.employee
@@ -227,7 +227,7 @@ class TestGratuity(IntegrationTestCase):
 		fnf.submit()
 
 		jv = fnf.create_journal_entry()
-		jv.accounts[1].account = frappe.get_cached_value("Company", "_Test Company", "default_bank_account")
+		jv.accounts[1].account = nts.get_cached_value("Company", "_Test Company", "default_bank_account")
 		jv.cheque_no = "123456"
 		jv.cheque_date = getdate()
 		jv.save()
@@ -244,10 +244,10 @@ class TestGratuity(IntegrationTestCase):
 def setup_gratuity_rule(name: str) -> dict:
 	from hrms.regional.united_arab_emirates.setup import setup
 
-	if not frappe.db.exists("Gratuity Rule", name):
+	if not nts.db.exists("Gratuity Rule", name):
 		setup()
 
-	rule = frappe.get_doc("Gratuity Rule", name)
+	rule = nts.get_doc("Gratuity Rule", name)
 	rule.applicable_earnings_component = []
 	rule.append("applicable_earnings_component", {"salary_component": "Basic Salary"})
 	rule.save()
@@ -257,8 +257,8 @@ def setup_gratuity_rule(name: str) -> dict:
 
 def create_gratuity(**args):
 	if args:
-		args = frappe._dict(args)
-	gratuity = frappe.new_doc("Gratuity")
+		args = nts._dict(args)
+	gratuity = nts.new_doc("Gratuity")
 	gratuity.employee = args.employee
 	gratuity.posting_date = getdate()
 	gratuity.gratuity_rule = args.rule or "Rule Under Limited Contract (UAE)"
@@ -279,10 +279,10 @@ def create_gratuity(**args):
 
 
 def set_mode_of_payment_account():
-	if not frappe.db.exists("Account", "Payment Account - _TC"):
+	if not nts.db.exists("Account", "Payment Account - _TC"):
 		mode_of_payment = create_account()
 
-	mode_of_payment = frappe.get_doc("Mode of Payment", "Cash")
+	mode_of_payment = nts.get_doc("Mode of Payment", "Cash")
 
 	mode_of_payment.accounts = []
 	mode_of_payment.append("accounts", {"company": "_Test Company", "default_account": "_Test Bank - _TC"})
@@ -290,7 +290,7 @@ def set_mode_of_payment_account():
 
 
 def create_account():
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Account",
 			"company": "_Test Company",

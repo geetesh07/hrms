@@ -1,10 +1,10 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
+import nts
+from nts.tests import IntegrationTestCase
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.payroll.doctype.employee_tax_exemption_declaration.test_employee_tax_exemption_declaration import (
 	PAYROLL_PERIOD_END,
@@ -18,8 +18,8 @@ from hrms.payroll.doctype.employee_tax_exemption_declaration.test_employee_tax_e
 
 class TestEmployeeTaxExemptionProofSubmission(IntegrationTestCase):
 	def setUp(self):
-		frappe.db.delete("Employee Tax Exemption Proof Submission")
-		frappe.db.delete("Salary Structure Assignment")
+		nts.db.delete("Employee Tax Exemption Proof Submission")
+		nts.db.delete("Salary Structure Assignment")
 
 		make_employee("employee@proofsubmission.com", company="_Test Company")
 		create_payroll_period(
@@ -32,10 +32,10 @@ class TestEmployeeTaxExemptionProofSubmission(IntegrationTestCase):
 		create_exemption_category()
 
 	def test_exemption_amount_lesser_than_category_max(self):
-		proof = frappe.get_doc(
+		proof = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Proof Submission",
-				"employee": frappe.get_value("Employee", {"user_id": "employee@proofsubmission.com"}, "name"),
+				"employee": nts.get_value("Employee", {"user_id": "employee@proofsubmission.com"}, "name"),
 				"payroll_period": "Test Payroll Period",
 				"tax_exemption_proofs": [
 					dict(
@@ -47,12 +47,12 @@ class TestEmployeeTaxExemptionProofSubmission(IntegrationTestCase):
 				],
 			}
 		)
-		self.assertRaises(frappe.ValidationError, proof.save)
-		proof = frappe.get_doc(
+		self.assertRaises(nts.ValidationError, proof.save)
+		proof = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Proof Submission",
 				"payroll_period": "Test Payroll Period",
-				"employee": frappe.get_value("Employee", {"user_id": "employee@proofsubmission.com"}, "name"),
+				"employee": nts.get_value("Employee", {"user_id": "employee@proofsubmission.com"}, "name"),
 				"tax_exemption_proofs": [
 					dict(
 						exemption_sub_category="_Test Sub Category",
@@ -67,10 +67,10 @@ class TestEmployeeTaxExemptionProofSubmission(IntegrationTestCase):
 		self.assertTrue(proof.submit)
 
 	def test_duplicate_category_in_proof_submission(self):
-		proof = frappe.get_doc(
+		proof = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Proof Submission",
-				"employee": frappe.get_value("Employee", {"user_id": "employee@proofsubmission.com"}, "name"),
+				"employee": nts.get_value("Employee", {"user_id": "employee@proofsubmission.com"}, "name"),
 				"payroll_period": "Test Payroll Period",
 				"tax_exemption_proofs": [
 					dict(
@@ -87,17 +87,17 @@ class TestEmployeeTaxExemptionProofSubmission(IntegrationTestCase):
 				],
 			}
 		)
-		self.assertRaises(frappe.ValidationError, proof.save)
+		self.assertRaises(nts.ValidationError, proof.save)
 
 	def test_india_hra_exemption(self):
 		# set country
-		current_country = frappe.flags.country
-		frappe.flags.country = "India"
+		current_country = nts.flags.country
+		nts.flags.country = "India"
 
-		employee = frappe.get_value("Employee", {"user_id": "employee@proofsubmission.com"}, "name")
+		employee = nts.get_value("Employee", {"user_id": "employee@proofsubmission.com"}, "name")
 		setup_hra_exemption_prerequisites("Monthly", employee)
 
-		proof = frappe.get_doc(
+		proof = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Proof Submission",
 				"employee": employee,
@@ -139,4 +139,4 @@ class TestEmployeeTaxExemptionProofSubmission(IntegrationTestCase):
 		self.assertEqual(proof.exemption_amount, 136000)
 
 		# reset
-		frappe.flags.country = current_country
+		nts.flags.country = current_country

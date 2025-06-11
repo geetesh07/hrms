@@ -1,18 +1,18 @@
-import frappe
-from frappe.utils import add_months, get_first_day, get_last_day, getdate, now_datetime
+import nts
+from nts.utils import add_months, get_first_day, get_last_day, getdate, now_datetime
 
-from erpnext.setup.doctype.department.department import get_abbreviated_name
-from erpnext.setup.doctype.designation.test_designation import create_designation
-from erpnext.setup.utils import enable_all_roles_and_domains
+from prodman.setup.doctype.department.department import get_abbreviated_name
+from prodman.setup.doctype.designation.test_designation import create_designation
+from prodman.setup.utils import enable_all_roles_and_domains
 
 
 def before_tests():
-	frappe.clear_cache()
+	nts.clear_cache()
 	# complete setup if missing
-	from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
+	from nts.desk.page.setup_wizard.setup_wizard import setup_complete
 
 	year = now_datetime().year
-	if not frappe.get_list("Company"):
+	if not nts.get_list("Company"):
 		setup_complete(
 			{
 				"currency": "INR",
@@ -26,7 +26,7 @@ def before_tests():
 				"fy_end_date": f"{year}-12-31",
 				"language": "english",
 				"company_tagline": "Testing",
-				"email": "test@erpnext.com",
+				"email": "test@prodman.com",
 				"password": "test",
 				"chart_of_accounts": "Standard",
 			}
@@ -34,14 +34,14 @@ def before_tests():
 
 	enable_all_roles_and_domains()
 	set_defaults()
-	frappe.db.commit()  # nosemgrep
+	nts.db.commit()  # nosemgrep
 
 
 def set_defaults():
 	from hrms.payroll.doctype.salary_slip.test_salary_slip import make_holiday_list
 
 	make_holiday_list("Salary Slip Test Holiday List")
-	frappe.db.set_value("Company", "_Test Company", "default_holiday_list", "Salary Slip Test Holiday List")
+	nts.db.set_value("Company", "_Test Company", "default_holiday_list", "Salary Slip Test Holiday List")
 
 
 def get_first_sunday(holiday_list="Salary Slip Test Holiday List", for_date=None, find_after_for_date=False):
@@ -54,7 +54,7 @@ def get_first_sunday(holiday_list="Salary Slip Test Holiday List", for_date=None
 		month_start_date = date
 
 	month_end_date = get_last_day(date)
-	first_sunday = frappe.db.sql(
+	first_sunday = nts.db.sql(
 		"""
 		select holiday_date from `tabHoliday`
 		where parent = %s
@@ -74,10 +74,10 @@ def get_first_day_for_prev_month():
 
 
 def add_date_to_holiday_list(date: str, holiday_list: str) -> None:
-	if frappe.db.exists("Holiday", {"parent": holiday_list, "holiday_date": date}):
+	if nts.db.exists("Holiday", {"parent": holiday_list, "holiday_date": date}):
 		return
 
-	holiday_list = frappe.get_doc("Holiday List", holiday_list)
+	holiday_list = nts.get_doc("Holiday List", holiday_list)
 	holiday_list.append(
 		"holidays",
 		{
@@ -89,10 +89,10 @@ def add_date_to_holiday_list(date: str, holiday_list: str) -> None:
 
 
 def create_company(name: str = "_Test Company", is_group: 0 | 1 = 0, parent_company: str | None = None):
-	if frappe.db.exists("Company", name):
-		return frappe.get_doc("Company", name)
+	if nts.db.exists("Company", name):
+		return nts.get_doc("Company", name)
 
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Company",
 			"company_name": name,
@@ -107,19 +107,19 @@ def create_company(name: str = "_Test Company", is_group: 0 | 1 = 0, parent_comp
 def create_department(name: str, company: str = "_Test Company") -> str:
 	docname = get_abbreviated_name(name, company)
 
-	if frappe.db.exists("Department", docname):
+	if nts.db.exists("Department", docname):
 		return docname
 
-	department = frappe.new_doc("Department")
+	department = nts.new_doc("Department")
 	department.update({"doctype": "Department", "department_name": name, "company": "_Test Company"})
 	department.insert()
 	return department.name
 
 
 def create_employee_grade(grade: str, default_structure: str | None = None, default_base: float = 50000):
-	if frappe.db.exists("Employee Grade", grade):
-		return frappe.get_doc("Employee Grade", grade)
-	return frappe.get_doc(
+	if nts.db.exists("Employee Grade", grade):
+		return nts.get_doc("Employee Grade", grade)
+	return nts.get_doc(
 		{
 			"doctype": "Employee Grade",
 			"__newname": grade,
@@ -130,16 +130,16 @@ def create_employee_grade(grade: str, default_structure: str | None = None, defa
 
 
 def create_job_applicant(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 	filters = {
 		"applicant_name": args.applicant_name or "_Test Applicant",
 		"email_id": args.email_id or "test_applicant@example.com",
 	}
 
-	if frappe.db.exists("Job Applicant", filters):
-		return frappe.get_doc("Job Applicant", filters)
+	if nts.db.exists("Job Applicant", filters):
+		return nts.get_doc("Job Applicant", filters)
 
-	job_applicant = frappe.get_doc(
+	job_applicant = nts.get_doc(
 		{
 			"doctype": "Job Applicant",
 			"status": args.status or "Open",
@@ -152,4 +152,4 @@ def create_job_applicant(**args):
 
 
 def get_email_by_subject(subject: str) -> str | None:
-	return frappe.db.exists("Email Queue", {"message": ("like", f"%{subject}%")})
+	return nts.db.exists("Email Queue", {"message": ("like", f"%{subject}%")})

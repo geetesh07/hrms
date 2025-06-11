@@ -1,11 +1,11 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Salary Structure Assignment", {
+nts.ui.form.on("Salary Structure Assignment", {
 	setup: function (frm) {
 		frm.set_query("employee", function () {
 			return {
-				query: "erpnext.controllers.queries.employee_query",
+				query: "prodman.controllers.queries.employee_query",
 				filters: { company: frm.doc.company },
 			};
 		});
@@ -31,7 +31,7 @@ frappe.ui.form.on("Salary Structure Assignment", {
 		});
 
 		frm.set_query("payroll_payable_account", function () {
-			var company_currency = erpnext.get_currency(frm.doc.company);
+			var company_currency = prodman.get_currency(frm.doc.company);
 			return {
 				filters: {
 					company: frm.doc.company,
@@ -60,9 +60,9 @@ frappe.ui.form.on("Salary Structure Assignment", {
 		frm.add_custom_button(
 			__("Payroll Entry"),
 			() => {
-				frappe.model.with_doctype("Payroll Entry", () => {
-					const doc = frappe.model.get_new_doc("Payroll Entry");
-					frappe.set_route("Form", "Payroll Entry", doc.name);
+				nts.model.with_doctype("Payroll Entry", () => {
+					const doc = nts.model.get_new_doc("Payroll Entry");
+					nts.set_route("Form", "Payroll Entry", doc.name);
 				});
 			},
 			__("Create"),
@@ -89,7 +89,7 @@ frappe.ui.form.on("Salary Structure Assignment", {
 
 	company: function (frm) {
 		if (frm.doc.company) {
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Company",
 				frm.doc.company,
 				"default_payroll_payable_account",
@@ -101,7 +101,7 @@ frappe.ui.form.on("Salary Structure Assignment", {
 	},
 
 	preview_salary_slip: function (frm) {
-		frappe.db.get_value(
+		nts.db.get_value(
 			"Salary Structure",
 			frm.doc.salary_structure,
 			"salary_slip_based_on_timesheet",
@@ -109,7 +109,7 @@ frappe.ui.form.on("Salary Structure Assignment", {
 				const print_format = r.salary_slip_based_on_timesheet
 					? "Salary Slip based on Timesheet"
 					: "Salary Slip Standard";
-				frappe.call({
+				nts.call({
 					method: "hrms.payroll.doctype.salary_structure.salary_structure.make_salary_slip",
 					args: {
 						source_name: frm.doc.salary_structure,
@@ -130,7 +130,7 @@ frappe.ui.form.on("Salary Structure Assignment", {
 
 	set_payroll_cost_centers: function (frm) {
 		if (frm.doc.payroll_cost_centers && frm.doc.payroll_cost_centers.length < 1) {
-			frappe.call({
+			nts.call({
 				method: "set_payroll_cost_centers",
 				doc: frm.doc,
 				callback: function (data) {

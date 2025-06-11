@@ -1,9 +1,9 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _
-from frappe.utils import cint, flt
+import nts
+from nts import _
+from nts.utils import cint, flt
 
 
 def execute(filters=None):
@@ -20,14 +20,14 @@ def get_data(filters):
 
 
 def get_rows(filters):
-	Timesheet = frappe.qb.DocType("Timesheet")
-	SalarySlip = frappe.qb.DocType("Salary Slip")
-	SalesInvoice = frappe.qb.DocType("Sales Invoice")
-	SalesInvoiceTimesheet = frappe.qb.DocType("Sales Invoice Timesheet")
-	SalarySlipTimesheet = frappe.qb.DocType("Salary Slip Timesheet")
+	Timesheet = nts.qb.DocType("Timesheet")
+	SalarySlip = nts.qb.DocType("Salary Slip")
+	SalesInvoice = nts.qb.DocType("Sales Invoice")
+	SalesInvoiceTimesheet = nts.qb.DocType("Sales Invoice Timesheet")
+	SalarySlipTimesheet = nts.qb.DocType("Salary Slip Timesheet")
 
 	query = (
-		frappe.qb.from_(SalarySlipTimesheet)
+		nts.qb.from_(SalarySlipTimesheet)
 		.inner_join(Timesheet)
 		.on(SalarySlipTimesheet.time_sheet == Timesheet.name)
 		.inner_join(SalarySlip)
@@ -78,7 +78,7 @@ def get_rows(filters):
 
 def calculate_cost_and_profit(data):
 	standard_working_hours = get_standard_working_hours()
-	precision = cint(frappe.db.get_default("float_precision")) or 2
+	precision = cint(nts.db.get_default("float_precision")) or 2
 
 	for row in data:
 		row.utilization = flt(
@@ -95,12 +95,12 @@ def calculate_cost_and_profit(data):
 
 
 def get_standard_working_hours() -> float | None:
-	standard_working_hours = frappe.db.get_single_value("HR Settings", "standard_working_hours")
+	standard_working_hours = nts.db.get_single_value("HR Settings", "standard_working_hours")
 	if not standard_working_hours:
-		frappe.throw(
+		nts.throw(
 			_("The metrics for this report are calculated based on the {0}. Please set {0} in {1}.").format(
-				frappe.bold(_("Standard Working Hours")),
-				frappe.utils.get_link_to_form("HR Settings", "HR Settings"),
+				nts.bold(_("Standard Working Hours")),
+				nts.utils.get_link_to_form("HR Settings", "HR Settings"),
 			)
 		)
 

@@ -1,6 +1,6 @@
 import requests
 
-import frappe
+import nts
 
 STANDARD_ROLES = [
 	# standard roles
@@ -27,7 +27,7 @@ STANDARD_ROLES = [
 ]
 
 
-@frappe.whitelist(allow_guest=True)
+@nts.whitelist(allow_guest=True)
 def get_add_on_details(plan: str) -> dict[str, int]:
 	"""
 	Returns the number of employees to be billed under add-ons for SAAS subscription
@@ -60,31 +60,31 @@ def get_add_on_details(plan: str) -> dict[str, int]:
 
 
 def get_active_employees() -> int:
-	return frappe.db.count("Employee", {"status": "Active"})
+	return nts.db.count("Employee", {"status": "Active"})
 
 
-@frappe.whitelist(allow_guest=True)
+@nts.whitelist(allow_guest=True)
 def subscription_updated(app: str, plan: str):
-	if app in ["hrms", "erpnext"] and plan:
-		update_erpnext_access()
+	if app in ["hrms", "prodman"] and plan:
+		update_prodman_access()
 
 
-def update_erpnext_access(user_input: dict | None):
+def update_prodman_access(user_input: dict | None):
 	"""
 	Called from hooks after setup wizard completion, ignored if user has no hrms subscription
-	enables erpnext workspaces and roles if user has subscribed to both hrms and erpnext
-	disables erpnext workspaces and roles if user has subscribed to hrms but not erpnext
+	enables prodman workspaces and roles if user has subscribed to both hrms and prodman
+	disables prodman workspaces and roles if user has subscribed to hrms but not prodman
 	"""
-	if not frappe.utils.get_url().endswith(".frappehr.com"):
+	if not nts.utils.get_url().endswith(".ntshr.com"):
 		return
 
-	update_erpnext_workspaces(True)
-	update_erpnext_roles(True)
+	update_prodman_workspaces(True)
+	update_prodman_roles(True)
 	set_app_logo()
 
 
-def update_erpnext_workspaces(disable: bool = True):
-	erpnext_workspaces = [
+def update_prodman_workspaces(disable: bool = True):
+	prodman_workspaces = [
 		"Home",
 		"Assets",
 		"Accounting",
@@ -97,22 +97,22 @@ def update_erpnext_workspaces(disable: bool = True):
 		"Support",
 	]
 
-	for workspace in erpnext_workspaces:
+	for workspace in prodman_workspaces:
 		try:
-			workspace_doc = frappe.get_doc("Workspace", workspace)
+			workspace_doc = nts.get_doc("Workspace", workspace)
 			workspace_doc.flags.ignore_links = True
 			workspace_doc.flags.ignore_validate = True
 			workspace_doc.public = 0 if disable else 1
 			workspace_doc.save()
 		except Exception:
-			frappe.clear_messages()
+			nts.clear_messages()
 
 
-def update_erpnext_roles(disable: bool = True):
-	roles = get_erpnext_roles()
+def update_prodman_roles(disable: bool = True):
+	roles = get_prodman_roles()
 	for role in roles:
 		try:
-			role_doc = frappe.get_doc("Role", role)
+			role_doc = nts.get_doc("Role", role)
 			role_doc.disabled = disable
 			role_doc.flags.ignore_links = True
 			role_doc.save()
@@ -121,35 +121,35 @@ def update_erpnext_roles(disable: bool = True):
 
 
 def set_app_logo():
-	frappe.db.set_single_value("Navbar Settings", "app_logo", "/assets/hrms/images/frappe-hr-logo.svg")
+	nts.db.set_single_value("Navbar Settings", "app_logo", "/assets/hrms/images/nts-hr-logo.svg")
 
 
-def get_erpnext_roles() -> set:
-	erpnext_roles = get_roles_for_app("erpnext")
+def get_prodman_roles() -> set:
+	prodman_roles = get_roles_for_app("prodman")
 	hrms_roles = get_roles_for_app("hrms")
-	return erpnext_roles - hrms_roles - set(STANDARD_ROLES)
+	return prodman_roles - hrms_roles - set(STANDARD_ROLES)
 
 
 def get_roles_for_app(app_name: str) -> set:
-	erpnext_modules = get_modules_by_app(app_name)
-	doctypes = get_doctypes_by_modules(erpnext_modules)
+	prodman_modules = get_modules_by_app(app_name)
+	doctypes = get_doctypes_by_modules(prodman_modules)
 	roles = roles_by_doctype(doctypes)
 
 	return roles
 
 
 def get_modules_by_app(app_name: str) -> list:
-	return frappe.db.get_all("Module Def", filters={"app_name": app_name}, pluck="name")
+	return nts.db.get_all("Module Def", filters={"app_name": app_name}, pluck="name")
 
 
 def get_doctypes_by_modules(modules: list) -> list:
-	return frappe.db.get_all("DocType", filters={"module": ("in", modules)}, pluck="name")
+	return nts.db.get_all("DocType", filters={"module": ("in", modules)}, pluck="name")
 
 
 def roles_by_doctype(doctypes: list) -> set:
 	roles = []
 	for d in doctypes:
-		permissions = frappe.get_meta(d).permissions
+		permissions = nts.get_meta(d).permissions
 
 		for d in permissions:
 			roles.append(d.role)
@@ -157,23 +157,23 @@ def roles_by_doctype(doctypes: list) -> set:
 	return set(roles)
 
 
-def hide_erpnext() -> bool:
-	hr_subscription = has_subscription(frappe.conf.sk_hrms)
-	erpnext_subscription = has_subscription(frappe.conf.sk_erpnext_smb or frappe.conf.sk_erpnext)
+def hide_prodman() -> bool:
+	hr_subscription = has_subscription(nts.conf.sk_hrms)
+	prodman_subscription = has_subscription(nts.conf.sk_prodman_smb or nts.conf.sk_prodman)
 
 	if not hr_subscription:
 		return False
 
-	if hr_subscription and erpnext_subscription:
-		# subscribed for ERPNext
+	if hr_subscription and prodman_subscription:
+		# subscribed for prodman
 		return False
 
-	# no subscription for ERPNext
+	# no subscription for prodman
 	return True
 
 
 def has_subscription(secret_key) -> bool:
-	url = f"https://frappecloud.com/api/method/press.api.developer.marketplace.get_subscription_status?secret_key={secret_key}"
+	url = f"https://ntscloud.com/api/method/press.api.developer.marketplace.get_subscription_status?secret_key={secret_key}"
 	response = requests.request(method="POST", url=url, timeout=5)
 
 	status = response.json().get("message")

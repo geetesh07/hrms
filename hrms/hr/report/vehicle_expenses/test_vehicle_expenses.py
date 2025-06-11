@@ -1,13 +1,13 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import getdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import getdate
 
-from erpnext.accounts.utils import get_fiscal_year
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.accounts.utils import get_fiscal_year
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.vehicle_log.test_vehicle_log import get_vehicle, make_vehicle_log
 from hrms.hr.doctype.vehicle_log.vehicle_log import make_expense_claim
@@ -18,9 +18,9 @@ class TestVehicleExpenses(IntegrationTestCase):
 	@classmethod
 	def setUpClass(self):
 		super().setUpClass()
-		frappe.db.sql("delete from `tabVehicle Log`")
+		nts.db.sql("delete from `tabVehicle Log`")
 
-		employee_id = frappe.db.sql("""select name from `tabEmployee` where name='testdriver@example.com'""")
+		employee_id = nts.db.sql("""select name from `tabEmployee` where name='testdriver@example.com'""")
 		self.employee_id = employee_id[0][0] if employee_id else None
 		if not self.employee_id:
 			self.employee_id = make_employee("testdriver@example.com", company="_Test Company")
@@ -68,9 +68,9 @@ class TestVehicleExpenses(IntegrationTestCase):
 
 		# clean up
 		vehicle_log.cancel()
-		frappe.delete_doc("Expense Claim", expense_claim.name)
-		frappe.delete_doc("Vehicle Log", vehicle_log.name)
+		nts.delete_doc("Expense Claim", expense_claim.name)
+		nts.delete_doc("Vehicle Log", vehicle_log.name)
 
 	def tearDown(self):
-		frappe.delete_doc("Vehicle", self.license_plate, force=1)
-		frappe.delete_doc("Employee", self.employee_id, force=1)
+		nts.delete_doc("Vehicle", self.license_plate, force=1)
+		nts.delete_doc("Employee", self.employee_id, force=1)

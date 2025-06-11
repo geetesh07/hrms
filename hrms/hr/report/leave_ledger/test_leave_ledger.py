@@ -1,9 +1,9 @@
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import add_days, add_months, flt, get_year_ending, get_year_start, getdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import add_days, add_months, flt, get_year_ending, get_year_start, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 
 from hrms.hr.doctype.leave_allocation.test_earned_leaves import (
 	allocate_earned_leaves_for_months,
@@ -25,9 +25,9 @@ class TestLeaveLedger(IntegrationTestCase):
 			"Leave Ledger Entry",
 			"Leave Period",
 		]:
-			frappe.db.delete(dt)
+			nts.db.delete(dt)
 
-		frappe.db.delete("Employee", {"company": "_Test Company"})
+		nts.db.delete("Employee", {"company": "_Test Company"})
 
 		self.date = getdate()
 		self.year_start = getdate(get_year_start(self.date))
@@ -39,11 +39,11 @@ class TestLeaveLedger(IntegrationTestCase):
 			self.year_end,
 			add_weekly_offs=False,
 		)
-		self.employee_1 = frappe.get_doc(
+		self.employee_1 = nts.get_doc(
 			"Employee",
 			make_employee("test_emp_1@example.com", company="_Test Company", holiday_list=holiday_list),
 		)
-		self.employee_2 = frappe.get_doc(
+		self.employee_2 = nts.get_doc(
 			"Employee",
 			make_employee("test_emp_2@example.com", company="_Test Company", holiday_list=holiday_list),
 		)
@@ -60,7 +60,7 @@ class TestLeaveLedger(IntegrationTestCase):
 
 	def create_earned_leave_allocation(self):
 		# emp 1 - earned leave allocation
-		frappe.flags.current_date = add_months(self.year_start, 2)
+		nts.flags.current_date = add_months(self.year_start, 2)
 		# 3 leaves allocated
 		assignments = make_policy_assignment(
 			self.employee_1,
@@ -73,10 +73,10 @@ class TestLeaveLedger(IntegrationTestCase):
 		# 7 more leaves allocated in the subsequent months
 		allocate_earned_leaves_for_months(1)
 
-		allocation = frappe.db.get_value(
+		allocation = nts.db.get_value(
 			"Leave Allocation", {"leave_policy_assignment": assignments[0]}, "name"
 		)
-		self.earned_leave_allocation = frappe.get_doc("Leave Allocation", allocation)
+		self.earned_leave_allocation = nts.get_doc("Leave Allocation", allocation)
 
 	def create_casual_leave_allocation(self):
 		allocation = create_leave_allocation(
@@ -100,7 +100,7 @@ class TestLeaveLedger(IntegrationTestCase):
 		)
 
 	def test_report_with_filters(self):
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": self.year_start,
 				"to_date": self.year_end,
@@ -151,7 +151,7 @@ class TestLeaveLedger(IntegrationTestCase):
 			return report[1][-1]
 
 		# CASE 1: no filters, skip total row
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": self.year_start,
 				"to_date": self.year_end,
@@ -162,7 +162,7 @@ class TestLeaveLedger(IntegrationTestCase):
 		self.assertNotIn("Total", total_row.employee)
 
 		# CASE 2: employee filter, add total row
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": self.year_start,
 				"to_date": self.year_end,
@@ -176,7 +176,7 @@ class TestLeaveLedger(IntegrationTestCase):
 		self.assertEqual(total_row.leaves, 2)
 
 		# CASE 3: leave type filter with only 1 allocation, add total row
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": self.year_start,
 				"to_date": self.year_end,
@@ -190,4 +190,4 @@ class TestLeaveLedger(IntegrationTestCase):
 		self.assertEqual(total_row.leaves, 13)
 
 	def tearDown(self):
-		frappe.flags.current_date = None
+		nts.flags.current_date = None

@@ -128,9 +128,9 @@ function downloadPDF() {
 	const salarySlipName = salarySlip.value.name
 	loading.value = true
 
-	let headers = { "X-Frappe-Site-Name": window.location.hostname }
+	let headers = { "X-nts-Site-Name": window.location.hostname }
 	if (window.csrf_token) {
-		headers["X-Frappe-CSRF-Token"] = window.csrf_token
+		headers["X-nts-CSRF-Token"] = window.csrf_token
 	}
 
 	fetch("/api/method/hrms.api.download_salary_slip", {

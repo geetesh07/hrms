@@ -1,5 +1,5 @@
 $(() => {
-	const query_params = frappe.utils.get_query_params();
+	const query_params = nts.utils.get_query_params();
 	update_ui_with_filters();
 
 	$(".desktop-filters").change(function () {

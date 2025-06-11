@@ -1,10 +1,10 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _, scrub
-from frappe.query_builder.functions import Sum
-from frappe.utils import add_days, flt, getdate, rounded
+import nts
+from nts import _, scrub
+from nts.query_builder.functions import Sum
+from nts.utils import add_days, flt, getdate, rounded
 
 from hrms.payroll.doctype.payroll_entry.payroll_entry import get_start_end_dates
 from hrms.payroll.doctype.salary_slip.salary_slip import calculate_tax_by_tax_slab
@@ -16,14 +16,14 @@ def execute(filters=None):
 
 class IncomeTaxComputationReport:
 	def __init__(self, filters=None):
-		self.filters = frappe._dict(filters or {})
+		self.filters = nts._dict(filters or {})
 		self.columns = []
 		self.data = []
-		self.employees = frappe._dict()
+		self.employees = nts._dict()
 		self.payroll_period_start_date = None
 		self.payroll_period_end_date = None
 		if self.filters.payroll_period:
-			self.payroll_period_start_date, self.payroll_period_end_date = frappe.db.get_value(
+			self.payroll_period_start_date, self.payroll_period_end_date = nts.db.get_value(
 				"Payroll Period", self.filters.payroll_period, ["start_date", "end_date"]
 			)
 
@@ -59,7 +59,7 @@ class IncomeTaxComputationReport:
 			"relieving_date",
 		]
 
-		employees = frappe.get_all("Employee", filters=filters, fields=fields)
+		employees = nts.get_all("Employee", filters=filters, fields=fields)
 		ss_assignments = self.get_ss_assignments([d.employee for d in employees])
 
 		for d in employees:
@@ -68,7 +68,7 @@ class IncomeTaxComputationReport:
 				self.employees.setdefault(d.employee, d)
 
 		if not self.employees:
-			frappe.throw(_("No employees found with selected filters and active salary structure"))
+			nts.throw(_("No employees found with selected filters and active salary structure"))
 
 	def get_employee_filters(self):
 		filters = {"company": self.filters.company}
@@ -82,7 +82,7 @@ class IncomeTaxComputationReport:
 		return filters
 
 	def get_ss_assignments(self, employees):
-		ss_assignments = frappe.get_all(
+		ss_assignments = nts.get_all(
 			"Salary Structure Assignment",
 			filters={
 				"employee": ["in", employees],
@@ -100,10 +100,10 @@ class IncomeTaxComputationReport:
 			order_by="from_date desc",
 		)
 
-		employee_ss_assignments = frappe._dict()
+		employee_ss_assignments = nts._dict()
 		for d in ss_assignments:
 			if d.employee not in list(employee_ss_assignments.keys()):
-				tax_slab = frappe.get_cached_value(
+				tax_slab = nts.get_cached_value(
 					"Income Tax Slab", d.income_tax_slab, ["allow_tax_exemption", "disabled"], as_dict=1
 				)
 
@@ -121,7 +121,7 @@ class IncomeTaxComputationReport:
 		return employee_ss_assignments
 
 	def get_future_salary_slips(self):
-		self.future_salary_slips = frappe._dict()
+		self.future_salary_slips = nts._dict()
 		for employee in list(self.employees.keys()):
 			last_ss = self.get_last_salary_slip(employee)
 			if last_ss and last_ss.end_date == self.payroll_period_end_date:
@@ -132,7 +132,7 @@ class IncomeTaxComputationReport:
 				ss_start_date = add_days(last_ss.end_date, 1)
 			else:
 				ss_start_date = self.payroll_period_start_date
-				last_ss = frappe._dict(
+				last_ss = nts._dict(
 					{
 						"payroll_frequency": "Monthly",
 						"salary_structure": self.employees[employee].get("salary_structure"),
@@ -144,7 +144,7 @@ class IncomeTaxComputationReport:
 			):
 				ss_end_date = get_start_end_dates(last_ss.payroll_frequency, ss_start_date).end_date
 
-				ss = frappe.new_doc("Salary Slip")
+				ss = nts.new_doc("Salary Slip")
 				ss.employee = employee
 				ss.start_date = ss_start_date
 				ss.end_date = ss_end_date
@@ -160,7 +160,7 @@ class IncomeTaxComputationReport:
 				ss_start_date = add_days(ss_end_date, 1)
 
 	def get_last_salary_slip(self, employee):
-		last_salary_slip = frappe.db.get_value(
+		last_salary_slip = nts.db.get_value(
 			"Salary Slip",
 			{
 				"employee": employee,
@@ -176,10 +176,10 @@ class IncomeTaxComputationReport:
 
 	def get_gross_earnings(self):
 		# Get total earnings from existing salary slip
-		ss = frappe.qb.DocType("Salary Slip")
-		existing_ss = frappe._dict(
+		ss = nts.qb.DocType("Salary Slip")
+		existing_ss = nts._dict(
 			(
-				frappe.qb.from_(ss)
+				nts.qb.from_(ss)
 				.select(ss.employee, Sum(ss.base_gross_pay).as_("amount"))
 				.where(ss.docstatus == 1)
 				.where(ss.employee.isin(list(self.employees.keys())))
@@ -212,11 +212,11 @@ class IncomeTaxComputationReport:
 			return
 
 		# Get component totals from existing salary slips
-		ss = frappe.qb.DocType("Salary Slip")
-		ss_comps = frappe.qb.DocType("Salary Detail")
+		ss = nts.qb.DocType("Salary Slip")
+		ss_comps = nts.qb.DocType("Salary Detail")
 
 		records = (
-			frappe.qb.from_(ss)
+			nts.qb.from_(ss)
 			.inner_join(ss_comps)
 			.on(ss.name == ss_comps.parent)
 			.select(ss.name, ss.employee, ss_comps.salary_component, Sum(ss_comps.amount).as_("amount"))
@@ -229,7 +229,7 @@ class IncomeTaxComputationReport:
 			.groupby(ss.employee, ss_comps.salary_component)
 		).run(as_dict=True)
 
-		existing_ss_exemptions = frappe._dict()
+		existing_ss_exemptions = nts._dict()
 		for d in records:
 			existing_ss_exemptions.setdefault(d.employee, {}).setdefault(scrub(d.salary_component), d.amount)
 
@@ -263,7 +263,7 @@ class IncomeTaxComputationReport:
 		# nontaxable earning components
 		nontaxable_earning_components = [
 			d.name
-			for d in frappe.get_all(
+			for d in nts.get_all(
 				"Salary Component", {"type": "Earning", "is_tax_applicable": 0, "disabled": 0}
 			)
 		]
@@ -271,7 +271,7 @@ class IncomeTaxComputationReport:
 		# tax exempted deduction components
 		tax_exempted_deduction_components = [
 			d.name
-			for d in frappe.get_all(
+			for d in nts.get_all(
 				"Salary Component", {"type": "Deduction", "exempted_from_income_tax": 1, "disabled": 0}
 			)
 		]
@@ -286,7 +286,7 @@ class IncomeTaxComputationReport:
 
 	def get_employee_tax_exemptions(self):
 		# add columns
-		exemption_categories = frappe.get_all("Employee Tax Exemption Category", {"is_active": 1})
+		exemption_categories = nts.get_all("Employee Tax Exemption Category", {"is_active": 1})
 		for d in exemption_categories:
 			self.add_column(d.name)
 
@@ -304,11 +304,11 @@ class IncomeTaxComputationReport:
 
 		max_exemptions = self.get_max_exemptions_based_on_category()
 
-		par = frappe.qb.DocType(source)
-		child = frappe.qb.DocType(child_doctype)
+		par = nts.qb.DocType(source)
+		child = nts.qb.DocType(child_doctype)
 
 		records = (
-			frappe.qb.from_(par)
+			nts.qb.from_(par)
 			.inner_join(child)
 			.on(par.name == child.parent)
 			.select(par.employee, child.exemption_category, Sum(child.amount).as_("amount"))
@@ -341,7 +341,7 @@ class IncomeTaxComputationReport:
 
 	def get_max_exemptions_based_on_category(self):
 		return dict(
-			frappe.get_all(
+			nts.get_all(
 				"Employee Tax Exemption Category",
 				filters={"is_active": 1},
 				fields=["name", "max_amount"],
@@ -350,7 +350,7 @@ class IncomeTaxComputationReport:
 		)
 
 	def get_hra(self):
-		if not frappe.get_meta("Employee Tax Exemption Declaration").has_field("monthly_house_rent"):
+		if not nts.get_meta("Employee Tax Exemption Declaration").has_field("monthly_house_rent"):
 			return
 
 		self.add_column("HRA")
@@ -366,7 +366,7 @@ class IncomeTaxComputationReport:
 		else:
 			hra_amount_field = "annual_hra_exemption"
 
-		records = frappe.get_all(
+		records = nts.get_all(
 			source,
 			filters={
 				"docstatus": 1,
@@ -391,7 +391,7 @@ class IncomeTaxComputationReport:
 		self.add_column("Standard Tax Exemption")
 
 		standard_exemptions_per_slab = dict(
-			frappe.get_all(
+			nts.get_all(
 				"Income Tax Slab",
 				filters={"company": self.filters.company, "docstatus": 1, "disabled": 0},
 				fields=["name", "standard_tax_exemption_amount"],
@@ -413,7 +413,7 @@ class IncomeTaxComputationReport:
 
 		for employee in list(self.employees.keys()):
 			other_income = (
-				frappe.get_all(
+				nts.get_all(
 					"Employee Other Income",
 					filters={
 						"employee": employee,
@@ -439,7 +439,7 @@ class IncomeTaxComputationReport:
 
 			if last_ss and last_ss.end_date == self.payroll_period_end_date:
 				annual_taxable_amount, tax_exemption_declaration, standard_tax_exemption_amount = (
-					frappe.db.get_value(
+					nts.db.get_value(
 						"Salary Slip",
 						last_ss.name,
 						[
@@ -473,7 +473,7 @@ class IncomeTaxComputationReport:
 		self.add_column("Other Taxes and Charges")
 		self.add_column("Total Applicable Tax", "applicable_tax")
 
-		is_tax_rounded = frappe.db.get_value(
+		is_tax_rounded = nts.db.get_value(
 			"Salary Component",
 			{"variable_based_on_taxable_salary": 1, "disabled": 0},
 			"round_to_the_nearest_integer",
@@ -482,7 +482,7 @@ class IncomeTaxComputationReport:
 		for emp, emp_details in self.employees.items():
 			tax_slab = emp_details.get("income_tax_slab")
 			if tax_slab:
-				tax_slab = frappe.get_cached_doc("Income Tax Slab", tax_slab)
+				tax_slab = nts.get_cached_doc("Income Tax Slab", tax_slab)
 				eval_globals, eval_locals = self.get_data_for_eval(emp, emp_details)
 				tax_amount, other_taxes_and_charges = calculate_tax_by_tax_slab(
 					emp_details["total_taxable_amount"],
@@ -506,13 +506,13 @@ class IncomeTaxComputationReport:
 		last_ss = self.get_last_salary_slip(emp)
 
 		if last_ss:
-			salary_slip = frappe.get_cached_doc("Salary Slip", last_ss.name)
+			salary_slip = nts.get_cached_doc("Salary Slip", last_ss.name)
 		else:
-			salary_slip = frappe.new_doc("Salary Slip")
+			salary_slip = nts.new_doc("Salary Slip")
 			salary_slip.employee = emp
 			salary_slip.salary_structure = emp_details.salary_structure
 			salary_slip.start_date = max(self.payroll_period_start_date, emp_details.date_of_joining)
-			salary_slip.payroll_frequency = frappe.db.get_value(
+			salary_slip.payroll_frequency = nts.db.get_value(
 				"Salary Structure", emp_details.salary_structure, "payroll_frequency"
 			)
 			salary_slip.end_date = get_start_end_dates(
@@ -525,9 +525,9 @@ class IncomeTaxComputationReport:
 		return salary_slip.whitelisted_globals, eval_locals
 
 	def get_total_deducted_tax(self):
-		SalaryComponent = frappe.qb.DocType("Salary Component")
+		SalaryComponent = nts.qb.DocType("Salary Component")
 		tax_components = (
-			frappe.qb.from_(SalaryComponent)
+			nts.qb.from_(SalaryComponent)
 			.select(SalaryComponent.name)
 			.where(
 				(SalaryComponent.is_income_tax_component == 1)
@@ -541,11 +541,11 @@ class IncomeTaxComputationReport:
 
 		self.add_column("Total Tax Deducted")
 
-		ss = frappe.qb.DocType("Salary Slip")
-		ss_ded = frappe.qb.DocType("Salary Detail")
+		ss = nts.qb.DocType("Salary Slip")
+		ss_ded = nts.qb.DocType("Salary Detail")
 
 		records = (
-			frappe.qb.from_(ss)
+			nts.qb.from_(ss)
 			.inner_join(ss_ded)
 			.on(ss.name == ss_ded.parent)
 			.select(ss.employee, Sum(ss_ded.amount).as_("amount"))

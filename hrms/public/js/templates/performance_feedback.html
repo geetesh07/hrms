@@ -2,7 +2,7 @@
 	{% if (feedback_history.length) { %}
 		<div class="feedback-summary mb-5 pb-2">
 			{%=
-				frappe.render_template(
+				nts.render_template(
 					"feedback_summary",
 					{
 						number_of_stars: 5,
@@ -29,7 +29,7 @@
 	{% } %}
 
 	{%=
-		frappe.render_template(
+		nts.render_template(
 			"feedback_history",
 			{ feedback_history: feedback_history, feedback_doctype: "Employee Performance Feedback" }
 		)

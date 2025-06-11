@@ -1,16 +1,16 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.model.document import Document
-from frappe.utils import add_days, get_weekday, getdate, nowdate
+import nts
+from nts.model.document import Document
+from nts.utils import add_days, get_weekday, getdate, nowdate
 
 from hrms.hr.doctype.shift_assignment_tool.shift_assignment_tool import create_shift_assignment
 
 
 class ShiftScheduleAssignment(Document):
 	def create_shifts(self, start_date: str, end_date: str | None = None) -> None:
-		shift_schedule = frappe.get_doc("Shift Schedule", self.shift_schedule)
+		shift_schedule = nts.get_doc("Shift Schedule", self.shift_schedule)
 		gap = {
 			"Every Week": 0,
 			"Every 2 Weeks": 1,
@@ -68,11 +68,11 @@ class ShiftScheduleAssignment(Document):
 
 
 def process_auto_shift_creation():
-	shift_schedule_assignments = frappe.get_all(
+	shift_schedule_assignments = nts.get_all(
 		"Shift Schedule Assignment",
 		filters={"enabled": 1, "create_shifts_after": ["<=", nowdate()]},
 		pluck="name",
 	)
 	for d in shift_schedule_assignments:
-		doc = frappe.get_doc("Shift Schedule Assignment", d)
+		doc = nts.get_doc("Shift Schedule Assignment", d)
 		doc.create_shifts(add_days(doc.create_shifts_after, 1))

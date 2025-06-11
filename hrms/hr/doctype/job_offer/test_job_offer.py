@@ -1,11 +1,11 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import add_days, nowdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import add_days, nowdate
 
-from erpnext.setup.doctype.designation.test_designation import create_designation
+from prodman.setup.doctype.designation.test_designation import create_designation
 
 from hrms.hr.doctype.job_applicant.job_applicant import get_applicant_to_hire_percentage
 from hrms.hr.doctype.job_offer.job_offer import get_offer_acceptance_rate
@@ -15,13 +15,13 @@ from hrms.tests.test_utils import create_job_applicant
 
 class TestJobOffer(IntegrationTestCase):
 	def setUp(self):
-		frappe.db.delete("Job Applicant")
-		frappe.db.delete("Job Offer")
+		nts.db.delete("Job Applicant")
+		nts.db.delete("Job Offer")
 
 		create_designation(designation_name="Researcher")
 
 	def test_job_offer_creation_against_vacancies(self):
-		frappe.db.set_single_value("HR Settings", "check_vacancies", 1)
+		nts.db.set_single_value("HR Settings", "check_vacancies", 1)
 		job_applicant = create_job_applicant(email_id="test_job_offer@example.com")
 		job_offer = create_job_offer(job_applicant=job_applicant.name, designation="UX Designer")
 
@@ -31,15 +31,15 @@ class TestJobOffer(IntegrationTestCase):
 				{"designation": "UX Designer", "vacancies": 0, "estimated_cost_per_position": 5000}
 			],
 		)
-		self.assertRaises(frappe.ValidationError, job_offer.submit)
+		self.assertRaises(nts.ValidationError, job_offer.submit)
 
 		# test creation of job offer when vacancies are not present
-		frappe.db.set_single_value("HR Settings", "check_vacancies", 0)
+		nts.db.set_single_value("HR Settings", "check_vacancies", 0)
 		job_offer.submit()
-		self.assertTrue(frappe.db.exists("Job Offer", job_offer.name))
+		self.assertTrue(nts.db.exists("Job Offer", job_offer.name))
 
 	def test_job_applicant_update(self):
-		frappe.db.set_single_value("HR Settings", "check_vacancies", 0)
+		nts.db.set_single_value("HR Settings", "check_vacancies", 0)
 		create_staffing_plan()
 		job_applicant = create_job_applicant(email_id="test_job_applicants@example.com")
 		job_offer = create_job_offer(job_applicant=job_applicant.name)
@@ -52,7 +52,7 @@ class TestJobOffer(IntegrationTestCase):
 		job_offer.submit()
 		job_applicant.reload()
 		self.assertEqual(job_applicant.status, "Rejected")
-		frappe.db.set_single_value("HR Settings", "check_vacancies", 1)
+		nts.db.set_single_value("HR Settings", "check_vacancies", 1)
 
 	def test_recruitment_metrics(self):
 		job_applicant1 = create_job_applicant(email_id="test_job_applicant1@example.com")
@@ -71,14 +71,14 @@ class TestJobOffer(IntegrationTestCase):
 
 
 def create_job_offer(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 	if not args.job_applicant:
 		job_applicant = create_job_applicant()
 
-	if not frappe.db.exists("Designation", args.designation):
+	if not nts.db.exists("Designation", args.designation):
 		create_designation(designation_name=args.designation)
 
-	job_offer = frappe.get_doc(
+	job_offer = nts.get_doc(
 		{
 			"doctype": "Job Offer",
 			"job_applicant": args.job_applicant or job_applicant.name,
@@ -91,12 +91,12 @@ def create_job_offer(**args):
 
 
 def create_staffing_plan(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 	make_company()
-	frappe.db.set_value("Company", "_Test Company", "is_group", 1)
-	if frappe.db.exists("Staffing Plan", args.name or "Test"):
+	nts.db.set_value("Company", "_Test Company", "is_group", 1)
+	if nts.db.exists("Staffing Plan", args.name or "Test"):
 		return
-	staffing_plan = frappe.get_doc(
+	staffing_plan = nts.get_doc(
 		{
 			"doctype": "Staffing Plan",
 			"name": args.name or "Test",

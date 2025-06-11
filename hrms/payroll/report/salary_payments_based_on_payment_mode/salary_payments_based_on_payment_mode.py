@@ -1,11 +1,11 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
-import erpnext
+import prodman
 
 from hrms.payroll.report.provident_fund_deductions.provident_fund_deductions import get_conditions
 
@@ -43,7 +43,7 @@ def get_columns(filters, mode_of_payments):
 
 
 def get_payment_modes():
-	mode_of_payments = frappe.db.sql_list(
+	mode_of_payments = nts.db.sql_list(
 		"""
 		select distinct mode_of_payment from `tabSalary Slip` where docstatus = 1
 	"""
@@ -70,7 +70,7 @@ def get_data(filters, mode_of_payments):
 
 	conditions = get_conditions(filters)
 
-	entry = frappe.db.sql(
+	entry = nts.db.sql(
 		"""
 		select branch, mode_of_payment, sum(net_pay) as net_pay, sum(gross_pay) as gross_pay
 		from `tabSalary Slip` sal
@@ -83,7 +83,7 @@ def get_data(filters, mode_of_payments):
 
 	branch_wise_entries, gross_pay = prepare_data(entry)
 
-	branches = frappe.db.sql_list(
+	branches = nts.db.sql_list(
 		"""
 		select distinct branch from `tabSalary Slip` sal
 		where docstatus = 1 %s
@@ -116,7 +116,7 @@ def get_data(filters, mode_of_payments):
 		data.append({"branch": "Total Deductions", mode_of_payments[0]: total_deductions})
 		data.append({"branch": "Total Net Pay", mode_of_payments[0]: total_row.get("total")})
 
-		currency = erpnext.get_company_currency(filters.company)
+		currency = prodman.get_company_currency(filters.company)
 		report_summary = get_report_summary(gross_pay, total_deductions, total_row.get("total"), currency)
 
 	return data, total_row, report_summary

@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Employee Onboarding", {
+nts.ui.form.on("Employee Onboarding", {
 	setup: function (frm) {
 		frm.set_query("job_applicant", function () {
 			return {
@@ -26,7 +26,7 @@ frappe.ui.form.on("Employee Onboarding", {
 			frm.add_custom_button(
 				__("Employee"),
 				function () {
-					frappe.set_route("Form", "Employee", frm.doc.employee);
+					nts.set_route("Form", "Employee", frm.doc.employee);
 				},
 				__("View"),
 			);
@@ -35,14 +35,14 @@ frappe.ui.form.on("Employee Onboarding", {
 			frm.add_custom_button(
 				__("Project"),
 				function () {
-					frappe.set_route("Form", "Project", frm.doc.project);
+					nts.set_route("Form", "Project", frm.doc.project);
 				},
 				__("View"),
 			);
 			frm.add_custom_button(
 				__("Task"),
 				function () {
-					frappe.set_route("List", "Task", { project: frm.doc.project });
+					nts.set_route("List", "Task", { project: frm.doc.project });
 				},
 				__("View"),
 			);
@@ -51,7 +51,7 @@ frappe.ui.form.on("Employee Onboarding", {
 			frm.add_custom_button(
 				__("Employee"),
 				function () {
-					frappe.model.open_mapped_doc({
+					nts.model.open_mapped_doc({
 						method: "hrms.hr.doctype.employee_onboarding.employee_onboarding.make_employee",
 						frm: frm,
 					});
@@ -73,7 +73,7 @@ frappe.ui.form.on("Employee Onboarding", {
 	employee_onboarding_template: function (frm) {
 		frm.set_value("activities", "");
 		if (frm.doc.employee_onboarding_template) {
-			frappe.call({
+			nts.call({
 				method: "hrms.controllers.employee_boarding_controller.get_onboarding_details",
 				args: {
 					parent: frm.doc.employee_onboarding_template,
@@ -93,7 +93,7 @@ frappe.ui.form.on("Employee Onboarding", {
 
 	job_applicant: function (frm) {
 		if (frm.doc.job_applicant) {
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Employee",
 				{ job_applicant: frm.doc.job_applicant },
 				"name",

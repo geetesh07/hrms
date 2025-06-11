@@ -1,14 +1,14 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
-from frappe import _
-from frappe.desk.form import assign_to
-from frappe.model.document import Document
-from frappe.utils import add_days, flt, unique
+import nts
+from nts import _
+from nts.desk.form import assign_to
+from nts.model.document import Document
+from nts.utils import add_days, flt, unique
 
-from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
-from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
+from prodman.setup.doctype.employee.employee import get_holiday_list_for_employee
+from prodman.setup.doctype.holiday_list.holiday_list import is_holiday
 
 
 class EmployeeBoardingController(Document):
@@ -31,7 +31,7 @@ class EmployeeBoardingController(Document):
 		else:
 			project_name += self.employee
 
-		project = frappe.get_doc(
+		project = nts.get_doc(
 			{
 				"doctype": "Project",
 				"project_name": project_name,
@@ -58,7 +58,7 @@ class EmployeeBoardingController(Document):
 
 			dates = self.get_task_dates(activity, holiday_list)
 
-			task = frappe.get_doc(
+			task = nts.get_doc(
 				{
 					"doctype": "Task",
 					"project": self.project,
@@ -75,7 +75,7 @@ class EmployeeBoardingController(Document):
 
 			users = [activity.user] if activity.user else []
 			if activity.role:
-				user_list = frappe.db.sql_list(
+				user_list = nts.db.sql_list(
 					"""
 					SELECT
 						DISTINCT(has_role.parent)
@@ -107,7 +107,7 @@ class EmployeeBoardingController(Document):
 				return get_holiday_list_for_employee(self.employee)
 			else:
 				if not self.holiday_list:
-					frappe.throw(_("Please set the Holiday List."), frappe.MandatoryError)
+					nts.throw(_("Please set the Holiday List."), nts.MandatoryError)
 				else:
 					return self.holiday_list
 
@@ -143,21 +143,21 @@ class EmployeeBoardingController(Document):
 	def on_cancel(self):
 		# delete task project
 		project = self.project
-		for task in frappe.get_all("Task", filters={"project": project}):
-			frappe.delete_doc("Task", task.name, force=1)
-		frappe.delete_doc("Project", project, force=1)
+		for task in nts.get_all("Task", filters={"project": project}):
+			nts.delete_doc("Task", task.name, force=1)
+		nts.delete_doc("Project", project, force=1)
 		self.db_set("project", "")
 		for activity in self.activities:
 			activity.db_set("task", "")
 
-		frappe.msgprint(
+		nts.msgprint(
 			_("Linked Project {} and Tasks deleted.").format(project), alert=True, indicator="blue"
 		)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_onboarding_details(parent, parenttype):
-	return frappe.get_all(
+	return nts.get_all(
 		"Employee Boarding Activity",
 		fields=[
 			"activity_name",
@@ -175,8 +175,8 @@ def get_onboarding_details(parent, parenttype):
 
 
 def update_employee_boarding_status(project, event=None):
-	employee_onboarding = frappe.db.exists("Employee Onboarding", {"project": project.name})
-	employee_separation = frappe.db.exists("Employee Separation", {"project": project.name})
+	employee_onboarding = nts.db.exists("Employee Onboarding", {"project": project.name})
+	employee_separation = nts.db.exists("Employee Separation", {"project": project.name})
 
 	if not (employee_onboarding or employee_separation):
 		return
@@ -188,11 +188,11 @@ def update_employee_boarding_status(project, event=None):
 		status = "Completed"
 
 	if employee_onboarding:
-		frappe.db.set_value("Employee Onboarding", employee_onboarding, "boarding_status", status)
+		nts.db.set_value("Employee Onboarding", employee_onboarding, "boarding_status", status)
 	elif employee_separation:
-		frappe.db.set_value("Employee Separation", employee_separation, "boarding_status", status)
+		nts.db.set_value("Employee Separation", employee_separation, "boarding_status", status)
 
 
 def update_task(task, event=None):
 	if task.project and not task.flags.from_project:
-		update_employee_boarding_status(frappe.get_cached_doc("Project", task.project))
+		update_employee_boarding_status(nts.get_cached_doc("Project", task.project))

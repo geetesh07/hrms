@@ -1,8 +1,8 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.utils import add_days, add_months, getdate, today
+import nts
+from nts.utils import add_days, add_months, getdate, today
 
 from hrms.hr.doctype.attendance_request.test_attendance_request import get_employee
 from hrms.hr.doctype.leave_allocation.test_leave_allocation import create_leave_allocation
@@ -19,11 +19,11 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 		cls.make_employees()
 
 	def setUp(self):
-		frappe.db.delete("Compensatory Leave Request")
-		frappe.db.delete("Leave Ledger Entry")
-		frappe.db.delete("Leave Allocation")
-		frappe.db.delete("Attendance")
-		frappe.db.delete("Leave Period")
+		nts.db.delete("Compensatory Leave Request")
+		nts.db.delete("Leave Ledger Entry")
+		nts.db.delete("Leave Allocation")
+		nts.db.delete("Attendance")
+		nts.db.delete("Leave Period")
 
 		create_leave_period(add_months(today(), -3), add_months(today(), 3), "_Test Company")
 		create_holiday_list()
@@ -55,7 +55,7 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 		compensatory_leave_request.submit()
 
 		# leave allocation creation on submit
-		leaves_allocated = frappe.db.get_value(
+		leaves_allocated = nts.db.get_value(
 			"Leave Allocation",
 			{"name": compensatory_leave_request.leave_allocation},
 			["total_leaves_allocated"],
@@ -67,7 +67,7 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 		compensatory_leave_request.submit()
 
 		# leave allocation updates on submission of second compensatory leave request
-		leaves_allocated = frappe.db.get_value(
+		leaves_allocated = nts.db.get_value(
 			"Leave Allocation",
 			{"name": compensatory_leave_request.leave_allocation},
 			["total_leaves_allocated"],
@@ -130,7 +130,7 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 		compensatory_leave_request.submit()
 
 		filters = dict(transaction_name=compensatory_leave_request.leave_allocation)
-		leave_ledger_entry = frappe.get_all("Leave Ledger Entry", fields="*", filters=filters)
+		leave_ledger_entry = nts.get_all("Leave Ledger Entry", fields="*", filters=filters)
 
 		self.assertEqual(len(leave_ledger_entry), 1)
 		self.assertEqual(leave_ledger_entry[0].employee, compensatory_leave_request.employee)
@@ -139,7 +139,7 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 
 		# check reverse leave ledger entry on cancellation
 		compensatory_leave_request.cancel()
-		leave_ledger_entry = frappe.get_all(
+		leave_ledger_entry = nts.get_all(
 			"Leave Ledger Entry", fields="*", filters=filters, order_by="creation desc"
 		)
 
@@ -152,7 +152,7 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 		employee = get_employee()
 		mark_attendance(employee, status="Half Day")
 		date = today()
-		compensatory_leave_request = frappe.new_doc("Compensatory Leave Request")
+		compensatory_leave_request = nts.new_doc("Compensatory Leave Request")
 		compensatory_leave_request.update(
 			dict(
 				employee=employee.name,
@@ -164,14 +164,14 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 		)
 
 		# cannot apply for full day compensatory leave for a half day attendance
-		self.assertRaises(frappe.ValidationError, compensatory_leave_request.submit)
+		self.assertRaises(nts.ValidationError, compensatory_leave_request.submit)
 
 		compensatory_leave_request.half_day = 1
 		compensatory_leave_request.half_day_date = date
 		compensatory_leave_request.submit()
 
 		# check creation of leave ledger entry on submission of leave request
-		leave_ledger_entry = frappe.get_all(
+		leave_ledger_entry = nts.get_all(
 			"Leave Ledger Entry",
 			fields="*",
 			filters={"transaction_name": compensatory_leave_request.leave_allocation},
@@ -180,7 +180,7 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 		self.assertEqual(leave_ledger_entry[0].leaves, 0.5)
 
 	def test_request_on_leave_period_boundary(self):
-		frappe.db.delete("Leave Period")
+		nts.db.delete("Leave Period")
 		create_leave_period("2023-01-01", "2023-12-31", "_Test Company")
 		create_holiday_list("2023-01-01", "2023-12-31")
 
@@ -190,7 +190,7 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 		mark_attendance(employee, boundary_date, "Present")
 
 		# no leave period found of "2024-01-01"
-		compensatory_leave_request = frappe.new_doc("Compensatory Leave Request")
+		compensatory_leave_request = nts.new_doc("Compensatory Leave Request")
 		compensatory_leave_request.update(
 			dict(
 				employee=employee.name,
@@ -201,7 +201,7 @@ class TestCompensatoryLeaveRequest(HRMSTestSuite):
 			)
 		)
 		compensatory_leave_request.insert()
-		self.assertRaises(frappe.ValidationError, compensatory_leave_request.submit)
+		self.assertRaises(nts.ValidationError, compensatory_leave_request.submit)
 
 		create_leave_period("2024-01-01", "2024-12-31", "_Test Company")
 		compensatory_leave_request.reload()
@@ -212,7 +212,7 @@ def get_compensatory_leave_request(employee, leave_date=None):
 	if not leave_date:
 		leave_date = today()
 
-	prev_comp_leave_req = frappe.db.get_value(
+	prev_comp_leave_req = nts.db.get_value(
 		"Compensatory Leave Request",
 		dict(
 			leave_type="Compensatory Off",
@@ -223,9 +223,9 @@ def get_compensatory_leave_request(employee, leave_date=None):
 		"name",
 	)
 	if prev_comp_leave_req:
-		return frappe.get_doc("Compensatory Leave Request", prev_comp_leave_req)
+		return nts.get_doc("Compensatory Leave Request", prev_comp_leave_req)
 
-	return frappe.get_doc(
+	return nts.get_doc(
 		dict(
 			doctype="Compensatory Leave Request",
 			employee=employee,
@@ -241,10 +241,10 @@ def mark_attendance(employee, date=None, status="Present"):
 	if not date:
 		date = today()
 
-	if not frappe.db.exists(
+	if not nts.db.exists(
 		dict(doctype="Attendance", employee=employee.name, attendance_date=date, status="Present")
 	):
-		attendance = frappe.get_doc(
+		attendance = nts.get_doc(
 			{"doctype": "Attendance", "employee": employee.name, "attendance_date": date, "status": status}
 		)
 		attendance.save()
@@ -253,16 +253,16 @@ def mark_attendance(employee, date=None, status="Present"):
 
 def create_holiday_list(from_date=None, to_date=None):
 	list_name = "_Test Compensatory Leave"
-	if frappe.db.exists("Holiday List", list_name):
-		frappe.db.delete("Holiday List", list_name)
-		frappe.db.delete("Holiday", {"parent": list_name})
+	if nts.db.exists("Holiday List", list_name):
+		nts.db.delete("Holiday List", list_name)
+		nts.db.delete("Holiday", {"parent": list_name})
 
 	if from_date:
 		holiday_date = add_days(from_date, 1)
 	else:
 		holiday_date = today()
 
-	holiday_list = frappe.get_doc(
+	holiday_list = nts.get_doc(
 		{
 			"doctype": "Holiday List",
 			"from_date": from_date or add_months(today(), -3),

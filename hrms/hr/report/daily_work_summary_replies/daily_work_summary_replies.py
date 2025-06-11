@@ -1,9 +1,9 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 from hrms.hr.doctype.daily_work_summary.daily_work_summary import get_user_emails_from_group
 
@@ -37,11 +37,11 @@ def get_columns(filters=None):
 
 
 def get_data(filters):
-	daily_summary_emails = frappe.get_all(
+	daily_summary_emails = nts.get_all(
 		"Daily Work Summary", fields=["name"], filters=[["creation", "Between", filters.range]]
 	)
 	daily_summary_emails = [d.get("name") for d in daily_summary_emails]
-	replies = frappe.get_all(
+	replies = nts.get_all(
 		"Communication",
 		fields=["content", "text_content", "sender"],
 		filters=[
@@ -55,7 +55,7 @@ def get_data(filters):
 	data = []
 	total = len(daily_summary_emails)
 	for user in get_user_emails_from_group(filters.group):
-		user_name = frappe.get_value("User", user, "full_name")
+		user_name = nts.get_value("User", user, "full_name")
 		count = len([d for d in replies if d.sender == user])
 		data.append([user_name, count, total])
 	return data

@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Employee Separation", {
+nts.ui.form.on("Employee Separation", {
 	setup: function (frm) {
 		frm.add_fetch("employee_separation_template", "company", "company");
 		frm.add_fetch("employee_separation_template", "department", "department");
@@ -14,7 +14,7 @@ frappe.ui.form.on("Employee Separation", {
 			frm.add_custom_button(
 				__("Employee"),
 				function () {
-					frappe.set_route("Form", "Employee", frm.doc.employee);
+					nts.set_route("Form", "Employee", frm.doc.employee);
 				},
 				__("View"),
 			);
@@ -23,14 +23,14 @@ frappe.ui.form.on("Employee Separation", {
 			frm.add_custom_button(
 				__("Project"),
 				function () {
-					frappe.set_route("Form", "Project", frm.doc.project);
+					nts.set_route("Form", "Project", frm.doc.project);
 				},
 				__("View"),
 			);
 			frm.add_custom_button(
 				__("Task"),
 				function () {
-					frappe.set_route("List", "Task", { project: frm.doc.project });
+					nts.set_route("List", "Task", { project: frm.doc.project });
 				},
 				__("View"),
 			);
@@ -40,7 +40,7 @@ frappe.ui.form.on("Employee Separation", {
 	employee_separation_template: function (frm) {
 		frm.set_value("activities", "");
 		if (frm.doc.employee_separation_template) {
-			frappe.call({
+			nts.call({
 				method: "hrms.controllers.employee_boarding_controller.get_onboarding_details",
 				args: {
 					parent: frm.doc.employee_separation_template,
@@ -49,7 +49,7 @@ frappe.ui.form.on("Employee Separation", {
 				callback: function (r) {
 					if (r.message) {
 						$.each(r.message, function (i, d) {
-							var row = frappe.model.add_child(
+							var row = nts.model.add_child(
 								frm.doc,
 								"Employee Boarding Activity",
 								"activities",

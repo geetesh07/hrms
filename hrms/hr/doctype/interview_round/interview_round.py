@@ -1,24 +1,24 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
 import json
 
-import frappe
-from frappe.model.document import Document
+import nts
+from nts.model.document import Document
 
 
 class InterviewRound(Document):
 	pass
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def create_interview(doc):
 	if isinstance(doc, str):
 		doc = json.loads(doc)
-		doc = frappe.get_doc(doc)
+		doc = nts.get_doc(doc)
 
-	interview = frappe.new_doc("Interview")
+	interview = nts.new_doc("Interview")
 	interview.interview_round = doc.name
 	interview.designation = doc.designation
 

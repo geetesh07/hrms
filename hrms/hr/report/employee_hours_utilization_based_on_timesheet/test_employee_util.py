@@ -1,9 +1,9 @@
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils.make_random import get_random
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils.make_random import get_random
 
-from erpnext.projects.doctype.project.test_project import make_project
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.projects.doctype.project.test_project import make_project
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.report.employee_hours_utilization_based_on_timesheet.employee_hours_utilization_based_on_timesheet import (
 	execute,
@@ -24,11 +24,11 @@ class TestEmployeeUtilization(IntegrationTestCase):
 		# Create test timesheets
 		cls.create_test_timesheets()
 
-		frappe.db.set_single_value("HR Settings", "standard_working_hours", 9)
+		nts.db.set_single_value("HR Settings", "standard_working_hours", 9)
 
 	@classmethod
 	def create_test_timesheets(cls):
-		timesheet1 = frappe.new_doc("Timesheet")
+		timesheet1 = nts.new_doc("Timesheet")
 		timesheet1.employee = cls.test_emp1
 		timesheet1.company = "_Test Company"
 
@@ -46,7 +46,7 @@ class TestEmployeeUtilization(IntegrationTestCase):
 		timesheet1.save()
 		timesheet1.submit()
 
-		timesheet2 = frappe.new_doc("Timesheet")
+		timesheet2 = nts.new_doc("Timesheet")
 		timesheet2.employee = cls.test_emp2
 		timesheet2.company = "_Test Company"
 
@@ -68,7 +68,7 @@ class TestEmployeeUtilization(IntegrationTestCase):
 	@classmethod
 	def tearDownClass(cls):
 		# Delete time logs
-		frappe.db.sql(
+		nts.db.sql(
 			"""
             DELETE FROM `tabTimesheet Detail`
             WHERE parent IN (
@@ -79,8 +79,8 @@ class TestEmployeeUtilization(IntegrationTestCase):
         """
 		)
 
-		frappe.db.sql("DELETE FROM `tabTimesheet` WHERE company='_Test Company'")
-		frappe.db.sql(f"DELETE FROM `tabProject` WHERE name='{cls.test_project.name}'")
+		nts.db.sql("DELETE FROM `tabTimesheet` WHERE company='_Test Company'")
+		nts.db.sql(f"DELETE FROM `tabProject` WHERE name='{cls.test_project.name}'")
 
 	def test_utilization_report_with_required_filters_only(self):
 		filters = {"company": "_Test Company", "from_date": "2021-04-01", "to_date": "2021-04-03"}
@@ -100,7 +100,7 @@ class TestEmployeeUtilization(IntegrationTestCase):
 
 		report = execute(filters)
 
-		emp1_data = frappe.get_doc("Employee", self.test_emp1)
+		emp1_data = nts.get_doc("Employee", self.test_emp1)
 		expected_data = [
 			{
 				"employee": self.test_emp1,
@@ -127,7 +127,7 @@ class TestEmployeeUtilization(IntegrationTestCase):
 
 		report = execute(filters)
 
-		emp2_data = frappe.get_doc("Employee", self.test_emp2)
+		emp2_data = nts.get_doc("Employee", self.test_emp2)
 		expected_data = [
 			{
 				"employee": self.test_emp2,
@@ -145,7 +145,7 @@ class TestEmployeeUtilization(IntegrationTestCase):
 		self.assertEqual(report[1], expected_data)
 
 	def test_utilization_report_for_department(self):
-		emp1_data = frappe.get_doc("Employee", self.test_emp1)
+		emp1_data = nts.get_doc("Employee", self.test_emp1)
 		filters = {
 			"company": "_Test Company",
 			"from_date": "2021-04-01",
@@ -171,8 +171,8 @@ class TestEmployeeUtilization(IntegrationTestCase):
 			self.assertEqual(summary[i]["value"], expected_summary_values[i])
 
 	def get_expected_data_for_test_employees(self):
-		emp1_data = frappe.get_doc("Employee", self.test_emp1)
-		emp2_data = frappe.get_doc("Employee", self.test_emp2)
+		emp1_data = nts.get_doc("Employee", self.test_emp1)
+		emp2_data = nts.get_doc("Employee", self.test_emp2)
 
 		return [
 			{

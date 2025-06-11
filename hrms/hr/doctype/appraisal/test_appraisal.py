@@ -1,11 +1,11 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
+import nts
+from nts.tests import IntegrationTestCase
 
-from erpnext.setup.doctype.designation.test_designation import create_designation
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.designation.test_designation import create_designation
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.appraisal_cycle.appraisal_cycle import get_appraisal_cycle_summary
 from hrms.hr.doctype.appraisal_cycle.test_appraisal_cycle import create_appraisal_cycle
@@ -19,9 +19,9 @@ from hrms.tests.test_utils import create_company
 
 class TestAppraisal(IntegrationTestCase):
 	def setUp(self):
-		frappe.db.delete("Goal")
-		frappe.db.delete("Appraisal")
-		frappe.db.delete("Employee Performance Feedback")
+		nts.db.delete("Goal")
+		nts.db.delete("Appraisal")
+		nts.db.delete("Employee Performance Feedback")
 
 		self.company = create_company("_Test Appraisal").name
 		self.template = create_appraisal_template()
@@ -38,7 +38,7 @@ class TestAppraisal(IntegrationTestCase):
 		cycle = create_appraisal_cycle(designation="Engineer")
 		cycle.create_appraisals()
 
-		appraisal = frappe.get_doc(
+		appraisal = nts.get_doc(
 			{
 				"doctype": "Appraisal",
 				"employee": self.employee1,
@@ -47,14 +47,14 @@ class TestAppraisal(IntegrationTestCase):
 		)
 		appraisal.set_appraisal_template()
 
-		self.assertRaises(frappe.DuplicateEntryError, appraisal.insert)
+		self.assertRaises(nts.DuplicateEntryError, appraisal.insert)
 
 	def test_manual_kra_rating(self):
 		cycle = create_appraisal_cycle(designation="Engineer", kra_evaluation_method="Manual Rating")
 		cycle.create_appraisals()
 
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 
 		# 30% weightage
 		appraisal.goals[0].score = 5
@@ -91,8 +91,8 @@ class TestAppraisal(IntegrationTestCase):
 		self.assertEqual(appraisal.final_score, 3.767)
 
 	def setup_appraisal(self, cycle):
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 
 		# GOAL SCORE
 		appraisal.goals[0].score = 5  # 30% weightage
@@ -148,8 +148,8 @@ class TestAppraisal(IntegrationTestCase):
 		# child2_2
 		create_goal(self.employee1, parent_goal=parent2.name)
 
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 
 		# Quality KRA, 30% weightage
 		self.assertEqual(appraisal.appraisal_kra[0].goal_completion, 12.5)
@@ -193,8 +193,8 @@ class TestAppraisal(IntegrationTestCase):
 		# child2_2
 		create_goal(self.employee1, parent_goal=parent2.name)
 
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 
 		# Quality KRA, 30% weightage
 		self.assertEqual(appraisal.appraisal_kra[0].goal_completion, 50)
@@ -223,8 +223,8 @@ class TestAppraisal(IntegrationTestCase):
 
 		goal = create_goal(self.employee1, "Quality", appraisal_cycle=cycle.name, progress=50)
 
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 
 		# Quality KRA, 30% weightage
 		self.assertEqual(appraisal.appraisal_kra[0].goal_completion, 50)
@@ -247,8 +247,8 @@ class TestAppraisal(IntegrationTestCase):
 
 		goal = create_goal(self.employee1, "Quality", appraisal_cycle=cycle.name, progress=50)
 
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 
 		# Quality KRA, 30% weightage
 		self.assertEqual(appraisal.appraisal_kra[0].goal_completion, 50)
@@ -263,8 +263,8 @@ class TestAppraisal(IntegrationTestCase):
 		cycle = create_appraisal_cycle(designation="Engineer")
 		cycle.create_appraisals()
 
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 
 		ratings = appraisal.self_ratings
 		# 70% weightage
@@ -280,14 +280,14 @@ class TestAppraisal(IntegrationTestCase):
 		cycle.create_appraisals()
 
 		# unsubmitted appraisals
-		self.assertRaises(frappe.ValidationError, cycle.complete_cycle)
+		self.assertRaises(nts.ValidationError, cycle.complete_cycle)
 
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 		appraisal.submit()
 
 		cycle.complete_cycle()
-		appraisal = frappe.get_doc(
+		appraisal = nts.get_doc(
 			{
 				"doctype": "Appraisal",
 				"employee": self.employee1,
@@ -297,7 +297,7 @@ class TestAppraisal(IntegrationTestCase):
 		)
 
 		# transaction against a Completed cycle
-		self.assertRaises(frappe.ValidationError, appraisal.insert)
+		self.assertRaises(nts.ValidationError, appraisal.insert)
 
 	def test_cycle_summary(self):
 		employee2 = make_employee("test_appraisal2@example.com", company=self.company, designation="Engineer")
@@ -305,8 +305,8 @@ class TestAppraisal(IntegrationTestCase):
 		cycle = create_appraisal_cycle(designation="Engineer")
 		cycle.create_appraisals()
 
-		appraisal = frappe.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal)
+		appraisal = nts.db.exists("Appraisal", {"appraisal_cycle": cycle.name, "employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal)
 
 		create_goal(self.employee1, "Quality", appraisal_cycle=cycle.name)
 		feedback = create_performance_feedback(

@@ -1,14 +1,14 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _, bold
-from frappe.model.document import Document
-from frappe.utils import flt, format_date, get_link_to_form, getdate
+import nts
+from nts import _, bold
+from nts.model.document import Document
+from nts.utils import flt, format_date, get_link_to_form, getdate
 
-from erpnext.accounts.general_ledger import make_gl_entries
-from erpnext.controllers.accounts_controller import AccountsController
+from prodman.accounts.general_ledger import make_gl_entries
+from prodman.controllers.accounts_controller import AccountsController
 
 from hrms.hr.doctype.leave_application.leave_application import get_leaves_for_period
 from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
@@ -32,15 +32,15 @@ class LeaveEncashment(AccountsController):
 	def set_salary_structure(self):
 		self._salary_structure = get_assigned_salary_structure(self.employee, self.encashment_date)
 		if not self._salary_structure:
-			frappe.throw(
+			nts.throw(
 				_("No Salary Structure assigned to Employee {0} on the given date {1}").format(
-					self.employee, frappe.bold(format_date(self.encashment_date))
+					self.employee, nts.bold(format_date(self.encashment_date))
 				)
 			)
 
 	def before_submit(self):
 		if not self.encashment_amount or self.encashment_amount <= 0:
-			frappe.throw(_("You can only submit Leave Encashment for a valid encashment amount"))
+			nts.throw(_("You can only submit Leave Encashment for a valid encashment amount"))
 
 	def on_submit(self):
 		if not self.leave_allocation:
@@ -56,15 +56,15 @@ class LeaveEncashment(AccountsController):
 
 	def on_cancel(self):
 		if self.additional_salary:
-			frappe.get_doc("Additional Salary", self.additional_salary).cancel()
+			nts.get_doc("Additional Salary", self.additional_salary).cancel()
 			self.db_set("additional_salary", "")
 
 		if self.leave_allocation:
-			frappe.db.set_value(
+			nts.db.set_value(
 				"Leave Allocation",
 				self.leave_allocation,
 				"total_leaves_encashed",
-				frappe.db.get_value("Leave Allocation", self.leave_allocation, "total_leaves_encashed")
+				nts.db.get_value("Leave Allocation", self.leave_allocation, "total_leaves_encashed")
 				- self.encashment_days,
 			)
 
@@ -75,7 +75,7 @@ class LeaveEncashment(AccountsController):
 		self.ignore_linked_doctypes = ["GL Entry"]
 		self.set_status(update=True)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_leave_details_for_encashment(self):
 		self.set_leave_balance()
 		self.set_actual_encashable_days()
@@ -83,7 +83,7 @@ class LeaveEncashment(AccountsController):
 		self.set_encashment_amount()
 
 	def get_encashment_settings(self):
-		return frappe.get_cached_value(
+		return nts.get_cached_value(
 			"Leave Type",
 			self.leave_type,
 			["allow_encashment", "non_encashable_leaves", "max_encashable_leaves"],
@@ -93,7 +93,7 @@ class LeaveEncashment(AccountsController):
 	def set_actual_encashable_days(self):
 		encashment_settings = self.get_encashment_settings()
 		if not encashment_settings.allow_encashment:
-			frappe.throw(_("Leave Type {0} is not encashable").format(self.leave_type))
+			nts.throw(_("Leave Type {0} is not encashable").format(self.leave_type))
 
 		self.actual_encashable_days = self.leave_balance
 		leave_form_link = get_link_to_form("Leave Type", self.leave_type)
@@ -102,7 +102,7 @@ class LeaveEncashment(AccountsController):
 		if encashment_settings.non_encashable_leaves:
 			actual_encashable_days = self.leave_balance - encashment_settings.non_encashable_leaves
 			self.actual_encashable_days = actual_encashable_days if actual_encashable_days > 0 else 0
-			frappe.msgprint(
+			nts.msgprint(
 				_("Excluded {0} Non-Encashable Leaves for {1}").format(
 					bold(encashment_settings.non_encashable_leaves),
 					leave_form_link,
@@ -113,7 +113,7 @@ class LeaveEncashment(AccountsController):
 			self.actual_encashable_days = min(
 				self.actual_encashable_days, encashment_settings.max_encashable_leaves
 			)
-			frappe.msgprint(
+			nts.msgprint(
 				_("Maximum encashable leaves for {0} are {1}").format(
 					leave_form_link, bold(encashment_settings.max_encashable_leaves)
 				),
@@ -126,7 +126,7 @@ class LeaveEncashment(AccountsController):
 			self.encashment_days = self.actual_encashable_days
 
 		if self.encashment_days > self.actual_encashable_days:
-			frappe.throw(
+			nts.throw(
 				_("Encashment Days cannot exceed {0} {1} as per Leave Type settings").format(
 					bold(_("Actual Encashable Days")),
 					self.actual_encashable_days,
@@ -136,7 +136,7 @@ class LeaveEncashment(AccountsController):
 	def set_leave_balance(self):
 		allocation = self.get_leave_allocation()
 		if not allocation:
-			frappe.throw(
+			nts.throw(
 				_("No Leaves Allocated to Employee: {0} for Leave Type: {1}").format(
 					self.employee, self.leave_type
 				)
@@ -153,13 +153,13 @@ class LeaveEncashment(AccountsController):
 		self.leave_allocation = allocation.name
 
 	def create_additional_salary(self):
-		additional_salary = frappe.new_doc("Additional Salary")
-		additional_salary.company = frappe.get_value("Employee", self.employee, "company")
+		additional_salary = nts.new_doc("Additional Salary")
+		additional_salary.company = nts.get_value("Employee", self.employee, "company")
 		additional_salary.employee = self.employee
 		additional_salary.currency = self.currency
-		earning_component = frappe.get_value("Leave Type", self.leave_type, "earning_component")
+		earning_component = nts.get_value("Leave Type", self.leave_type, "earning_component")
 		if not earning_component:
-			frappe.throw(_("Please set Earning Component for Leave type: {0}.").format(self.leave_type))
+			nts.throw(_("Please set Earning Component for Leave type: {0}.").format(self.leave_type))
 		additional_salary.salary_component = earning_component
 		additional_salary.payroll_date = self.encashment_date
 		additional_salary.amount = self.encashment_amount
@@ -169,11 +169,11 @@ class LeaveEncashment(AccountsController):
 		additional_salary.submit()
 
 	def set_encashed_leaves_in_allocation(self):
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Leave Allocation",
 			self.leave_allocation,
 			"total_leaves_encashed",
-			frappe.db.get_value("Leave Allocation", self.leave_allocation, "total_leaves_encashed")
+			nts.db.get_value("Leave Allocation", self.leave_allocation, "total_leaves_encashed")
 			+ self.encashment_days,
 		)
 
@@ -181,7 +181,7 @@ class LeaveEncashment(AccountsController):
 		if not hasattr(self, "_salary_structure"):
 			self.set_salary_structure()
 
-		per_day_encashment = frappe.db.get_value(
+		per_day_encashment = nts.db.get_value(
 			"Salary Structure", self._salary_structure, "leave_encashment_amount_per_day"
 		)
 		self.encashment_amount = self.encashment_days * per_day_encashment if per_day_encashment > 0 else 0
@@ -209,9 +209,9 @@ class LeaveEncashment(AccountsController):
 	def get_leave_allocation(self):
 		date = self.encashment_date or getdate()
 
-		LeaveAllocation = frappe.qb.DocType("Leave Allocation")
+		LeaveAllocation = nts.qb.DocType("Leave Allocation")
 		leave_allocation = (
-			frappe.qb.from_(LeaveAllocation)
+			nts.qb.from_(LeaveAllocation)
 			.select(
 				LeaveAllocation.name,
 				LeaveAllocation.from_date,
@@ -230,7 +230,7 @@ class LeaveEncashment(AccountsController):
 		return leave_allocation[0] if leave_allocation else None
 
 	def create_leave_ledger_entry(self, submit=True):
-		args = frappe._dict(
+		args = nts._dict(
 			leaves=self.encashment_days * -1,
 			from_date=self.encashment_date,
 			to_date=self.encashment_date,
@@ -245,19 +245,19 @@ class LeaveEncashment(AccountsController):
 
 		to_date = leave_allocation.get("to_date")
 
-		can_expire = not frappe.db.get_value("Leave Type", self.leave_type, "is_carry_forward")
+		can_expire = not nts.db.get_value("Leave Type", self.leave_type, "is_carry_forward")
 		if to_date < getdate() and can_expire:
-			args = frappe._dict(
+			args = nts._dict(
 				leaves=self.encashment_days, from_date=to_date, to_date=to_date, is_carry_forward=0
 			)
 			create_leave_ledger_entry(self, args, submit)
 
 	def set_total_advance_paid(self):
-		from frappe.query_builder.functions import Sum
+		from nts.query_builder.functions import Sum
 
-		gle = frappe.qb.DocType("GL Entry")
+		gle = nts.qb.DocType("GL Entry")
 		paid_amount = (
-			frappe.qb.from_(gle)
+			nts.qb.from_(gle)
 			.select(Sum(gle.debit_in_account_currency).as_("paid_amount"))
 			.where(
 				(gle.against_voucher_type == "Leave Encashment")
@@ -270,7 +270,7 @@ class LeaveEncashment(AccountsController):
 		).run(as_dict=True)[0].paid_amount or 0
 
 		if flt(paid_amount) > self.encashment_amount:
-			frappe.throw(_("Row {0}# Paid Amount cannot be greater than Encashment amount"))
+			nts.throw(_("Row {0}# Paid Amount cannot be greater than Encashment amount"))
 
 		self.db_set("paid_amount", paid_amount)
 		self.set_status(update=True)
@@ -322,7 +322,7 @@ def create_leave_encashment(leave_allocation):
 	for allocation in leave_allocation:
 		if not get_assigned_salary_structure(allocation.employee, allocation.to_date):
 			continue
-		leave_encashment = frappe.get_doc(
+		leave_encashment = nts.get_doc(
 			dict(
 				doctype="Leave Encashment",
 				leave_period=allocation.leave_period,

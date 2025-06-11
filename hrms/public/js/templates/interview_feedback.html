@@ -4,7 +4,7 @@
 		{{ __("Overall Average Rating") }}
 	</h4>
 	{%=
-		frappe.render_template(
+		nts.render_template(
 			"feedback_summary",
 			{ number_of_stars: 5, average_rating: average_rating, feedback_count: feedbacks.length, reviews_per_rating: reviews_per_rating }
 		)
@@ -18,12 +18,12 @@
 		<div class="row">
 			{% for(const d of skills_average_rating) { %}
 			<div class="col-md-4 mb-4">
-				{%= frappe.render_template("circular_progress_bar", {skill: d.skill, rating: d.rating * 5}) %}
+				{%= nts.render_template("circular_progress_bar", {skill: d.skill, rating: d.rating * 5}) %}
 			</div>
 			{% } %}
 		</div>
 	</div>
 	{% } %}
 
-	{%= frappe.render_template("feedback_history", { feedback_history: feedbacks, feedback_doctype: "Interview Feedback" }) %}
+	{%= nts.render_template("feedback_history", { feedback_history: feedbacks, feedback_doctype: "Interview Feedback" }) %}
 </div>

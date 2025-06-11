@@ -1,18 +1,18 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_all_nodes(method, company):
 	"""Recursively gets all data from nodes"""
-	method = frappe.get_attr(method)
+	method = nts.get_attr(method)
 
-	if method not in frappe.whitelisted:
-		frappe.throw(_("Not Permitted"), frappe.PermissionError)
+	if method not in nts.whitelisted:
+		nts.throw(_("Not Permitted"), nts.PermissionError)
 
 	root_nodes = method(company=company)
 	result = []

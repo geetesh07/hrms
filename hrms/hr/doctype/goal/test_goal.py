@@ -1,10 +1,10 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
+import nts
+from nts.tests import IntegrationTestCase
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.appraisal_template.test_appraisal_template import create_kras
 from hrms.hr.doctype.goal.goal import get_children, update_status
@@ -12,7 +12,7 @@ from hrms.hr.doctype.goal.goal import get_children, update_status
 
 class TestGoal(IntegrationTestCase):
 	def setUp(self):
-		frappe.db.delete("Goal")
+		nts.db.delete("Goal")
 		create_kras(["Development", "Quality"])
 
 		self.employee1 = make_employee("employee1@example.com", company="_Test Company")
@@ -20,7 +20,7 @@ class TestGoal(IntegrationTestCase):
 
 	def test_validate_parent_fields(self):
 		parent_goal = create_goal(self.employee1, "Development", 1)
-		child_goal = frappe.get_doc(
+		child_goal = nts.get_doc(
 			{
 				"doctype": "Goal",
 				"goal_name": "Test",
@@ -32,7 +32,7 @@ class TestGoal(IntegrationTestCase):
 		)
 
 		# parent goal and child goal should have same employee
-		self.assertRaises(frappe.ValidationError, child_goal.insert)
+		self.assertRaises(nts.ValidationError, child_goal.insert)
 
 	def test_set_status(self):
 		goal = create_goal(self.employee1, "Development")
@@ -217,7 +217,7 @@ def create_goal(
 	appraisal_cycle=None,
 	progress=0,
 ):
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Goal",
 			"goal_name": "Test",

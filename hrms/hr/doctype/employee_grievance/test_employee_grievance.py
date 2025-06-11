@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import today
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import today
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 
 class TestEmployeeGrievance(IntegrationTestCase):
@@ -18,7 +18,7 @@ def create_employee_grievance():
 	emp_1 = make_employee("test_emp_grievance_@example.com", company="_Test Company")
 	emp_2 = make_employee("testculprit@example.com", company="_Test Company")
 
-	grievance = frappe.new_doc("Employee Grievance")
+	grievance = nts.new_doc("Employee Grievance")
 	grievance.subject = "Test Employee Grievance"
 	grievance.raised_by = emp_1
 	grievance.date = today()
@@ -44,9 +44,9 @@ def create_employee_grievance():
 
 
 def create_grievance_type():
-	if frappe.db.exists("Grievance Type", "Employee Abuse"):
-		return frappe.get_doc("Grievance Type", "Employee Abuse")
-	grievance_type = frappe.new_doc("Grievance Type")
+	if nts.db.exists("Grievance Type", "Employee Abuse"):
+		return nts.get_doc("Grievance Type", "Employee Abuse")
+	grievance_type = nts.new_doc("Grievance Type")
 	grievance_type.name = "Employee Abuse"
 	grievance_type.description = "Test"
 	grievance_type.save()

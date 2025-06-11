@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.ui.form.on("Expense Claim Type", {
+nts.ui.form.on("Expense Claim Type", {
 	refresh: function (frm) {
 		frm.fields_dict["accounts"].grid.get_field("default_account").get_query = function (
 			doc,

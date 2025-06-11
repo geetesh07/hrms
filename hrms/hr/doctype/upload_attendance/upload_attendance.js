@@ -1,12 +1,12 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.provide("hrms.hr");
+nts.provide("hrms.hr");
 
-hrms.hr.AttendanceControlPanel = class AttendanceControlPanel extends frappe.ui.form.Controller {
+hrms.hr.AttendanceControlPanel = class AttendanceControlPanel extends nts.ui.form.Controller {
 	onload() {
-		this.frm.set_value("att_fr_date", frappe.datetime.get_today());
-		this.frm.set_value("att_to_date", frappe.datetime.get_today());
+		this.frm.set_value("att_fr_date", nts.datetime.get_today());
+		this.frm.set_value("att_to_date", nts.datetime.get_today());
 	}
 
 	refresh() {
@@ -17,11 +17,11 @@ hrms.hr.AttendanceControlPanel = class AttendanceControlPanel extends frappe.ui.
 
 	get_template() {
 		if (!this.frm.doc.att_fr_date || !this.frm.doc.att_to_date) {
-			frappe.msgprint(__("Attendance From Date and Attendance To Date is mandatory"));
+			nts.msgprint(__("Attendance From Date and Attendance To Date is mandatory"));
 			return;
 		}
 		window.location.href = repl(
-			frappe.request.url + "?cmd=%(cmd)s&from_date=%(from_date)s&to_date=%(to_date)s",
+			nts.request.url + "?cmd=%(cmd)s&from_date=%(from_date)s&to_date=%(to_date)s",
 			{
 				cmd: "hrms.hr.doctype.upload_attendance.upload_attendance.get_template",
 				from_date: this.frm.doc.att_fr_date,
@@ -32,7 +32,7 @@ hrms.hr.AttendanceControlPanel = class AttendanceControlPanel extends frappe.ui.
 
 	show_upload() {
 		let $wrapper = $(this.frm.fields_dict.upload_html.wrapper).empty();
-		new frappe.ui.FileUploader({
+		new nts.ui.FileUploader({
 			wrapper: $wrapper,
 			method: "hrms.hr.doctype.upload_attendance.upload_attendance.upload",
 		});
@@ -42,7 +42,7 @@ hrms.hr.AttendanceControlPanel = class AttendanceControlPanel extends frappe.ui.
 	setup_import_progress() {
 		var $log_wrapper = $(this.frm.fields_dict.import_log.wrapper).empty();
 
-		frappe.realtime.on("import_attendance", (data) => {
+		nts.realtime.on("import_attendance", (data) => {
 			if (data.progress) {
 				this.frm.dashboard.show_progress(
 					"Import Attendance",
@@ -73,5 +73,5 @@ hrms.hr.AttendanceControlPanel = class AttendanceControlPanel extends frappe.ui.
 	}
 };
 
-// nosemgrep: frappe-semgrep-rules.rules.frappe-cur-frm-usage
+// nosemgrep: nts-semgrep-rules.rules.nts-cur-frm-usage
 cur_frm.cscript = new hrms.hr.AttendanceControlPanel({ frm: cur_frm });

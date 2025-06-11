@@ -1,9 +1,9 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+import nts
+from nts.custom.doctype.custom_field.custom_field import create_custom_fields
 
 from hrms.setup import delete_custom_fields
 
@@ -249,8 +249,8 @@ def add_custom_roles_for_reports():
 		"Provident Fund Deductions",
 		"Income Tax Deductions",
 	):
-		if not frappe.db.get_value("Custom Role", dict(report=report_name)):
-			doc = frappe.new_doc("Custom Role")
+		if not nts.db.get_value("Custom Role", dict(report=report_name)):
+			doc = nts.new_doc("Custom Role")
 			doc.update(
 				dict(
 					report=report_name,
@@ -260,13 +260,13 @@ def add_custom_roles_for_reports():
 
 
 def create_gratuity_rule_for_india():
-	if not frappe.db.exists("DocType", "Gratuity Rule"):
+	if not nts.db.exists("DocType", "Gratuity Rule"):
 		return
 
-	if frappe.db.exists("Gratuity Rule", "Indian Standard Gratuity Rule"):
+	if nts.db.exists("Gratuity Rule", "Indian Standard Gratuity Rule"):
 		return
 
-	rule = frappe.new_doc("Gratuity Rule")
+	rule = nts.new_doc("Gratuity Rule")
 	rule.update(
 		{
 			"name": "Indian Standard Gratuity Rule",

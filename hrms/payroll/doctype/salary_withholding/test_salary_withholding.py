@@ -1,11 +1,11 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import getdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.payroll.doctype.payroll_entry.payroll_entry import get_start_end_dates
 from hrms.payroll.doctype.payroll_entry.test_payroll_entry import make_payroll_entry
@@ -30,9 +30,9 @@ class TestSalaryWithholding(IntegrationTestCase):
 			"Payroll Employee Detail",
 			"Journal Entry",
 		]:
-			frappe.db.delete(dt)
+			nts.db.delete(dt)
 
-		self.company = frappe.get_doc("Company", COMPANY_NAME)
+		self.company = nts.get_doc("Company", COMPANY_NAME)
 		self.employee1 = make_employee("employee1@example.com", company=COMPANY_NAME, designation="Engineer")
 		self.employee2 = make_employee("employee2@example.com", company=COMPANY_NAME, designation="Engineer")
 
@@ -140,7 +140,7 @@ class TestSalaryWithholding(IntegrationTestCase):
 
 
 def create_salary_withholding(employee: str, from_date: str, number_of_withholding_cycles: int = 0):
-	doc = frappe.new_doc("Salary Withholding")
+	doc = nts.new_doc("Salary Withholding")
 	doc.update(
 		{
 			"employee": employee,
@@ -154,7 +154,7 @@ def create_salary_withholding(employee: str, from_date: str, number_of_withholdi
 
 
 def get_salary_slip_details(payroll_entry: str, employee: str) -> dict:
-	return frappe.db.get_value(
+	return nts.db.get_value(
 		"Salary Slip",
 		{"payroll_entry": payroll_entry, "employee": employee},
 		["status", "salary_withholding", "salary_withholding_cycle"],

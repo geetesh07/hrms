@@ -1,9 +1,9 @@
-import frappe
+import nts
 
-from erpnext.tests.utils import ERPNextTestSuite
+from prodman.tests.utils import prodmanTestSuite
 
 
-class HRMSTestSuite(ERPNextTestSuite):
+class HRMSTestSuite(prodmanTestSuite):
 	"""Class for creating HRMS test records"""
 
 	@classmethod
@@ -36,10 +36,10 @@ class HRMSTestSuite(ERPNextTestSuite):
 		]
 		cls.departments = []
 		for x in records:
-			if not frappe.db.exists("Department", x.get("department_name")):
-				cls.departments.append(frappe.get_doc(x).insert())
+			if not nts.db.exists("Department", x.get("department_name")):
+				cls.departments.append(nts.get_doc(x).insert())
 			else:
-				cls.departments.append(frappe.get_doc("Department", x.get("department_name")))
+				cls.departments.append(nts.get_doc("Department", x.get("department_name")))
 
 	@classmethod
 	def make_leave_types(cls):
@@ -70,10 +70,10 @@ class HRMSTestSuite(ERPNextTestSuite):
 		]
 		cls.leave_types = []
 		for x in records:
-			if not frappe.db.exists("Leave Type", x.get("leave_type_name")):
-				cls.leave_types.append(frappe.get_doc(x).insert())
+			if not nts.db.exists("Leave Type", x.get("leave_type_name")):
+				cls.leave_types.append(nts.get_doc(x).insert())
 			else:
-				cls.leave_types.append(frappe.get_doc("Leave Type", x.get("leave_type_name")))
+				cls.leave_types.append(nts.get_doc("Leave Type", x.get("leave_type_name")))
 
 	@classmethod
 	def make_leave_allocations(cls):
@@ -102,14 +102,14 @@ class HRMSTestSuite(ERPNextTestSuite):
 
 		cls.leave_allocations = []
 		for x in records:
-			if not frappe.db.exists(
+			if not nts.db.exists(
 				"Leave Allocation",
 				{"employee": x.get("employee"), "from_date": x.get("from_date"), "to_date": x.get("to_date")},
 			):
-				cls.leave_allocations.append(frappe.get_doc(x).insert())
+				cls.leave_allocations.append(nts.get_doc(x).insert())
 			else:
 				cls.leave_allocations.append(
-					frappe.get_doc(
+					nts.get_doc(
 						"Employee",
 						{
 							"employee": x.get("employee"),

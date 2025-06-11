@@ -30,7 +30,7 @@ export default function useWorkflow(doctype) {
 
 	const getTransitions = async (doc) => {
 		const transitions = createResource({
-			url: "frappe.model.workflow.get_transitions",
+			url: "nts.model.workflow.get_transitions",
 			params: { doc: doc },
 			transform: (data) => {
 				const isSelfApproval = userResource?.data?.name == doc.owner
@@ -64,7 +64,7 @@ export default function useWorkflow(doctype) {
 
 	const applyWorkflow = async (doc, action) => {
 		const applyWorkflow = createResource({
-			url: "frappe.model.workflow.apply_workflow",
+			url: "nts.model.workflow.apply_workflow",
 			params: { doc: doc, action: action },
 			onSuccess() {
 				toast({

@@ -1,19 +1,19 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-// nosemgrep: frappe-semgrep-rules.rules.frappe-cur-frm-usage
+// nosemgrep: nts-semgrep-rules.rules.nts-cur-frm-usage
 cur_frm.add_fetch("employee", "employee_name", "employee_name");
 
-frappe.ui.form.on("Leave Allocation", {
+nts.ui.form.on("Leave Allocation", {
 	onload: function (frm) {
 		// Ignore cancellation of doctype on cancel all.
 		frm.ignore_doctypes_on_cancel_all = ["Leave Ledger Entry"];
 
-		if (!frm.doc.from_date) frm.set_value("from_date", frappe.datetime.get_today());
+		if (!frm.doc.from_date) frm.set_value("from_date", nts.datetime.get_today());
 
 		frm.set_query("employee", function () {
 			return {
-				query: "erpnext.controllers.queries.employee_query",
+				query: "prodman.controllers.queries.employee_query",
 			};
 		});
 		frm.set_query("leave_type", function () {
@@ -29,7 +29,7 @@ frappe.ui.form.on("Leave Allocation", {
 		hrms.leave_utils.add_view_ledger_button(frm);
 
 		if (frm.doc.docstatus === 1 && !frm.doc.expired) {
-			var valid_expiry = moment(frappe.datetime.get_today()).isBetween(
+			var valid_expiry = moment(nts.datetime.get_today()).isBetween(
 				frm.doc.from_date,
 				frm.doc.to_date,
 			);
@@ -38,7 +38,7 @@ frappe.ui.form.on("Leave Allocation", {
 				frm.add_custom_button(
 					__("Expire Allocation"),
 					function () {
-						frappe.confirm("Are you sure you want to expire this allocation?", () => {
+						nts.confirm("Are you sure you want to expire this allocation?", () => {
 							frm.trigger("expire_allocation");
 						});
 					},
@@ -48,7 +48,7 @@ frappe.ui.form.on("Leave Allocation", {
 		}
 
 		if (!frm.doc.__islocal && frm.doc.leave_policy_assignment) {
-			frappe.db.get_value("Leave Type", frm.doc.leave_type, "is_earned_leave", (r) => {
+			nts.db.get_value("Leave Type", frm.doc.leave_type, "is_earned_leave", (r) => {
 				if (!r?.is_earned_leave) return;
 				frm.set_df_property("new_leaves_allocated", "read_only", 1);
 				frm.trigger("add_allocate_leaves_button");
@@ -57,7 +57,7 @@ frappe.ui.form.on("Leave Allocation", {
 	},
 
 	add_allocate_leaves_button: async function (frm) {
-		const { message: monthly_earned_leave } = await frappe.call({
+		const { message: monthly_earned_leave } = await nts.call({
 			method: "get_monthly_earned_leave",
 			doc: frm.doc,
 		});
@@ -65,7 +65,7 @@ frappe.ui.form.on("Leave Allocation", {
 		frm.add_custom_button(
 			__("Allocate Leaves"),
 			function () {
-				const dialog = new frappe.ui.Dialog({
+				const dialog = new nts.ui.Dialog({
 					title: "Manual Leave Allocation",
 					fields: [
 						{
@@ -78,7 +78,7 @@ frappe.ui.form.on("Leave Allocation", {
 							label: "From Date",
 							fieldname: "from_date",
 							fieldtype: "Date",
-							default: frappe.datetime.get_today(),
+							default: nts.datetime.get_today(),
 						},
 						{
 							label: "To Date",
@@ -90,7 +90,7 @@ frappe.ui.form.on("Leave Allocation", {
 					],
 					primary_action_label: "Allocate",
 					primary_action({ new_leaves, from_date }) {
-						frappe.call({
+						nts.call({
 							method: "allocate_leaves_manually",
 							doc: frm.doc,
 							args: { new_leaves, from_date },
@@ -105,8 +105,8 @@ frappe.ui.form.on("Leave Allocation", {
 				});
 				dialog.fields_dict.new_leaves.set_value(monthly_earned_leave);
 				dialog.fields_dict.from_date.datepicker?.update({
-					minDate: frappe.datetime.str_to_obj(frm.doc.from_date),
-					maxDate: frappe.datetime.str_to_obj(frm.doc.to_date),
+					minDate: nts.datetime.str_to_obj(frm.doc.from_date),
+					maxDate: nts.datetime.str_to_obj(frm.doc.to_date),
 				});
 
 				dialog.show();
@@ -116,16 +116,16 @@ frappe.ui.form.on("Leave Allocation", {
 	},
 
 	expire_allocation: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry.expire_allocation",
 			args: {
 				allocation: frm.doc,
-				expiry_date: frappe.datetime.get_today(),
+				expiry_date: nts.datetime.get_today(),
 			},
 			freeze: true,
 			callback: function (r) {
 				if (!r.exc) {
-					frappe.msgprint(__("Allocation Expired!"));
+					nts.msgprint(__("Allocation Expired!"));
 				}
 				frm.refresh();
 			},
@@ -161,7 +161,7 @@ frappe.ui.form.on("Leave Allocation", {
 
 	leave_policy: function (frm) {
 		if (frm.doc.leave_policy && frm.doc.leave_type) {
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Leave Policy Detail",
 				{
 					parent: frm.doc.leave_policy,
@@ -179,7 +179,7 @@ frappe.ui.form.on("Leave Allocation", {
 
 	calculate_total_leaves_allocated: function (frm) {
 		if (cint(frm.doc.carry_forward) == 1 && frm.doc.leave_type && frm.doc.employee) {
-			return frappe.call({
+			return nts.call({
 				method: "set_total_leaves_allocated",
 				doc: frm.doc,
 				callback: function () {
@@ -193,7 +193,7 @@ frappe.ui.form.on("Leave Allocation", {
 	},
 });
 
-frappe.tour["Leave Allocation"] = [
+nts.tour["Leave Allocation"] = [
 	{
 		fieldname: "employee",
 		title: "Employee",

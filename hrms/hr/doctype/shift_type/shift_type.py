@@ -1,17 +1,17 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
 from datetime import datetime, timedelta
 from itertools import groupby
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import add_days, cint, create_batch, get_datetime, get_time, getdate, time_diff
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import add_days, cint, create_batch, get_datetime, get_time, getdate, time_diff
 
-from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
-from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
+from prodman.setup.doctype.employee.employee import get_holiday_list_for_employee
+from prodman.setup.doctype.holiday_list.holiday_list import is_holiday
 
 from hrms.hr.doctype.attendance.attendance import mark_attendance
 from hrms.hr.doctype.employee_checkin.employee_checkin import (
@@ -35,7 +35,7 @@ class ShiftType(Document):
 
 	def validate_same_start_and_end(self, start_time: datetime.time, end_time: datetime.time):
 		if start_time == end_time:
-			frappe.throw(
+			nts.throw(
 				title=_("Invalid Shift Times"),
 				msg=_("Start time and end time cannot be same."),
 			)
@@ -44,10 +44,10 @@ class ShiftType(Document):
 		shift_start, shift_end = self.get_shift_start_and_shift_end(start_time, end_time)
 		if self.get_total_shift_duration_in_minutes(shift_start, shift_end) >= 1440:
 			max_label = self.get_max_shift_buffer_label()
-			frappe.throw(
+			nts.throw(
 				title=_("Invalid Shift Times"),
 				msg=_("Please reduce {0} to avoid shift time overlapping with itself").format(
-					frappe.bold(max_label)
+					nts.bold(max_label)
 				),
 			)
 
@@ -83,7 +83,7 @@ class ShiftType(Document):
 
 	def validate_unlinked_logs(self):
 		if self.is_field_modified("start_time") and self.unlinked_checkins_exist():
-			frappe.throw(
+			nts.throw(
 				title=_("Unmarked Check-in Logs Found"),
 				msg=_("Mark attendance for existing check-in/out logs before changing shift settings"),
 			)
@@ -92,12 +92,12 @@ class ShiftType(Document):
 		return not self.is_new() and self.has_value_changed(fieldname)
 
 	def unlinked_checkins_exist(self):
-		return frappe.db.exists(
+		return nts.db.exists(
 			"Employee Checkin",
 			{"shift": self.name, "attendance": ["is", "not set"], "skip_auto_attendance": 0, "offshift": 0},
 		)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def process_auto_attendance(self):
 		if (
 			not cint(self.enable_auto_attendance)
@@ -138,7 +138,7 @@ class ShiftType(Document):
 			)
 
 		# commit after processing checkin logs to avoid losing progress
-		frappe.db.commit()  # nosemgrep
+		nts.db.commit()  # nosemgrep
 
 		assigned_employees = self.get_assigned_employees(self.process_attendance_after, True)
 		# mark absent in batches & commit to avoid losing progress since this tries to process remaining attendance
@@ -148,10 +148,10 @@ class ShiftType(Document):
 				self.mark_absent_for_dates_with_no_attendance(employee)
 				self.mark_absent_for_half_day_dates(employee)
 
-			frappe.db.commit()  # nosemgrep
+			nts.db.commit()  # nosemgrep
 
 	def get_employee_checkins(self) -> list[dict]:
-		return frappe.get_all(
+		return nts.get_all(
 			"Employee Checkin",
 			fields=[
 				"name",
@@ -232,13 +232,13 @@ class ShiftType(Document):
 				if not attendance:
 					continue
 
-				frappe.get_doc(
+				nts.get_doc(
 					{
 						"doctype": "Comment",
 						"comment_type": "Comment",
 						"reference_doctype": "Attendance",
 						"reference_name": attendance,
-						"content": frappe._("Employee was marked Absent due to missing Employee Checkins."),
+						"content": nts._("Employee was marked Absent due to missing Employee Checkins."),
 					}
 				).insert(ignore_permissions=True)
 
@@ -264,7 +264,7 @@ class ShiftType(Document):
 		return: start date = max of `process_attendance_after` and DOJ
 		return: end date = min of shift before `last_sync_of_checkin` and Relieving Date
 		"""
-		date_of_joining, relieving_date, employee_creation = frappe.get_cached_value(
+		date_of_joining, relieving_date, employee_creation = nts.get_cached_value(
 			"Employee", employee, ["date_of_joining", "relieving_date", "creation"]
 		)
 
@@ -294,9 +294,9 @@ class ShiftType(Document):
 		return start_date, end_date
 
 	def get_marked_attendance_dates_between(self, employee: str, start_date: str, end_date: str) -> list[str]:
-		Attendance = frappe.qb.DocType("Attendance")
+		Attendance = nts.qb.DocType("Attendance")
 		return (
-			frappe.qb.from_(Attendance)
+			nts.qb.from_(Attendance)
 			.select(Attendance.attendance_date)
 			.where(
 				(Attendance.employee == employee)
@@ -314,18 +314,18 @@ class ShiftType(Document):
 
 		or_filters = [["end_date", ">=", from_date], ["end_date", "is", "not set"]]
 
-		assigned_employees = frappe.get_all(
+		assigned_employees = nts.get_all(
 			"Shift Assignment", filters=filters, or_filters=or_filters, pluck="employee"
 		)
 
 		if consider_default_shift:
-			default_shift_employees = frappe.get_all(
+			default_shift_employees = nts.get_all(
 				"Employee", filters={"default_shift": self.name, "status": "Active"}, pluck="name"
 			)
 			assigned_employees = set(assigned_employees + default_shift_employees)
 
 		# exclude inactive employees
-		inactive_employees = frappe.db.get_all("Employee", {"status": "Inactive"}, pluck="name")
+		inactive_employees = nts.db.get_all("Employee", {"status": "Inactive"}, pluck="name")
 
 		return list(set(assigned_employees) - set(inactive_employees))
 
@@ -346,7 +346,7 @@ class ShiftType(Document):
 		return True
 
 	def mark_absent_for_half_day_dates(self, employee):
-		half_day_attendances = frappe.get_all(
+		half_day_attendances = nts.get_all(
 			"Attendance",
 			filters={"employee": employee, "status": "Half Day", "modify_half_day_status": 1},
 			fields=["name", "attendance_date"],
@@ -356,18 +356,18 @@ class ShiftType(Document):
 			timestamp = datetime.combine(attendance.attendance_date, start_time)
 			shift_details = get_employee_shift(employee, timestamp, True)
 			if shift_details and shift_details.shift_type.name == self.name:
-				frappe.db.set_value(
+				nts.db.set_value(
 					"Attendance",
 					attendance.name,
 					{"shift": self.name, "half_day_status": "Absent", "modify_half_day_status": 0},
 				)
-				frappe.get_doc(
+				nts.get_doc(
 					{
 						"doctype": "Comment",
 						"comment_type": "Comment",
 						"reference_doctype": "Attendance",
 						"reference_name": attendance.name,
-						"content": frappe._(
+						"content": nts._(
 							"Employee was marked Absent for other half due to missing Employee Checkins."
 						),
 					}
@@ -376,12 +376,12 @@ class ShiftType(Document):
 
 def update_last_sync_of_checkin():
 	"""Called from hooks"""
-	shifts = frappe.get_all(
+	shifts = nts.get_all(
 		"Shift Type",
 		filters={"enable_auto_attendance": 1, "auto_update_last_sync": 1},
 		fields=["name", "last_sync_of_checkin", "start_time", "end_time"],
 	)
-	current_datetime = frappe.flags.current_datetime or get_datetime()
+	current_datetime = nts.flags.current_datetime or get_datetime()
 	for shift in shifts:
 		shift_end = get_actual_shift_end(shift, current_datetime)
 		update_last_sync = None
@@ -391,7 +391,7 @@ def update_last_sync_of_checkin():
 		elif shift_end < current_datetime:
 			update_last_sync = True
 		if update_last_sync:
-			frappe.db.set_value(
+			nts.db.set_value(
 				"Shift Type", shift.name, "last_sync_of_checkin", shift_end + timedelta(minutes=1)
 			)
 
@@ -410,7 +410,7 @@ def get_actual_shift_end(shift, current_datetime):
 
 def process_auto_attendance_for_all_shifts():
 	"""Called from hooks"""
-	shift_list = frappe.get_all("Shift Type", filters={"enable_auto_attendance": "1"}, pluck="name")
+	shift_list = nts.get_all("Shift Type", filters={"enable_auto_attendance": "1"}, pluck="name")
 	for shift in shift_list:
-		doc = frappe.get_cached_doc("Shift Type", shift)
+		doc = nts.get_cached_doc("Shift Type", shift)
 		doc.process_auto_attendance()

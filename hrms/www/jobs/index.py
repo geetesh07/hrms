@@ -1,15 +1,15 @@
 import math
 
-import frappe
-from frappe import _
-from frappe.query_builder import Order
-from frappe.query_builder.functions import Count
-from frappe.utils import pretty_date
+import nts
+from nts import _
+from nts.query_builder import Order
+from nts.query_builder.functions import Count
+from nts.utils import pretty_date
 
 
 def get_context(context):
 	context.no_cache = 1
-	if frappe.session.user == "Guest":
+	if nts.session.user == "Guest":
 		context.parents = [{"name": _("Home"), "route": "/"}]
 	else:
 		context.parents = [{"name": _("My Account"), "route": "/me"}]
@@ -23,11 +23,11 @@ def get_context(context):
 
 
 def get_job_openings(filters=None, txt=None, sort=None, limit=20, offset=0):
-	jo = frappe.qb.DocType("Job Opening")
-	ja = frappe.qb.DocType("Job Applicant")
+	jo = nts.qb.DocType("Job Opening")
+	ja = nts.qb.DocType("Job Applicant")
 
 	query = (
-		frappe.qb.from_(jo)
+		nts.qb.from_(jo)
 		.left_join(ja)
 		.on(ja.job_title == jo.name)
 		.select(
@@ -58,7 +58,7 @@ def get_job_openings(filters=None, txt=None, sort=None, limit=20, offset=0):
 	)
 
 	for d in filters:
-		query = query.where(frappe.qb.Field(d).isin(filters[d]))
+		query = query.where(nts.qb.Field(d).isin(filters[d]))
 
 	if txt:
 		query = query.where((jo.job_title.like(f"%{txt}%")) | (jo.description.like(f"%{txt}%")))
@@ -72,9 +72,9 @@ def get_job_openings(filters=None, txt=None, sort=None, limit=20, offset=0):
 
 
 def get_no_of_pages(filters=None, txt=None, page_length=20):
-	jo = frappe.qb.DocType("Job Opening")
+	jo = nts.qb.DocType("Job Opening")
 	query = (
-		frappe.qb.from_(jo)
+		nts.qb.from_(jo)
 		.select(
 			Count("*").as_("no_of_openings"),
 		)
@@ -82,7 +82,7 @@ def get_no_of_pages(filters=None, txt=None, page_length=20):
 	)
 
 	for d in filters:
-		query = query.where(frappe.qb.Field(d).isin(filters[d]))
+		query = query.where(nts.qb.Field(d).isin(filters[d]))
 
 	if txt:
 		query = query.where((jo.job_title.like(f"%{txt}%")) | (jo.description.like(f"%{txt}%")))
@@ -92,7 +92,7 @@ def get_no_of_pages(filters=None, txt=None, page_length=20):
 
 
 def get_all_filters(filters=None):
-	job_openings = frappe.get_all(
+	job_openings = nts.get_all(
 		"Job Opening",
 		filters={"publish": 1, "status": "Open"},
 		fields=["company", "department", "employment_type", "location"],
@@ -110,7 +110,7 @@ def get_all_filters(filters=None):
 
 
 def get_filters_txt_sort_offset(page_len=20):
-	args = frappe.request.args.to_dict(flat=False)
+	args = nts.request.args.to_dict(flat=False)
 	filters = {}
 	txt = ""
 	sort = None

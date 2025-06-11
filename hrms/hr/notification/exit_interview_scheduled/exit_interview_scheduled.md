@@ -20,14 +20,14 @@
 			<div>
 				<ul class="list-unstyled" style="line-height: 1.7">
 					<li><b>{{_("Employee")}}: </b>{{ doc.employee }} - {{ doc.employee_name }}</li>
-					<li><b>{{_("Date")}}: </b>{{ frappe.utils.formatdate(doc.date) }}</li>
+					<li><b>{{_("Date")}}: </b>{{ nts.utils.formatdate(doc.date) }}</li>
 					<li><b>{{_("Interviewers")}}:</b> </li>
 					{% for entry in doc.interviewers %}
 						<ul>
 							<li>{{ entry.user }}</li>
 						</ul>
 					{% endfor %}
-					<li><b>{{ _("Interview Document") }}:</b> {{ frappe.utils.get_link_to_form(doc.doctype, doc.name) }}</li>
+					<li><b>{{ _("Interview Document") }}:</b> {{ nts.utils.get_link_to_form(doc.doctype, doc.name) }}</li>
 				</ul>
 			</div>
 		</td>

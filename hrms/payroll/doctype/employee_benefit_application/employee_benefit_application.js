@@ -1,10 +1,10 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Employee Benefit Application", {
+nts.ui.form.on("Employee Benefit Application", {
 	employee: function (frm) {
 		if (frm.doc.employee) {
-			frappe.run_serially([
+			nts.run_serially([
 				() => frm.trigger("get_employee_currency"),
 				() => frm.trigger("set_earning_component"),
 			]);
@@ -46,7 +46,7 @@ frappe.ui.form.on("Employee Benefit Application", {
 
 	get_employee_currency: function (frm) {
 		if (frm.doc.employee) {
-			frappe.call({
+			nts.call({
 				method: "hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment.get_employee_currency",
 				args: {
 					employee: frm.doc.employee,
@@ -80,7 +80,7 @@ frappe.ui.form.on("Employee Benefit Application", {
 });
 
 var get_max_benefits = function (frm, method, args) {
-	frappe.call({
+	nts.call({
 		method: method,
 		args: args,
 		callback: function (data) {
@@ -96,7 +96,7 @@ var get_max_benefits = function (frm, method, args) {
 	});
 };
 
-frappe.ui.form.on("Employee Benefit Application Detail", {
+nts.ui.form.on("Employee Benefit Application Detail", {
 	amount: function (frm) {
 		calculate_all(frm.doc);
 	},

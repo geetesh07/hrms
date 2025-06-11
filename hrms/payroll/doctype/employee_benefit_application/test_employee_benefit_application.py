@@ -1,12 +1,12 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import add_days, date_diff, get_year_ending, get_year_start, getdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import add_days, date_diff, get_year_ending, get_year_start, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 
 from hrms.hr.utils import get_holiday_dates_for_employee
 from hrms.payroll.doctype.employee_benefit_application.employee_benefit_application import (
@@ -45,7 +45,7 @@ class TestEmployeeBenefitApplication(IntegrationTestCase):
 			submit=True,
 		)
 
-		frappe.db.set_value("Leave Type", "Leave Without Pay", "include_holiday", 0)
+		nts.db.set_value("Leave Type", "Leave Without Pay", "include_holiday", 0)
 		salary_structure = make_salary_structure(
 			"Test Employee Benefits",
 			"Monthly",
@@ -71,9 +71,9 @@ class TestEmployeeBenefitApplication(IntegrationTestCase):
 
 
 def make_employee_benefit_application(employee, payroll_period, date):
-	frappe.db.delete("Employee Benefit Application")
+	nts.db.delete("Employee Benefit Application")
 
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Employee Benefit Application",
 			"employee": employee,

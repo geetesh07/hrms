@@ -1,9 +1,9 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import add_days, today
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import add_days, today
 
 from hrms.payroll.doctype.salary_structure.test_salary_structure import make_employee
 
@@ -34,12 +34,12 @@ class TestTrainingEvent(IntegrationTestCase):
 			self.assertEqual(entry.status, "Open")
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 
 def create_training_program(training_program):
-	if not frappe.db.get_value("Training Program", training_program):
-		frappe.get_doc(
+	if not nts.db.get_value("Training Program", training_program):
+		nts.get_doc(
 			{
 				"doctype": "Training Program",
 				"training_program": training_program,
@@ -49,7 +49,7 @@ def create_training_program(training_program):
 
 
 def create_training_event(attendees):
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Training Event",
 			"event_name": "Basic Training Event",

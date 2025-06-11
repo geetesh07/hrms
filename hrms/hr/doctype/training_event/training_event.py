@@ -1,13 +1,13 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import time_diff_in_seconds
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import time_diff_in_seconds
 
-from erpnext.setup.doctype.employee.employee import get_employee_emails
+from prodman.setup.doctype.employee.employee import get_employee_emails
 
 
 class TrainingEvent(Document):
@@ -23,7 +23,7 @@ class TrainingEvent(Document):
 
 	def validate_period(self):
 		if time_diff_in_seconds(self.end_time, self.start_time) <= 0:
-			frappe.throw(_("End time cannot be before start time"))
+			nts.throw(_("End time cannot be before start time"))
 
 	def set_status_for_attendees(self):
 		if self.event_status == "Completed":

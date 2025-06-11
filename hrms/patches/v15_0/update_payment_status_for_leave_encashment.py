@@ -1,5 +1,5 @@
-import frappe
-from frappe.query_builder import DocType
+import nts
+from nts.query_builder import DocType
 
 
 def execute():
@@ -14,19 +14,19 @@ def execute():
 
 	# Fetch Leave Encashments that were paid via Salary Slips
 	paid_encashments = (
-		frappe.qb.from_(AdditionalSalary)
+		nts.qb.from_(AdditionalSalary)
 		.select(AdditionalSalary.ref_docname)
 		.where(
 			(AdditionalSalary.ref_doctype == "Leave Encashment")
 			& (AdditionalSalary.docstatus == 1)
 			& (
 				AdditionalSalary.name.isin(
-					frappe.qb.from_(SalaryDetail)
+					nts.qb.from_(SalaryDetail)
 					.select(SalaryDetail.additional_salary)
 					.where(
 						(
 							SalaryDetail.parent.isin(
-								frappe.qb.from_(SalarySlip)
+								nts.qb.from_(SalarySlip)
 								.select(SalarySlip.name)
 								.where(SalarySlip.docstatus == 1)
 							)
@@ -40,15 +40,15 @@ def execute():
 
 	if not paid_encashments:
 		# If no encashments were marked as "Paid", set all submitted to "Unpaid"
-		frappe.qb.update(LeaveEncashment).set(LeaveEncashment.status, "Unpaid").where(
+		nts.qb.update(LeaveEncashment).set(LeaveEncashment.status, "Unpaid").where(
 			LeaveEncashment.docstatus == 1
 		).run()
 		return
 
-	frappe.qb.update(LeaveEncashment).set(LeaveEncashment.status, "Paid").where(
+	nts.qb.update(LeaveEncashment).set(LeaveEncashment.status, "Paid").where(
 		LeaveEncashment.name.isin(paid_encashments)
 	).run()
 
-	frappe.qb.update(LeaveEncashment).set(LeaveEncashment.status, "Unpaid").where(
+	nts.qb.update(LeaveEncashment).set(LeaveEncashment.status, "Unpaid").where(
 		(LeaveEncashment.docstatus == 1) & (LeaveEncashment.name.notin(paid_encashments))
 	).run()

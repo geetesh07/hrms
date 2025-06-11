@@ -1,7 +1,7 @@
-// Copyright (c) 2017, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2017, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Employee Advance", {
+nts.ui.form.on("Employee Advance", {
 	setup: function (frm) {
 		frm.set_query("employee", function () {
 			return {
@@ -13,9 +13,9 @@ frappe.ui.form.on("Employee Advance", {
 
 		frm.set_query("advance_account", function () {
 			if (!frm.doc.employee) {
-				frappe.msgprint(__("Please select employee first"));
+				nts.msgprint(__("Please select employee first"));
 			}
-			let company_currency = erpnext.get_currency(frm.doc.company);
+			let company_currency = prodman.get_currency(frm.doc.company);
 			let currencies = [company_currency];
 			if (frm.doc.currency && frm.doc.currency != company_currency) {
 				currencies.push(frm.doc.currency);
@@ -44,7 +44,7 @@ frappe.ui.form.on("Employee Advance", {
 		if (
 			frm.doc.docstatus === 1 &&
 			flt(frm.doc.paid_amount) < flt(frm.doc.advance_amount) &&
-			frappe.model.can_create("Payment Entry")
+			nts.model.can_create("Payment Entry")
 		) {
 			frm.add_custom_button(
 				__("Payment"),
@@ -56,7 +56,7 @@ frappe.ui.form.on("Employee Advance", {
 		} else if (
 			frm.doc.docstatus === 1 &&
 			flt(frm.doc.claimed_amount) < flt(frm.doc.paid_amount) - flt(frm.doc.return_amount) &&
-			frappe.model.can_create("Expense Claim")
+			nts.model.can_create("Expense Claim")
 		) {
 			frm.add_custom_button(
 				__("Expense Claim"),
@@ -73,7 +73,7 @@ frappe.ui.form.on("Employee Advance", {
 		) {
 			if (
 				frm.doc.repay_unclaimed_amount_from_salary == 0 &&
-				frappe.model.can_create("Journal Entry")
+				nts.model.can_create("Journal Entry")
 			) {
 				frm.add_custom_button(
 					__("Return"),
@@ -84,7 +84,7 @@ frappe.ui.form.on("Employee Advance", {
 				);
 			} else if (
 				frm.doc.repay_unclaimed_amount_from_salary == 1 &&
-				frappe.model.can_create("Additional Salary")
+				nts.model.can_create("Additional Salary")
 			) {
 				frm.add_custom_button(
 					__("Deduction from Salary"),
@@ -98,14 +98,14 @@ frappe.ui.form.on("Employee Advance", {
 	},
 
 	make_deduction_via_additional_salary: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.employee_advance.employee_advance.create_return_through_additional_salary",
 			args: {
 				doc: frm.doc,
 			},
 			callback: function (r) {
-				var doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				var doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},
@@ -115,21 +115,21 @@ frappe.ui.form.on("Employee Advance", {
 		if (frm.doc.__onload && frm.doc.__onload.make_payment_via_journal_entry) {
 			method = "hrms.hr.doctype.employee_advance.employee_advance.make_bank_entry";
 		}
-		return frappe.call({
+		return nts.call({
 			method: method,
 			args: {
 				dt: frm.doc.doctype,
 				dn: frm.doc.name,
 			},
 			callback: function (r) {
-				var doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				var doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},
 
 	make_expense_claim: function (frm) {
-		return frappe.call({
+		return nts.call({
 			method: "hrms.hr.doctype.expense_claim.expense_claim.get_expense_claim",
 			args: {
 				employee_name: frm.doc.employee,
@@ -141,14 +141,14 @@ frappe.ui.form.on("Employee Advance", {
 				return_amount: frm.doc.return_amount,
 			},
 			callback: function (r) {
-				const doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				const doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},
 
 	make_return_entry: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.employee_advance.employee_advance.make_return_entry",
 			args: {
 				employee: frm.doc.employee,
@@ -161,8 +161,8 @@ frappe.ui.form.on("Employee Advance", {
 				exchange_rate: frm.doc.exchange_rate,
 			},
 			callback: function (r) {
-				const doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				const doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},
@@ -172,13 +172,13 @@ frappe.ui.form.on("Employee Advance", {
 	},
 
 	get_employee_currency: function (frm) {
-		frappe.db.get_value(
+		nts.db.get_value(
 			"Salary Structure Assignment",
 			{ employee: frm.doc.employee, docstatus: 1 },
 			"currency",
 			(r) => {
 				if (r.currency) frm.set_value("currency", r.currency);
-				else frm.set_value("currency", erpnext.get_currency(frm.doc.company));
+				else frm.set_value("currency", prodman.get_currency(frm.doc.company));
 				frm.refresh_fields();
 			},
 		);
@@ -189,9 +189,9 @@ frappe.ui.form.on("Employee Advance", {
 			var from_currency = frm.doc.currency;
 			var company_currency;
 			if (!frm.doc.company) {
-				company_currency = erpnext.get_currency(frappe.defaults.get_default("Company"));
+				company_currency = prodman.get_currency(nts.defaults.get_default("Company"));
 			} else {
-				company_currency = erpnext.get_currency(frm.doc.company);
+				company_currency = prodman.get_currency(frm.doc.company);
 			}
 			if (from_currency != company_currency) {
 				frm.events.set_exchange_rate(frm, from_currency, company_currency);
@@ -205,8 +205,8 @@ frappe.ui.form.on("Employee Advance", {
 	},
 
 	set_exchange_rate: function (frm, from_currency, company_currency) {
-		frappe.call({
-			method: "erpnext.setup.utils.get_exchange_rate",
+		nts.call({
+			method: "prodman.setup.utils.get_exchange_rate",
 			args: {
 				from_currency: from_currency,
 				to_currency: company_currency,

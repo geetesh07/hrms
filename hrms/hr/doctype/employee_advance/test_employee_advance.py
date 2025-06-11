@@ -1,12 +1,12 @@
-# Copyright (c) 2017, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2017, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase, change_settings
-from frappe.utils import flt, nowdate
+import nts
+from nts.tests import IntegrationTestCase, change_settings
+from nts.utils import flt, nowdate
 
-import erpnext
-from erpnext.setup.doctype.employee.test_employee import make_employee
+import prodman
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.employee_advance.employee_advance import (
 	EmployeeAdvanceOverPayment,
@@ -25,7 +25,7 @@ from hrms.payroll.doctype.salary_structure.test_salary_structure import make_sal
 
 class TestEmployeeAdvance(IntegrationTestCase):
 	def setUp(self):
-		frappe.db.delete("Employee Advance")
+		nts.db.delete("Employee Advance")
 		self.update_company_in_fiscal_year()
 
 	def test_paid_amount_and_status(self):
@@ -135,7 +135,7 @@ class TestEmployeeAdvance(IntegrationTestCase):
 			exchange_rate=advance.exchange_rate,
 		)
 
-		entry = frappe.get_doc(entry)
+		entry = nts.get_doc(entry)
 		entry.insert()
 		entry.submit()
 
@@ -253,7 +253,7 @@ class TestEmployeeAdvance(IntegrationTestCase):
 			exchange_rate=advance.exchange_rate,
 		)
 
-		entry = frappe.get_doc(entry)
+		entry = nts.get_doc(entry)
 		entry.insert()
 		entry.submit()
 
@@ -280,7 +280,7 @@ class TestEmployeeAdvance(IntegrationTestCase):
 	@change_settings("HR Settings", {"unlink_payment_on_cancellation_of_employee_advance": True})
 	def test_unlink_payment_entries(self):
 		employee_name = make_employee("_T@employee.advance", "_Test Company")
-		self.assertTrue(frappe.db.exists("Employee", employee_name))
+		self.assertTrue(nts.db.exists("Employee", employee_name))
 
 		advance = make_employee_advance(employee_name)
 		self.assertTrue(advance)
@@ -296,9 +296,9 @@ class TestEmployeeAdvance(IntegrationTestCase):
 		self.assertEqual(advance_payment.references, [])
 
 	def update_company_in_fiscal_year(self):
-		fy_entries = frappe.get_all("Fiscal Year")
+		fy_entries = nts.get_all("Fiscal Year")
 		for fy_entry in fy_entries:
-			fiscal_year = frappe.get_doc("Fiscal Year", fy_entry.name)
+			fiscal_year = nts.get_doc("Fiscal Year", fy_entry.name)
 			company_list = [fy_c.company for fy_c in fiscal_year.companies if fy_c.company]
 			if "_Test Company" not in company_list:
 				fiscal_year.append("companies", {"company": "_Test Company"})
@@ -306,7 +306,7 @@ class TestEmployeeAdvance(IntegrationTestCase):
 
 
 def make_journal_entry_for_advance(advance):
-	journal_entry = frappe.get_doc(make_bank_entry("Employee Advance", advance.name))
+	journal_entry = nts.get_doc(make_bank_entry("Employee Advance", advance.name))
 	journal_entry.cheque_no = "123123"
 	journal_entry.cheque_date = nowdate()
 	journal_entry.save()
@@ -327,11 +327,11 @@ def make_payment_entry(advance, amount):
 
 
 def make_employee_advance(employee_name, args=None):
-	doc = frappe.new_doc("Employee Advance")
+	doc = nts.new_doc("Employee Advance")
 	doc.employee = employee_name
 	doc.company = "_Test Company"
 	doc.purpose = "For site visit"
-	doc.currency = erpnext.get_company_currency("_Test company")
+	doc.currency = prodman.get_company_currency("_Test company")
 	doc.exchange_rate = 1
 	doc.advance_amount = 1000
 	doc.posting_date = nowdate()

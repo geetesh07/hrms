@@ -1,18 +1,18 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
+import nts
 
-# test_records = frappe.get_test_records("Leave Type")
+# test_records = nts.get_test_records("Leave Type")
 
 
 def create_leave_type(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 	leave_type_name = args.leave_type_name or "_Test Leave Type"
-	if frappe.db.exists("Leave Type", leave_type_name):
-		frappe.delete_doc("Leave Type", leave_type_name, force=True)
+	if nts.db.exists("Leave Type", leave_type_name):
+		nts.delete_doc("Leave Type", leave_type_name, force=True)
 
-	leave_type = frappe.get_doc(
+	leave_type = nts.get_doc(
 		{
 			"doctype": "Leave Type",
 			"leave_type_name": leave_type_name,

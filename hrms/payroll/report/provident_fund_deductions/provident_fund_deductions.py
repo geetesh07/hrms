@@ -1,10 +1,10 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.utils import getdate
+import nts
+from nts import _
+from nts.utils import getdate
 
 
 def execute(filters=None):
@@ -70,8 +70,8 @@ def get_conditions(filters):
 def prepare_data(entry, component_type_dict):
 	data_list = {}
 
-	employee_account_dict = frappe._dict(
-		frappe.db.sql(""" select name, provident_fund_account from `tabEmployee`""")
+	employee_account_dict = nts._dict(
+		nts.db.sql(""" select name, provident_fund_account from `tabEmployee`""")
 	)
 
 	for d in entry:
@@ -98,7 +98,7 @@ def get_data(filters):
 
 	conditions = get_conditions(filters)
 
-	salary_slips = frappe.db.sql(
+	salary_slips = nts.db.sql(
 		""" select sal.name from `tabSalary Slip` sal
 		where docstatus = 1 %s
 		"""
@@ -106,8 +106,8 @@ def get_data(filters):
 		as_dict=1,
 	)
 
-	component_type_dict = frappe._dict(
-		frappe.db.sql(
+	component_type_dict = nts._dict(
+		nts.db.sql(
 			""" select name, component_type from `tabSalary Component`
 		where component_type in ('Provident Fund', 'Additional Provident Fund', 'Provident Fund Loan')"""
 		)
@@ -116,8 +116,8 @@ def get_data(filters):
 	if not len(component_type_dict):
 		return []
 
-	# nosemgrep: frappe-semgrep-rules.rules.frappe-using-db-sql
-	entry = frappe.db.sql(
+	# nosemgrep: nts-semgrep-rules.rules.nts-using-db-sql
+	entry = nts.db.sql(
 		""" select sal.name, sal.employee, sal.employee_name, ded.salary_component, ded.amount
 		from `tabSalary Slip` sal, `tabSalary Detail` ded
 		where sal.name = ded.parent
@@ -160,9 +160,9 @@ def get_data(filters):
 	return data
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_years():
-	year_list = frappe.db.sql_list(
+	year_list = nts.db.sql_list(
 		"""select distinct YEAR(end_date) from `tabSalary Slip` ORDER BY YEAR(end_date) DESC"""
 	)
 	if not year_list:

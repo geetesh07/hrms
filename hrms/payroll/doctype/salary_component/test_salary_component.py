@@ -1,8 +1,8 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
+import nts
+from nts.tests import IntegrationTestCase
 
 from hrms.payroll.doctype.salary_structure.test_salary_structure import make_salary_structure
 
@@ -58,10 +58,10 @@ class TestSalaryComponent(IntegrationTestCase):
 
 
 def create_salary_component(component_name, **args):
-	if frappe.db.exists("Salary Component", component_name):
-		return frappe.get_doc("Salary Component", component_name)
+	if nts.db.exists("Salary Component", component_name):
+		return nts.get_doc("Salary Component", component_name)
 
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Salary Component",
 			"salary_component": component_name,

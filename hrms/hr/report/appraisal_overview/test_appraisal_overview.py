@@ -1,8 +1,8 @@
-import frappe
-from frappe.tests import IntegrationTestCase
+import nts
+from nts.tests import IntegrationTestCase
 
-from erpnext.setup.doctype.designation.test_designation import create_designation
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.designation.test_designation import create_designation
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.appraisal_cycle.test_appraisal_cycle import create_appraisal_cycle
 from hrms.hr.doctype.appraisal_template.test_appraisal_template import create_appraisal_template
@@ -15,8 +15,8 @@ from hrms.tests.test_utils import create_company
 
 class TestAppraisalOverview(IntegrationTestCase):
 	def setUp(self):
-		frappe.db.delete("Goal")
-		frappe.db.delete("Appraisal")
+		nts.db.delete("Goal")
+		nts.db.delete("Appraisal")
 
 		self.company = create_company("_Test Appraisal").name
 
@@ -38,8 +38,8 @@ class TestAppraisalOverview(IntegrationTestCase):
 		cycle = create_appraisal_cycle(kra_evaluation_method="Manual Rating")
 		cycle.create_appraisals()
 
-		appraisal = frappe.get_doc("Appraisal", {"employee": self.employee1})
-		appraisal = frappe.get_doc("Appraisal", appraisal.name)
+		appraisal = nts.get_doc("Appraisal", {"employee": self.employee1})
+		appraisal = nts.get_doc("Appraisal", appraisal.name)
 
 		self.create_appraisal_data(appraisal)
 		report = execute()

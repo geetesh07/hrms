@@ -7,7 +7,7 @@
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "",
- "dynamic_filters_json": "{\"company\":\"frappe.defaults.get_user_default(\\\"Company\\\")\", \"from_date\":\"frappe.defaults.get_user_default(\\\"year_start_date\\\")\", \"to_date\":\"frappe.defaults.get_user_default(\\\"year_end_date\\\")\"}",
+ "dynamic_filters_json": "{\"company\":\"nts.defaults.get_user_default(\\\"Company\\\")\", \"from_date\":\"nts.defaults.get_user_default(\\\"year_start_date\\\")\", \"to_date\":\"nts.defaults.get_user_default(\\\"year_end_date\\\")\"}",
  "filters_json": "{\"time_interval\":\"Monthly\"}",
  "group_by_type": "Count",
  "idx": 0,

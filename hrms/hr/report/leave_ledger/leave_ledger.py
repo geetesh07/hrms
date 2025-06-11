@@ -1,11 +1,11 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _
-from frappe.query_builder.functions import Date
+import nts
+from nts import _
+from nts.query_builder.functions import Date
 
-Filters = frappe._dict
+Filters = nts._dict
 
 
 def execute(filters: Filters = None) -> tuple:
@@ -117,13 +117,13 @@ def get_columns() -> list[dict]:
 
 
 def get_data(filters: Filters) -> list[dict]:
-	Employee = frappe.qb.DocType("Employee")
-	Ledger = frappe.qb.DocType("Leave Ledger Entry")
+	Employee = nts.qb.DocType("Employee")
+	Ledger = nts.qb.DocType("Leave Ledger Entry")
 
 	from_date, to_date = filters.get("from_date"), filters.get("to_date")
 
 	query = (
-		frappe.qb.from_(Ledger)
+		nts.qb.from_(Ledger)
 		.inner_join(Employee)
 		.on(Ledger.employee == Employee.name)
 		.select(
@@ -189,7 +189,7 @@ def add_total_row(result: list[dict], filters: Filters) -> list[dict]:
 	if not add_total_row:
 		return result
 
-	total_row = frappe._dict({"employee": _("Total Leaves ({0})").format(leave_type)})
+	total_row = nts._dict({"employee": _("Total Leaves ({0})").format(leave_type)})
 	total_row["leaves"] = sum((row.get("leaves") or 0) for row in result)
 
 	result.append(total_row)

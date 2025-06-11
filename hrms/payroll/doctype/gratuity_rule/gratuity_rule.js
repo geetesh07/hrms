@@ -1,12 +1,12 @@
-// Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2020, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Gratuity Rule", {
+nts.ui.form.on("Gratuity Rule", {
 	// refresh: function(frm) {
 	// }
 });
 
-frappe.ui.form.on("Gratuity Rule Slab", {
+nts.ui.form.on("Gratuity Rule Slab", {
 	/*
 		Slabs should be in order like
 
@@ -32,7 +32,7 @@ frappe.ui.form.on("Gratuity Rule Slab", {
 	to_year(frm, cdt, cdn) {
 		let row = locals[cdt][cdn];
 		if (row.to_year <= row.from_year && row.to_year === 0) {
-			frappe.throw(__("To(Year) year can not be less than From(year)"));
+			nts.throw(__("To(Year) year can not be less than From(year)"));
 		}
 	},
 });

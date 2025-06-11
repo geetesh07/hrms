@@ -1,14 +1,14 @@
-frappe.provide("frappe.treeview_settings");
+nts.provide("nts.treeview_settings");
 
-frappe.treeview_settings["Goal"] = {
+nts.treeview_settings["Goal"] = {
 	get_tree_nodes: "hrms.hr.doctype.goal.goal.get_children",
 	filters: [
 		{
 			fieldname: "company",
 			fieldtype: "Select",
-			options: erpnext.utils.get_tree_options("company"),
+			options: prodman.utils.get_tree_options("company"),
 			label: __("Company"),
-			default: erpnext.utils.get_tree_default("company"),
+			default: prodman.utils.get_tree_default("company"),
 		},
 		{
 			fieldname: "appraisal_cycle",
@@ -17,7 +17,7 @@ frappe.treeview_settings["Goal"] = {
 			label: __("Appraisal Cycle"),
 			get_query() {
 				const company =
-					frappe.treeview_settings["Goal"].page.fields_dict.company.get_value();
+					nts.treeview_settings["Goal"].page.fields_dict.company.get_value();
 
 				return {
 					filters: {
@@ -61,7 +61,7 @@ frappe.treeview_settings["Goal"] = {
 			options: "Employee",
 			reqd: 1,
 			default() {
-				const treeview = frappe.treeview_settings["Goal"].treeview;
+				const treeview = nts.treeview_settings["Goal"].treeview;
 				let employee =
 					treeview.tree.get_selected_node().data.employee ||
 					treeview.tree.session_employee ||
@@ -83,13 +83,13 @@ frappe.treeview_settings["Goal"] = {
 			fieldname: "start_date",
 			label: __("Start Date"),
 			reqd: 1,
-			default: frappe.datetime.month_start(),
+			default: nts.datetime.month_start(),
 		},
 		{
 			fieldtype: "Date",
 			fieldname: "end_date",
 			label: __("End Date"),
-			default: frappe.datetime.month_end(),
+			default: nts.datetime.month_end(),
 		},
 		{
 			fieldtype: "Section Break",
@@ -106,7 +106,7 @@ frappe.treeview_settings["Goal"] = {
 			options: "Appraisal Cycle",
 			get_query() {
 				const company =
-					frappe.treeview_settings["Goal"].page.fields_dict.company.get_value();
+					nts.treeview_settings["Goal"].page.fields_dict.company.get_value();
 
 				return {
 					filters: {
@@ -116,7 +116,7 @@ frappe.treeview_settings["Goal"] = {
 				};
 			},
 			default() {
-				const treeview = frappe.treeview_settings["Goal"].treeview;
+				const treeview = nts.treeview_settings["Goal"].treeview;
 				let appraisal_cycle =
 					treeview.page.fields_dict.appraisal_cycle.get_value() ||
 					treeview.tree.get_selected_node().data.appraisal_cycle ||
@@ -144,7 +144,7 @@ frappe.treeview_settings["Goal"] = {
 				};
 			},
 			default() {
-				const treeview = frappe.treeview_settings["Goal"].treeview;
+				const treeview = nts.treeview_settings["Goal"].treeview;
 				return treeview.tree.get_selected_node().data.kra;
 			},
 		},
@@ -161,13 +161,13 @@ frappe.treeview_settings["Goal"] = {
 		},
 	],
 	onload(treeview) {
-		frappe.treeview_settings["Goal"].page = {};
-		$.extend(frappe.treeview_settings["Goal"].page, treeview.page);
+		nts.treeview_settings["Goal"].page = {};
+		$.extend(nts.treeview_settings["Goal"].page, treeview.page);
 		treeview.make_tree();
 
 		// set the current session employee
-		frappe.db
-			.get_value("Employee", { user_id: frappe.session.user }, "name")
+		nts.db
+			.get_value("Employee", { user_id: nts.session.user }, "name")
 			.then((employee_record) => {
 				treeview.tree.session_employee = employee_record?.message?.name;
 			});
@@ -215,8 +215,8 @@ frappe.treeview_settings["Goal"] = {
 	root_label: __("All Goals"),
 	ignore_fields: ["parent_goal"],
 	post_render(treeview) {
-		frappe.treeview_settings["Goal"].treeview = {};
-		$.extend(frappe.treeview_settings["Goal"].treeview, treeview);
+		nts.treeview_settings["Goal"].treeview = {};
+		$.extend(nts.treeview_settings["Goal"].treeview, treeview);
 	},
 	get_label(node) {
 		if (node.title && node.title !== node.label) {
@@ -234,7 +234,7 @@ frappe.treeview_settings["Goal"] = {
 				return !node.root && !node.expandable;
 			},
 			click: function (node) {
-				const dialog = new frappe.ui.Dialog({
+				const dialog = new nts.ui.Dialog({
 					title: __("Update Progress"),
 					fields: [
 						{
@@ -259,7 +259,7 @@ frappe.treeview_settings["Goal"] = {
 				return !node.is_root && !node.expandable && node.data.status != "Completed";
 			},
 			click: function (node) {
-				frappe.confirm(__("Mark {0} as Completed?", [node.label.bold()]), () =>
+				nts.confirm(__("Mark {0} as Completed?", [node.label.bold()]), () =>
 					update_progress(node, 100),
 				);
 			},
@@ -269,7 +269,7 @@ frappe.treeview_settings["Goal"] = {
 };
 
 function update_progress(node, progress) {
-	return frappe
+	return nts
 		.call({
 			method: "hrms.hr.doctype.goal.goal.update_progress",
 			args: {
@@ -279,17 +279,17 @@ function update_progress(node, progress) {
 		})
 		.then((r) => {
 			if (!r.exc && r.message) {
-				frappe.treeview_settings["Goal"].treeview.tree.load_children(
-					frappe.treeview_settings["Goal"].treeview.tree.root_node,
+				nts.treeview_settings["Goal"].treeview.tree.load_children(
+					nts.treeview_settings["Goal"].treeview.tree.root_node,
 					true,
 				);
 
-				frappe.show_alert({
+				nts.show_alert({
 					message: __("Goal updated successfully"),
 					indicator: "green",
 				});
 			} else {
-				frappe.msgprint(__("Could not update Goal"));
+				nts.msgprint(__("Could not update Goal"));
 			}
 		});
 }

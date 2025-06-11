@@ -1,9 +1,9 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests import IntegrationTestCase
-from frappe.utils import add_days, flt, getdate
+import nts
+from nts.tests import IntegrationTestCase
+from nts.utils import add_days, flt, getdate
 
 from hrms.hr.doctype.interview.test_interview import (
 	create_interview_and_dependencies,
@@ -14,7 +14,7 @@ from hrms.tests.test_utils import create_job_applicant
 
 class TestInterviewFeedback(IntegrationTestCase):
 	def test_validation_for_skill_set(self):
-		frappe.set_user("Administrator")
+		nts.set_user("Administrator")
 		job_applicant = create_job_applicant()
 		interview = create_interview_and_dependencies(
 			job_applicant.name, scheduled_on=add_days(getdate(), -1)
@@ -26,11 +26,11 @@ class TestInterviewFeedback(IntegrationTestCase):
 
 		interview_feedback = create_interview_feedback(interview.name, interviewer, skill_ratings)
 		interview_feedback.append("skill_assessment", {"skill": "Leadership", "rating": 0.8})
-		frappe.set_user(interviewer)
+		nts.set_user(interviewer)
 
-		self.assertRaises(frappe.ValidationError, interview_feedback.save)
+		self.assertRaises(nts.ValidationError, interview_feedback.save)
 
-		frappe.set_user("Administrator")
+		nts.set_user("Administrator")
 
 	def test_average_ratings_on_feedback_submission_and_cancellation(self):
 		job_applicant = create_job_applicant()
@@ -41,7 +41,7 @@ class TestInterviewFeedback(IntegrationTestCase):
 
 		# For First Interviewer Feedback
 		interviewer = "test_interviewer1@example.com"
-		frappe.set_user(interviewer)
+		nts.set_user(interviewer)
 
 		# calculating Average
 		feedback_1 = create_interview_feedback(interview.name, interviewer, skill_ratings)
@@ -59,7 +59,7 @@ class TestInterviewFeedback(IntegrationTestCase):
 
 		"""For Second Interviewer Feedback"""
 		interviewer = "test_interviewer2@example.com"
-		frappe.set_user(interviewer)
+		nts.set_user(interviewer)
 
 		feedback_2 = create_interview_feedback(interview.name, interviewer, skill_ratings)
 		interview.reload()
@@ -67,14 +67,14 @@ class TestInterviewFeedback(IntegrationTestCase):
 		feedback_2.cancel()
 		interview.reload()
 
-		frappe.set_user("Administrator")
+		nts.set_user("Administrator")
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 
 def create_interview_feedback(interview, interviewer, skills_ratings):
-	interview_feedback = frappe.new_doc("Interview Feedback")
+	interview_feedback = nts.new_doc("Interview Feedback")
 	interview_feedback.interview = interview
 	interview_feedback.interviewer = interviewer
 	interview_feedback.result = "Cleared"
@@ -91,7 +91,7 @@ def create_interview_feedback(interview, interviewer, skills_ratings):
 def get_skills_rating(interview_round):
 	import random
 
-	skills = frappe.get_all("Expected Skill Set", filters={"parent": interview_round}, fields=["skill"])
+	skills = nts.get_all("Expected Skill Set", filters={"parent": interview_round}, fields=["skill"])
 	for d in skills:
 		d["rating"] = random.random()
 	return skills

@@ -1,6 +1,6 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
-frappe.ui.form.on("Attendance Request", {
+nts.ui.form.on("Attendance Request", {
 	refresh(frm) {
 		frm.trigger("show_attendance_warnings");
 	},
@@ -13,7 +13,7 @@ frappe.ui.form.on("Attendance Request", {
 				if (r.message?.length) {
 					frm.dashboard.reset();
 					frm.dashboard.add_section(
-						frappe.render_template("attendance_warnings", {
+						nts.render_template("attendance_warnings", {
 							warnings: r.message || [],
 						}),
 						__("Attendance Warnings"),

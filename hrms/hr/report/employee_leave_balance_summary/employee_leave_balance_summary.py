@@ -1,15 +1,15 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 from hrms.hr.doctype.leave_application.leave_application import get_leave_details
 
 
 def execute(filters=None):
-	leave_types = frappe.db.sql_list("select name from `tabLeave Type` order by name asc")
+	leave_types = nts.db.sql_list("select name from `tabLeave Type` order by name asc")
 
 	columns = get_columns(leave_types)
 	data = get_data(filters, leave_types)
@@ -47,7 +47,7 @@ def get_conditions(filters):
 def get_data(filters, leave_types):
 	conditions = get_conditions(filters)
 
-	active_employees = frappe.get_list(
+	active_employees = nts.get_list(
 		"Employee",
 		filters=conditions,
 		fields=["name", "employee_name", "department", "user_id"],

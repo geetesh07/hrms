@@ -1,11 +1,11 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import flt
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import flt
 
 from hrms.mixins.appraisal import AppraisalMixin
 

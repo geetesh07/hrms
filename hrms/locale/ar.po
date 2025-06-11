@@ -1,20 +1,20 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: frappe\n"
-"Report-Msgid-Bugs-To: contact@frappe.io\n"
+"Project-Id-Version: nts\n"
+"Report-Msgid-Bugs-To: contact@nts.io\n"
 "POT-Creation-Date: 2025-05-04 09:34+0000\n"
 "PO-Revision-Date: 2025-05-05 18:11\n"
-"Last-Translator: contact@frappe.io\n"
+"Last-Translator: contact@nts.io\n"
 "Language-Team: Arabic\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.13.1\n"
 "Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);\n"
-"X-Crowdin-Project: frappe\n"
+"X-Crowdin-Project: nts\n"
 "X-Crowdin-Project-ID: 639578\n"
 "X-Crowdin-Language: ar\n"
-"X-Crowdin-File: /[frappe.hrms] develop/hrms/locale/main.pot\n"
+"X-Crowdin-File: /[nts.hrms] develop/hrms/locale/main.pot\n"
 "X-Crowdin-File-ID: 58\n"
 "Language: ar_SA\n"
 
@@ -2792,7 +2792,7 @@ msgstr "محتويات الرسالة المرفقة"
 #: hrms/payroll/doctype/salary_structure/salary_structure.js:152
 #: hrms/payroll/doctype/salary_structure_assignment/salary_structure_assignment.js:68
 #: hrms/payroll/doctype/salary_structure_assignment/salary_structure_assignment.js:70
-#: hrms/public/js/erpnext/delivery_trip.js:15
+#: hrms/public/js/prodman/delivery_trip.js:15
 msgid "Create"
 msgstr "انشاء"
 
@@ -2836,7 +2836,7 @@ msgstr "إنشاء رمز موظف جديد"
 msgid "Create Payment Entry"
 msgstr "إنشاء إدخال الدفع"
 
-#: hrms/public/js/erpnext/timesheet.js:8
+#: hrms/public/js/prodman/timesheet.js:8
 msgid "Create Salary Slip"
 msgstr "إنشاء كشف الرواتب"
 
@@ -5400,7 +5400,7 @@ msgstr "الموافقة على المصروفات إلزامية في مطال�
 #: hrms/hr/report/unpaid_expense_claim/unpaid_expense_claim.py:20
 #: hrms/hr/workspace/expense_claims/expense_claims.json
 #: hrms/hr/workspace/overview/overview.json
-#: hrms/public/js/erpnext/delivery_trip.js:8
+#: hrms/public/js/prodman/delivery_trip.js:8
 msgid "Expense Claim"
 msgstr "طلب النفقات"
 
@@ -5869,7 +5869,7 @@ msgid "Fractional Cost"
 msgstr ""
 
 #: frontend/src/components/BaseLayout.vue:9
-msgid "Frappe HR"
+msgid "nts HR"
 msgstr ""
 
 #. Label of the frequency (Select) field in DocType 'Shift Schedule'
@@ -6798,7 +6798,7 @@ msgid "If set, the job opening will be closed automatically after this date"
 msgstr ""
 
 #: hrms/patches/v15_0/notify_about_loan_app_separation.py:17
-msgid "If you are using loans in salary slips, please install the {0} app from Frappe Cloud Marketplace or GitHub to continue using loan integration with payroll."
+msgid "If you are using loans in salary slips, please install the {0} app from nts Cloud Marketplace or GitHub to continue using loan integration with payroll."
 msgstr ""
 
 #. Label of the upload_attendance_data (Section Break) field in DocType 'Upload
@@ -7007,7 +7007,7 @@ msgstr ""
 
 #: frontend/src/components/InstallPrompt.vue:5
 #: frontend/src/components/InstallPrompt.vue:28
-msgid "Install Frappe HR"
+msgid "Install nts HR"
 msgstr ""
 
 #: hrms/hr/doctype/leave_application/leave_application.py:436
@@ -8225,7 +8225,7 @@ msgid "Login Failed"
 msgstr ""
 
 #: frontend/src/views/Login.vue:8
-msgid "Login to Frappe HR"
+msgid "Login to nts HR"
 msgstr ""
 
 #. Label of the longitude (Float) field in DocType 'Employee Checkin'
@@ -14107,7 +14107,7 @@ msgid "Violet"
 msgstr ""
 
 #: hrms/patches/v15_0/notify_about_loan_app_separation.py:16
-msgid "WARNING: Loan Management module has been separated from ERPNext."
+msgid "WARNING: Loan Management module has been separated from prodman."
 msgstr ""
 
 #: hrms/setup.py:392

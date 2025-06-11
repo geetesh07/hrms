@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import get_link_to_form
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import get_link_to_form
 
 from hrms.hr.utils import validate_active_employee
 
@@ -27,15 +27,15 @@ class EmployeeReferral(Document):
 				self.referral_payment_status = "Unpaid"
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def create_job_applicant(source_name, target_doc=None):
-	emp_ref = frappe.get_doc("Employee Referral", source_name)
+	emp_ref = nts.get_doc("Employee Referral", source_name)
 	# just for Api call if some set status apart from default Status
 	status = emp_ref.status
 	if emp_ref.status in ["Pending", "In process"]:
 		status = "Open"
 
-	job_applicant = frappe.new_doc("Job Applicant")
+	job_applicant = nts.new_doc("Job Applicant")
 	job_applicant.source = "Employee Referral"
 	job_applicant.employee_referral = emp_ref.name
 	job_applicant.status = status
@@ -47,7 +47,7 @@ def create_job_applicant(source_name, target_doc=None):
 	job_applicant.resume_link = emp_ref.resume_link
 	job_applicant.save()
 
-	frappe.msgprint(
+	nts.msgprint(
 		_("Job Applicant {0} created successfully.").format(
 			get_link_to_form("Job Applicant", job_applicant.name)
 		),
@@ -60,17 +60,17 @@ def create_job_applicant(source_name, target_doc=None):
 	return job_applicant
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def create_additional_salary(doc):
 	import json
 
 	if isinstance(doc, str):
-		doc = frappe._dict(json.loads(doc))
+		doc = nts._dict(json.loads(doc))
 
-	if not frappe.db.exists("Additional Salary", {"ref_docname": doc.name}):
-		additional_salary = frappe.new_doc("Additional Salary")
+	if not nts.db.exists("Additional Salary", {"ref_docname": doc.name}):
+		additional_salary = nts.new_doc("Additional Salary")
 		additional_salary.employee = doc.referrer
-		additional_salary.company = frappe.db.get_value("Employee", doc.referrer, "company")
+		additional_salary.company = nts.db.get_value("Employee", doc.referrer, "company")
 		additional_salary.overwrite_salary_structure_amount = 0
 		additional_salary.ref_doctype = doc.doctype
 		additional_salary.ref_docname = doc.name
