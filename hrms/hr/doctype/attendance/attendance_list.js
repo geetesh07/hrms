@@ -1,4 +1,4 @@
-frappe.listview_settings["Attendance"] = {
+nts.listview_settings["Attendance"] = {
 	add_fields: ["status", "attendance_date"],
 
 	get_indicator: function (doc) {
@@ -21,7 +21,7 @@ frappe.listview_settings["Attendance"] = {
 				first_day_of_month = first_day_of_month.subtract(1, "month");
 			}
 
-			let dialog = new frappe.ui.Dialog({
+			let dialog = new nts.ui.Dialog({
 				title: __("Mark Attendance"),
 				fields: [
 					{
@@ -91,27 +91,27 @@ frappe.listview_settings["Attendance"] = {
 				],
 				primary_action(data) {
 					if (cur_dialog.no_unmarked_days_left) {
-						frappe.msgprint(
+						nts.msgprint(
 							__(
 								"Attendance from {0} to {1} has already been marked for the Employee {2}",
 								[data.from_date, data.to_date, data.employee],
 							),
 						);
 					} else {
-						frappe.confirm(
+						nts.confirm(
 							__("Mark attendance as {0} for {1} on selected dates?", [
 								data.status,
 								data.employee,
 							]),
 							() => {
-								frappe.call({
+								nts.call({
 									method: "hrms.hr.doctype.attendance.attendance.mark_bulk_attendance",
 									args: {
 										data: data,
 									},
 									callback: function (r) {
 										if (r.message === 1) {
-											frappe.show_alert({
+											nts.show_alert({
 												message: __("Attendance Marked"),
 												indicator: "blue",
 											});
@@ -156,7 +156,7 @@ frappe.listview_settings["Attendance"] = {
 			dialog.set_df_property("exclude_holidays", "hidden", 0);
 			dialog.no_unmarked_days_left = false;
 
-			frappe
+			nts
 				.call({
 					method: "hrms.hr.doctype.attendance.attendance.get_unmarked_days",
 					async: false,

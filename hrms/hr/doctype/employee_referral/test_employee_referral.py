@@ -1,9 +1,9 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import today
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import today
 
 from prodman.setup.doctype.designation.test_designation import create_designation
 from prodman.setup.doctype.employee.test_employee import make_employee
@@ -14,10 +14,10 @@ from hrms.hr.doctype.employee_referral.employee_referral import (
 )
 
 
-class TestEmployeeReferral(FrappeTestCase):
+class TestEmployeeReferral(ntsTestCase):
 	def setUp(self):
-		frappe.db.sql("DELETE FROM `tabJob Applicant`")
-		frappe.db.sql("DELETE FROM `tabEmployee Referral`")
+		nts.db.sql("DELETE FROM `tabJob Applicant`")
+		nts.db.sql("DELETE FROM `tabEmployee Referral`")
 
 	def test_workflow_and_status_sync(self):
 		emp_ref = create_employee_referral()
@@ -51,12 +51,12 @@ class TestEmployeeReferral(FrappeTestCase):
 		self.assertTrue(add_sal.ref_docname, emp_ref.name)
 
 	def tearDown(self):
-		frappe.db.sql("DELETE FROM `tabJob Applicant`")
-		frappe.db.sql("DELETE FROM `tabEmployee Referral`")
+		nts.db.sql("DELETE FROM `tabJob Applicant`")
+		nts.db.sql("DELETE FROM `tabEmployee Referral`")
 
 
 def create_employee_referral():
-	emp_ref = frappe.new_doc("Employee Referral")
+	emp_ref = nts.new_doc("Employee Referral")
 	emp_ref.first_name = "Mahesh"
 	emp_ref.last_name = "Singh"
 	emp_ref.email = "a@b.c"

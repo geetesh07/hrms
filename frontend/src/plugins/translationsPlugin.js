@@ -9,14 +9,14 @@ function makeTranslationFunction() {
 	}
 
 	async function setup() {
-		if (window.frappe?.boot?.__messages) {
-			messages = window.frappe?.boot?.__messages;
+		if (window.nts?.boot?.__messages) {
+			messages = window.nts?.boot?.__messages;
 			return;
 		}
 
-		const url = new URL("/api/method/frappe.translate.load_all_translations", location.origin);
-		url.searchParams.append("lang", window.frappe?.boot?.lang ?? navigator.language);
-		url.searchParams.append("hash", window.frappe?.boot?.translations_hash || window._version_number || Math.random()); // for cache busting
+		const url = new URL("/api/method/nts.translate.load_all_translations", location.origin);
+		url.searchParams.append("lang", window.nts?.boot?.lang ?? navigator.language);
+		url.searchParams.append("hash", window.nts?.boot?.translations_hash || window._version_number || Math.random()); // for cache busting
 		// url.searchParams.append("app", "hrms");
 
 		try {

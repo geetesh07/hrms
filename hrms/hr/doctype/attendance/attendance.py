@@ -1,11 +1,11 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import (
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import (
 	add_days,
 	cint,
 	cstr,
@@ -24,11 +24,11 @@ from hrms.hr.utils import (
 )
 
 
-class DuplicateAttendanceError(frappe.ValidationError):
+class DuplicateAttendanceError(nts.ValidationError):
 	pass
 
 
-class OverlappingShiftAttendanceError(frappe.ValidationError):
+class OverlappingShiftAttendanceError(nts.ValidationError):
 	pass
 
 
@@ -52,14 +52,14 @@ class Attendance(Document):
 		self.unlink_attendance_from_checkins()
 
 	def validate_attendance_date(self):
-		date_of_joining = frappe.db.get_value("Employee", self.employee, "date_of_joining")
+		date_of_joining = nts.db.get_value("Employee", self.employee, "date_of_joining")
 
 		if date_of_joining and getdate(self.attendance_date) < getdate(date_of_joining):
-			frappe.throw(
+			nts.throw(
 				_("Attendance date {0} can not be less than employee {1}'s joining date: {2}").format(
-					frappe.bold(format_date(self.attendance_date)),
-					frappe.bold(self.employee),
-					frappe.bold(format_date(date_of_joining)),
+					nts.bold(format_date(self.attendance_date)),
+					nts.bold(self.employee),
+					nts.bold(format_date(date_of_joining)),
 				)
 			)
 
@@ -67,10 +67,10 @@ class Attendance(Document):
 		duplicate = self.get_duplicate_attendance_record()
 
 		if duplicate:
-			frappe.throw(
+			nts.throw(
 				_("Attendance for employee {0} is already marked for the date {1}: {2}").format(
-					frappe.bold(self.employee),
-					frappe.bold(format_date(self.attendance_date)),
+					nts.bold(self.employee),
+					nts.bold(format_date(self.attendance_date)),
 					get_link_to_form("Attendance", duplicate),
 				),
 				title=_("Duplicate Attendance"),
@@ -78,9 +78,9 @@ class Attendance(Document):
 			)
 
 	def get_duplicate_attendance_record(self) -> str | None:
-		Attendance = frappe.qb.DocType("Attendance")
+		Attendance = nts.qb.DocType("Attendance")
 		query = (
-			frappe.qb.from_(Attendance)
+			nts.qb.from_(Attendance)
 			.select(Attendance.name)
 			.where(
 				(Attendance.employee == self.employee)
@@ -113,10 +113,10 @@ class Attendance(Document):
 		attendance = self.get_overlapping_shift_attendance()
 
 		if attendance:
-			frappe.throw(
+			nts.throw(
 				_("Attendance for employee {0} is already marked for an overlapping shift {1}: {2}").format(
-					frappe.bold(self.employee),
-					frappe.bold(attendance.shift),
+					nts.bold(self.employee),
+					nts.bold(attendance.shift),
 					get_link_to_form("Attendance", attendance.name),
 				),
 				title=_("Overlapping Shift Attendance"),
@@ -127,9 +127,9 @@ class Attendance(Document):
 		if not self.shift:
 			return {}
 
-		Attendance = frappe.qb.DocType("Attendance")
+		Attendance = nts.qb.DocType("Attendance")
 		same_date_attendance = (
-			frappe.qb.from_(Attendance)
+			nts.qb.from_(Attendance)
 			.select(Attendance.name, Attendance.shift)
 			.where(
 				(Attendance.employee == self.employee)
@@ -147,13 +147,13 @@ class Attendance(Document):
 		return {}
 
 	def validate_employee_status(self):
-		if frappe.db.get_value("Employee", self.employee, "status") == "Inactive":
-			frappe.throw(_("Cannot mark attendance for an Inactive employee {0}").format(self.employee))
+		if nts.db.get_value("Employee", self.employee, "status") == "Inactive":
+			nts.throw(_("Cannot mark attendance for an Inactive employee {0}").format(self.employee))
 
 	def check_leave_record(self):
-		LeaveApplication = frappe.qb.DocType("Leave Application")
+		LeaveApplication = nts.qb.DocType("Leave Application")
 		leave_record = (
-			frappe.qb.from_(LeaveApplication)
+			nts.qb.from_(LeaveApplication)
 			.select(
 				LeaveApplication.leave_type,
 				LeaveApplication.half_day,
@@ -175,14 +175,14 @@ class Attendance(Document):
 				self.leave_application = d.name
 				if d.half_day_date == getdate(self.attendance_date):
 					self.status = "Half Day"
-					frappe.msgprint(
+					nts.msgprint(
 						_("Employee {0} on Half day on {1}").format(
 							self.employee, format_date(self.attendance_date)
 						)
 					)
 				else:
 					self.status = "On Leave"
-					frappe.msgprint(
+					nts.msgprint(
 						_("Employee {0} is on Leave on {1}").format(
 							self.employee, format_date(self.attendance_date)
 						)
@@ -192,7 +192,7 @@ class Attendance(Document):
 			if not leave_record:
 				self.modify_half_day_status = 0
 				self.haf_day_status = "Absent"
-				frappe.msgprint(
+				nts.msgprint(
 					_("No leave record found for employee {0} on {1}").format(
 						self.employee, format_date(self.attendance_date)
 					),
@@ -203,16 +203,16 @@ class Attendance(Document):
 			self.leave_application = None
 
 	def validate_employee(self):
-		emp = frappe.db.sql(
+		emp = nts.db.sql(
 			"select name from `tabEmployee` where name = %s and status = 'Active'", self.employee
 		)
 		if not emp:
-			frappe.throw(_("Employee {0} is not active or does not exist").format(self.employee))
+			nts.throw(_("Employee {0} is not active or does not exist").format(self.employee))
 
 	def unlink_attendance_from_checkins(self):
-		EmployeeCheckin = frappe.qb.DocType("Employee Checkin")
+		EmployeeCheckin = nts.qb.DocType("Employee Checkin")
 		linked_logs = (
-			frappe.qb.from_(EmployeeCheckin)
+			nts.qb.from_(EmployeeCheckin)
 			.select(EmployeeCheckin.name)
 			.where(EmployeeCheckin.attendance == self.name)
 			.for_update()
@@ -221,12 +221,12 @@ class Attendance(Document):
 
 		if linked_logs:
 			(
-				frappe.qb.update(EmployeeCheckin)
+				nts.qb.update(EmployeeCheckin)
 				.set("attendance", "")
 				.where(EmployeeCheckin.attendance == self.name)
 			).run()
 
-			frappe.msgprint(
+			nts.msgprint(
 				msg=_("Unlinked Attendance record from Employee Checkins: {}").format(
 					", ".join(get_link_to_form("Employee Checkin", log.name) for log in linked_logs)
 				),
@@ -237,9 +237,9 @@ class Attendance(Document):
 			)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_events(start, end, filters=None):
-	employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user})
+	employee = nts.db.get_value("Employee", {"user_id": nts.session.user})
 	if not employee:
 		return []
 	if isinstance(filters, str):
@@ -255,7 +255,7 @@ def get_events(start, end, filters=None):
 
 
 def add_attendance(filters):
-	attendance = frappe.get_list(
+	attendance = nts.get_list(
 		"Attendance",
 		fields=[
 			"name",
@@ -302,8 +302,8 @@ def mark_attendance(
 	savepoint = "attendance_creation"
 
 	try:
-		frappe.db.savepoint(savepoint)
-		attendance = frappe.new_doc("Attendance")
+		nts.db.savepoint(savepoint)
+		attendance = nts.new_doc("Attendance")
 		attendance.update(
 			{
 				"doctype": "Attendance",
@@ -320,21 +320,21 @@ def mark_attendance(
 		attendance.insert()
 		attendance.submit()
 	except (DuplicateAttendanceError, OverlappingShiftAttendanceError):
-		frappe.db.rollback(save_point=savepoint)
+		nts.db.rollback(save_point=savepoint)
 		return
 
 	return attendance.name
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def mark_bulk_attendance(data):
 	import json
 
 	if isinstance(data, str):
 		data = json.loads(data)
-	data = frappe._dict(data)
+	data = nts._dict(data)
 	if not data.unmarked_days:
-		frappe.throw(_("Please select a date."))
+		nts.throw(_("Please select a date."))
 		return
 
 	for date in data.unmarked_days:
@@ -345,20 +345,20 @@ def mark_bulk_attendance(data):
 			"status": data.status,
 			"half_day_status": "Absent" if data.status == "Half Day" else None,
 		}
-		attendance = frappe.get_doc(doc_dict).insert()
+		attendance = nts.get_doc(doc_dict).insert()
 		attendance.submit()
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_unmarked_days(employee, from_date, to_date, exclude_holidays=0):
-	joining_date, relieving_date = frappe.get_cached_value(
+	joining_date, relieving_date = nts.get_cached_value(
 		"Employee", employee, ["date_of_joining", "relieving_date"]
 	)
 
 	from_date = max(getdate(from_date), joining_date or getdate(from_date))
 	to_date = min(getdate(to_date), relieving_date or getdate(to_date))
 
-	records = frappe.get_all(
+	records = nts.get_all(
 		"Attendance",
 		fields=["attendance_date", "employee"],
 		filters=[

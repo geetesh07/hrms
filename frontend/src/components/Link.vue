@@ -49,7 +49,7 @@ const value = computed({
 })
 
 const options = createResource({
-	url: "frappe.desk.search.search_link",
+	url: "nts.desk.search.search_link",
 	params: {
 		doctype: props.doctype,
 		txt: searchText.value,

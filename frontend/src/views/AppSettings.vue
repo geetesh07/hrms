@@ -59,14 +59,14 @@ import { arePushNotificationsEnabled } from "@/data/notifications"
 const __ = inject("$translate")
 const router = useRouter()
 const pushNotificationState = ref(
-	window.frappePushNotification?.isNotificationEnabled()
+	window.ntsPushNotification?.isNotificationEnabled()
 )
 const isLoading = ref(false)
 
 const disablePushSetting = computed(() => {
 	return (
 		!(
-			window.frappe?.boot.push_relay_server_url &&
+			window.nts?.boot.push_relay_server_url &&
 			arePushNotificationsEnabled.data
 		) || isLoading.value
 	)
@@ -74,7 +74,7 @@ const disablePushSetting = computed(() => {
 
 const description = computed(() => {
 	return !(
-		window.frappe?.boot.push_relay_server_url &&
+		window.nts?.boot.push_relay_server_url &&
 		arePushNotificationsEnabled.data
 	)
 		? __("Push notifications have been disabled on your site")
@@ -86,7 +86,7 @@ const togglePushNotifications = (newValue) => {
 		enablePushNotifications()
 	} else {
 		isLoading.value = true
-		window.frappePushNotification
+		window.ntsPushNotification
 			.disableNotification()
 			.then((data) => {
 				pushNotificationState.value = false // Disable the switch
@@ -117,7 +117,7 @@ const togglePushNotifications = (newValue) => {
 const enablePushNotifications = () => {
 	isLoading.value = true
 
-	window.frappePushNotification
+	window.ntsPushNotification
 		.enableNotification()
 		.then((data) => {
 			if (data.permission_granted) {

@@ -1,11 +1,11 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors and Contributors
 # See license.txt
 
 from datetime import datetime
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import (
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import (
 	add_days,
 	add_months,
 	get_first_day,
@@ -27,24 +27,24 @@ from hrms.hr.doctype.attendance.attendance import (
 )
 from hrms.tests.test_utils import get_first_sunday
 
-test_records = frappe.get_test_records("Attendance")
+test_records = nts.get_test_records("Attendance")
 
 
-class TestAttendance(FrappeTestCase):
+class TestAttendance(ntsTestCase):
 	def setUp(self):
 		from hrms.payroll.doctype.salary_slip.test_salary_slip import make_holiday_list
 
 		from_date = get_year_start(add_months(getdate(), -1))
 		to_date = get_year_ending(getdate())
 		self.holiday_list = make_holiday_list(from_date=from_date, to_date=to_date)
-		frappe.db.delete("Attendance")
+		nts.db.delete("Attendance")
 
 	def test_duplicate_attendance(self):
 		employee = make_employee("test_duplicate_attendance@example.com", company="_Test Company")
 		date = nowdate()
 
 		mark_attendance(employee, date, "Present")
-		attendance = frappe.get_doc(
+		attendance = nts.get_doc(
 			{
 				"doctype": "Attendance",
 				"employee": employee,
@@ -66,7 +66,7 @@ class TestAttendance(FrappeTestCase):
 		mark_attendance(employee, date, "Present", shift=shift_1.name)
 
 		# attendance record with shift
-		attendance = frappe.get_doc(
+		attendance = nts.get_doc(
 			{
 				"doctype": "Attendance",
 				"employee": employee,
@@ -80,7 +80,7 @@ class TestAttendance(FrappeTestCase):
 		self.assertRaises(DuplicateAttendanceError, attendance.insert)
 
 		# attendance record without any shift
-		attendance = frappe.get_doc(
+		attendance = nts.get_doc(
 			{
 				"doctype": "Attendance",
 				"employee": employee,
@@ -104,7 +104,7 @@ class TestAttendance(FrappeTestCase):
 		mark_attendance(employee, date, "Present", shift=shift_1.name)
 
 		# attendance record with overlapping shift
-		attendance = frappe.get_doc(
+		attendance = nts.get_doc(
 			{
 				"doctype": "Attendance",
 				"employee": employee,
@@ -128,7 +128,7 @@ class TestAttendance(FrappeTestCase):
 		shift_2 = setup_shift_type(shift_type="Shift 2", start_time="11:00:00", end_time="12:00:00")
 
 		mark_attendance(employee, date, "Present", shift_1.name)
-		frappe.get_doc(
+		nts.get_doc(
 			{
 				"doctype": "Attendance",
 				"employee": employee,
@@ -144,7 +144,7 @@ class TestAttendance(FrappeTestCase):
 		date = nowdate()
 
 		attendance = mark_attendance(employee, date, "Absent")
-		fetch_attendance = frappe.get_value(
+		fetch_attendance = nts.get_value(
 			"Attendance", {"employee": employee, "attendance_date": date, "status": "Absent"}
 		)
 		self.assertEqual(attendance, fetch_attendance)
@@ -156,7 +156,7 @@ class TestAttendance(FrappeTestCase):
 		employee = make_employee(
 			"test_unmarked_days@example.com", date_of_joining=add_days(attendance_date, -1)
 		)
-		frappe.db.set_value("Employee", employee, "holiday_list", self.holiday_list)
+		nts.db.set_value("Employee", employee, "holiday_list", self.holiday_list)
 
 		mark_attendance(employee, attendance_date, "Present")
 
@@ -179,7 +179,7 @@ class TestAttendance(FrappeTestCase):
 		employee = make_employee(
 			"test_unmarked_days@example.com", date_of_joining=add_days(attendance_date, -1)
 		)
-		frappe.db.set_value("Employee", employee, "holiday_list", self.holiday_list)
+		nts.db.set_value("Employee", employee, "holiday_list", self.holiday_list)
 
 		mark_attendance(employee, attendance_date, "Present")
 
@@ -205,7 +205,7 @@ class TestAttendance(FrappeTestCase):
 			"test_unmarked_days_as_per_doj@example.com", date_of_joining=doj, relieving_date=relieving_date
 		)
 
-		frappe.db.set_value("Employee", employee, "holiday_list", self.holiday_list)
+		nts.db.set_value("Employee", employee, "holiday_list", self.holiday_list)
 
 		attendance_date = add_days(date, 2)
 		mark_attendance(employee, attendance_date, "Present")
@@ -232,7 +232,7 @@ class TestAttendance(FrappeTestCase):
 		make_checkin(employee, datetime.combine(getdate(), get_time("14:00:00")))
 		shift.process_auto_attendance()
 
-		attendances = frappe.get_all(
+		attendances = nts.get_all(
 			"Attendance",
 			filters={
 				"employee": employee,
@@ -242,4 +242,4 @@ class TestAttendance(FrappeTestCase):
 		self.assertEqual(len(attendances), 1)
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()

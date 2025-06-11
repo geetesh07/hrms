@@ -588,7 +588,7 @@ const documentResource = createDocumentResource({
 })
 
 const docPermissions = createResource({
-	url: "frappe.client.get_doc_permissions",
+	url: "nts.client.get_doc_permissions",
 	params: { doctype: props.doctype, docname: props.id },
 })
 

@@ -272,7 +272,7 @@ class ntsPushNotification {
 	async unregisterTokenHandler(token) {
 		try {
 			let response = await fetch(
-				"/api/method/frappe.push_notification.unsubscribe?fcm_token=" +
+				"/api/method/nts.push_notification.unsubscribe?fcm_token=" +
 					token +
 					"&project_name=" +
 					this.projectName,
@@ -291,4 +291,4 @@ class ntsPushNotification {
 	}
 }
 
-export default FrappePushNotification
+export default ntsPushNotification

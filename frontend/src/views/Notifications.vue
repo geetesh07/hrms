@@ -120,7 +120,7 @@ const pageLength = 10
 
 const allowPushNotifications = computed(
 	() =>
-		window.frappe?.boot.push_relay_server_url &&
+		window.nts?.boot.push_relay_server_url &&
 		arePushNotificationsEnabled.data
 )
 

@@ -220,7 +220,7 @@ const attachedFiles = createResource({
 })
 
 const docPermissions = createResource({
-	url: "frappe.client.get_doc_permissions",
+	url: "nts.client.get_doc_permissions",
 	params: { doctype: props.modelValue.doctype, docname: props.modelValue.name },
 	auto: true,
 })
