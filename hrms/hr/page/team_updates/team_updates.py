@@ -1,12 +1,12 @@
 from email_reply_parser import EmailReplyParser
 
-import frappe
+import nts
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_data(start=0):
-	# frappe.only_for('Employee', 'System Manager')
-	data = frappe.get_all(
+	# nts.only_for('Employee', 'System Manager')
+	data = nts.get_all(
 		"Communication",
 		fields=("content", "text_content", "sender", "creation"),
 		filters=dict(reference_doctype="Daily Work Summary"),
@@ -16,8 +16,8 @@ def get_data(start=0):
 	)
 
 	for d in data:
-		d.sender_name = frappe.db.get_value("Employee", {"user_id": d.sender}, "employee_name") or d.sender
+		d.sender_name = nts.db.get_value("Employee", {"user_id": d.sender}, "employee_name") or d.sender
 		if d.text_content:
-			d.content = frappe.utils.md_to_html(EmailReplyParser.parse_reply(d.text_content))
+			d.content = nts.utils.md_to_html(EmailReplyParser.parse_reply(d.text_content))
 
 	return data

@@ -1,8 +1,8 @@
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.exit_interview.test_exit_interview import create_exit_interview
 from hrms.hr.doctype.full_and_final_statement.test_full_and_final_statement import (
@@ -12,20 +12,20 @@ from hrms.hr.report.employee_exits.employee_exits import execute
 from hrms.tests.test_utils import create_company
 
 
-class TestEmployeeExits(FrappeTestCase):
+class TestEmployeeExits(ntsTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
 		create_company("Test Company")
-		frappe.db.delete("Employee", {"company": "Test Company"})
-		frappe.db.delete("Full and Final Statement", {"company": "Test Company"})
-		frappe.db.delete("Exit Interview", {"company": "Test Company"})
+		nts.db.delete("Employee", {"company": "Test Company"})
+		nts.db.delete("Full and Final Statement", {"company": "Test Company"})
+		nts.db.delete("Exit Interview", {"company": "Test Company"})
 
 		cls.create_records()
 
 	@classmethod
 	def tearDownClass(cls):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 	@classmethod
 	def create_records(cls):
@@ -71,19 +71,19 @@ class TestEmployeeExits(FrappeTestCase):
 		# link questionnaire for a few records
 		# setting employee doctype as reference instead of creating a questionnaire
 		# since this is just for a test
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Exit Interview",
 			cls.interview1.name,
 			{"ref_doctype": "Employee", "reference_document_name": cls.emp1},
 		)
 
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Exit Interview",
 			cls.interview2.name,
 			{"ref_doctype": "Employee", "reference_document_name": cls.emp2},
 		)
 
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Exit Interview",
 			cls.interview3.name,
 			{"ref_doctype": "Employee", "reference_document_name": cls.emp3},
@@ -99,8 +99,8 @@ class TestEmployeeExits(FrappeTestCase):
 
 		report = execute(filters)
 
-		employee1 = frappe.get_doc("Employee", self.emp1)
-		employee2 = frappe.get_doc("Employee", self.emp2)
+		employee1 = nts.get_doc("Employee", self.emp1)
+		employee2 = nts.get_doc("Employee", self.emp2)
 		expected_data = [
 			{
 				"employee": employee1.name,
@@ -144,7 +144,7 @@ class TestEmployeeExits(FrappeTestCase):
 
 		report = execute(filters)
 
-		employee4 = frappe.get_doc("Employee", self.emp4)
+		employee4 = nts.get_doc("Employee", self.emp4)
 		expected_data = [
 			{
 				"employee": employee4.name,
@@ -174,7 +174,7 @@ class TestEmployeeExits(FrappeTestCase):
 
 		report = execute(filters)
 
-		employee4 = frappe.get_doc("Employee", self.emp4)
+		employee4 = nts.get_doc("Employee", self.emp4)
 		expected_data = [
 			{
 				"employee": employee4.name,
@@ -199,8 +199,8 @@ class TestEmployeeExits(FrappeTestCase):
 
 		report = execute(filters)
 
-		employee3 = frappe.get_doc("Employee", self.emp3)
-		employee4 = frappe.get_doc("Employee", self.emp4)
+		employee3 = nts.get_doc("Employee", self.emp3)
+		employee4 = nts.get_doc("Employee", self.emp4)
 		expected_data = [
 			{
 				"employee": employee3.name,

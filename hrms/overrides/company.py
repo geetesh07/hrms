@@ -1,16 +1,16 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 import json
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
-from erpnext.accounts.doctype.account.account import get_account_currency
+from prodman.accounts.doctype.account.account import get_account_currency
 
 
 def make_company_fixtures(doc, method=None):
-	if not frappe.flags.country_change:
+	if not nts.flags.country_change:
 		return
 
 	run_regional_setup(doc.country)
@@ -18,7 +18,7 @@ def make_company_fixtures(doc, method=None):
 
 
 def delete_company_fixtures():
-	countries = frappe.get_all(
+	countries = nts.get_all(
 		"Company",
 		distinct="True",
 		pluck="country",
@@ -26,34 +26,34 @@ def delete_company_fixtures():
 
 	for country in countries:
 		try:
-			module_name = f"hrms.regional.{frappe.scrub(country)}.setup.uninstall"
-			frappe.get_attr(module_name)()
+			module_name = f"hrms.regional.{nts.scrub(country)}.setup.uninstall"
+			nts.get_attr(module_name)()
 		except (ImportError, AttributeError):
 			# regional file or method does not exist
 			pass
 		except Exception as e:
-			frappe.log_error("Unable to delete country fixtures for Frappe HR")
-			msg = _("Failed to delete defaults for country {0}.").format(frappe.bold(country))
-			msg += "<br><br>" + _("{0}: {1}").format(frappe.bold(_("Error")), get_error_message(e))
-			frappe.throw(msg, title=_("Country Fixture Deletion Failed"))
+			nts.log_error("Unable to delete country fixtures for nts HR")
+			msg = _("Failed to delete defaults for country {0}.").format(nts.bold(country))
+			msg += "<br><br>" + _("{0}: {1}").format(nts.bold(_("Error")), get_error_message(e))
+			nts.throw(msg, title=_("Country Fixture Deletion Failed"))
 
 
 def run_regional_setup(country):
 	try:
-		module_name = f"hrms.regional.{frappe.scrub(country)}.setup.setup"
-		frappe.get_attr(module_name)()
+		module_name = f"hrms.regional.{nts.scrub(country)}.setup.setup"
+		nts.get_attr(module_name)()
 	except ImportError:
 		pass
 	except Exception as e:
-		frappe.log_error("Unable to setup country fixtures for Frappe HR")
-		msg = _("Failed to setup defaults for country {0}.").format(frappe.bold(country))
-		msg += "<br><br>" + _("{0}: {1}").format(frappe.bold(_("Error")), get_error_message(e))
-		frappe.throw(msg, title=_("Country Setup failed"))
+		nts.log_error("Unable to setup country fixtures for nts HR")
+		msg = _("Failed to setup defaults for country {0}.").format(nts.bold(country))
+		msg += "<br><br>" + _("{0}: {1}").format(nts.bold(_("Error")), get_error_message(e))
+		nts.throw(msg, title=_("Country Setup failed"))
 
 
 def get_error_message(error) -> str:
 	try:
-		message_log = frappe.message_log.pop() if frappe.message_log else str(error)
+		message_log = nts.message_log.pop() if nts.message_log else str(error)
 		if isinstance(message_log, str):
 			error_message = json.loads(message_log).get("message")
 		else:
@@ -70,23 +70,23 @@ def make_salary_components(country):
 	file_name = "salary_components.json"
 
 	# default components already added
-	if not frappe.db.exists("Salary Component", "Basic"):
-		file_path = frappe.get_app_path("hrms", "payroll", "data", file_name)
+	if not nts.db.exists("Salary Component", "Basic"):
+		file_path = nts.get_app_path("hrms", "payroll", "data", file_name)
 		docs.extend(json.loads(read_data_file(file_path)))
 
-	file_path = frappe.get_app_path("hrms", "regional", frappe.scrub(country), "data", file_name)
+	file_path = nts.get_app_path("hrms", "regional", nts.scrub(country), "data", file_name)
 	docs.extend(json.loads(read_data_file(file_path)))
 
 	for d in docs:
 		try:
-			doc = frappe.get_doc(d)
+			doc = nts.get_doc(d)
 			doc.flags.ignore_permissions = True
 			doc.flags.ignore_mandatory = True
 			doc.insert(ignore_if_duplicate=True)
-		except frappe.NameError:
-			frappe.clear_messages()
-		except frappe.DuplicateEntryError:
-			frappe.clear_messages()
+		except nts.NameError:
+			nts.clear_messages()
+		except nts.DuplicateEntryError:
+			nts.clear_messages()
 
 
 def read_data_file(file_path):
@@ -98,18 +98,18 @@ def read_data_file(file_path):
 
 
 def set_default_hr_accounts(doc, method=None):
-	if frappe.local.flags.ignore_chart_of_accounts:
+	if nts.local.flags.ignore_chart_of_accounts:
 		return
 
 	if not doc.default_payroll_payable_account:
-		payroll_payable_account = frappe.db.get_value(
+		payroll_payable_account = nts.db.get_value(
 			"Account", {"account_name": _("Payroll Payable"), "company": doc.name, "is_group": 0}
 		)
 
 		doc.db_set("default_payroll_payable_account", payroll_payable_account)
 
 	if not doc.default_employee_advance_account:
-		employe_advance_account = frappe.db.get_value(
+		employe_advance_account = nts.db.get_value(
 			"Account", {"account_name": _("Employee Advances"), "company": doc.name, "is_group": 0}
 		)
 
@@ -118,19 +118,19 @@ def set_default_hr_accounts(doc, method=None):
 
 def validate_default_accounts(doc, method=None):
 	if doc.default_payroll_payable_account:
-		for_company = frappe.db.get_value("Account", doc.default_payroll_payable_account, "company")
+		for_company = nts.db.get_value("Account", doc.default_payroll_payable_account, "company")
 		if for_company != doc.name:
-			frappe.throw(
+			nts.throw(
 				_("Account {0} does not belong to company: {1}").format(
 					doc.default_payroll_payable_account, doc.name
 				)
 			)
 
 		if get_account_currency(doc.default_payroll_payable_account) != doc.default_currency:
-			frappe.throw(
+			nts.throw(
 				_(
 					"The currency of {0} should be same as the company's default currency. Please select another account."
-				).format(frappe.bold(_("Default Payroll Payable Account")))
+				).format(nts.bold(_("Default Payroll Payable Account")))
 			)
 
 
@@ -143,11 +143,11 @@ def delete_docs_with_company_field(doc, method=None):
 	"""
 	Deletes records from linked doctypes where the 'company' field matches the company's name
 	"""
-	company_data_to_be_ignored = frappe.get_hooks("company_data_to_be_ignored") or []
+	company_data_to_be_ignored = nts.get_hooks("company_data_to_be_ignored") or []
 	for doctype in company_data_to_be_ignored:
-		records_to_delete = frappe.get_all(doctype, filters={"company": doc.name}, pluck="name")
+		records_to_delete = nts.get_all(doctype, filters={"company": doc.name}, pluck="name")
 		if records_to_delete:
-			frappe.db.delete(doctype, {"name": ["in", records_to_delete]})
+			nts.db.delete(doctype, {"name": ["in", records_to_delete]})
 
 
 def clear_company_field_for_single_doctypes(doc):
@@ -155,9 +155,9 @@ def clear_company_field_for_single_doctypes(doc):
 	Clears the 'company' value in Single doctypes where applicable
 	"""
 	single_docs = get_single_doctypes_with_company_field()
-	singles = frappe.qb.DocType("Singles")
+	singles = nts.qb.DocType("Singles")
 	(
-		frappe.qb.update(singles)
+		nts.qb.update(singles)
 		.set(singles.value, "")
 		.where(singles.doctype.isin(single_docs))
 		.where(singles.field == "company")
@@ -166,18 +166,18 @@ def clear_company_field_for_single_doctypes(doc):
 
 
 def get_single_doctypes_with_company_field():
-	DocType = frappe.qb.DocType("DocType")
-	DocField = frappe.qb.DocType("DocField")
+	DocType = nts.qb.DocType("DocType")
+	DocField = nts.qb.DocType("DocField")
 
 	return (
-		frappe.qb.from_(DocField)
+		nts.qb.from_(DocField)
 		.select(DocField.parent)
 		.where(
 			(DocField.fieldtype == "Link")
 			& (DocField.options == "Company")
 			& (
 				DocField.parent.isin(
-					frappe.qb.from_(DocType)
+					nts.qb.from_(DocType)
 					.select(DocType.name)
 					.where((DocType.issingle == 1) & (DocType.module.isin(["HR", "Payroll"])))
 				)

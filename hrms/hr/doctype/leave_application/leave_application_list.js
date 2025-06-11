@@ -1,4 +1,4 @@
-frappe.listview_settings["Leave Application"] = {
+nts.listview_settings["Leave Application"] = {
 	add_fields: [
 		"leave_type",
 		"employee",

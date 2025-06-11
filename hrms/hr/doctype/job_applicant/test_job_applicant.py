@@ -1,19 +1,19 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import nowdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import nowdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.job_offer.test_job_offer import create_job_offer
 from hrms.tests.test_utils import create_job_applicant
 
 
-class TestJobApplicant(FrappeTestCase):
+class TestJobApplicant(ntsTestCase):
 	def test_job_applicant_naming(self):
-		applicant = frappe.get_doc(
+		applicant = nts.get_doc(
 			{
 				"doctype": "Job Applicant",
 				"status": "Open",
@@ -23,7 +23,7 @@ class TestJobApplicant(FrappeTestCase):
 		).insert()
 		self.assertEqual(applicant.name, "job_applicant_naming@example.com")
 
-		applicant = frappe.get_doc(
+		applicant = nts.get_doc(
 			{
 				"doctype": "Job Applicant",
 				"status": "Open",
@@ -52,4 +52,4 @@ class TestJobApplicant(FrappeTestCase):
 		self.assertEqual(job_offer.status, "Accepted")
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()

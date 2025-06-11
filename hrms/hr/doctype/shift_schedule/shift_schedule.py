@@ -1,9 +1,9 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.model.document import Document
-from frappe.utils import random_string
+import nts
+from nts.model.document import Document
+from nts.utils import random_string
 
 
 class ShiftSchedule(Document):
@@ -22,19 +22,19 @@ class ShiftSchedule(Document):
 
 
 def get_or_insert_shift_schedule(shift_type: str, frequency: str, repeat_on_days: list[str]) -> str:
-	shift_schedules = frappe.get_all(
+	shift_schedules = nts.get_all(
 		"Shift Schedule",
 		pluck="name",
 		filters={"shift_type": shift_type, "frequency": frequency, "docstatus": 1},
 	)
 
 	for shift_schedule in shift_schedules:
-		shift_schedule = frappe.get_doc("Shift Schedule", shift_schedule)
+		shift_schedule = nts.get_doc("Shift Schedule", shift_schedule)
 		shift_schedule_days = [d.day for d in shift_schedule.repeat_on_days]
 		if sorted(repeat_on_days) == sorted(shift_schedule_days):
 			return shift_schedule.name
 
-	doc = frappe.get_doc(
+	doc = nts.get_doc(
 		{
 			"doctype": "Shift Schedule",
 			"name": random_string(10),

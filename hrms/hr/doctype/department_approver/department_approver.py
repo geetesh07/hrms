@@ -1,27 +1,27 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import get_link_to_form
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import get_link_to_form
 
 
 class DepartmentApprover(Document):
 	pass
 
 
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
+@nts.whitelist()
+@nts.validate_and_sanitize_search_inputs
 def get_approvers(doctype, txt, searchfield, start, page_len, filters):
 	if not filters.get("employee"):
-		frappe.throw(_("Please select Employee first."))
+		nts.throw(_("Please select Employee first."))
 
 	approvers = []
 	department_details = {}
 	department_list = []
-	employee = frappe.get_value(
+	employee = nts.get_value(
 		"Employee",
 		filters.get("employee"),
 		["employee_name", "department", "leave_approver", "expense_approver", "shift_request_approver"],
@@ -30,11 +30,11 @@ def get_approvers(doctype, txt, searchfield, start, page_len, filters):
 
 	employee_department = filters.get("department") or employee.department
 	if employee_department:
-		department_details = frappe.db.get_value(
+		department_details = nts.db.get_value(
 			"Department", {"name": employee_department}, ["lft", "rgt"], as_dict=True
 		)
 	if department_details:
-		department_list = frappe.db.sql(
+		department_list = nts.db.sql(
 			"""select name from `tabDepartment` where lft <= %s
 			and rgt >= %s
 			and disabled=0
@@ -45,17 +45,17 @@ def get_approvers(doctype, txt, searchfield, start, page_len, filters):
 
 	if filters.get("doctype") == "Leave Application" and employee.leave_approver:
 		approvers.append(
-			frappe.db.get_value("User", employee.leave_approver, ["name", "first_name", "last_name"])
+			nts.db.get_value("User", employee.leave_approver, ["name", "first_name", "last_name"])
 		)
 
 	if filters.get("doctype") == "Expense Claim" and employee.expense_approver:
 		approvers.append(
-			frappe.db.get_value("User", employee.expense_approver, ["name", "first_name", "last_name"])
+			nts.db.get_value("User", employee.expense_approver, ["name", "first_name", "last_name"])
 		)
 
 	if filters.get("doctype") == "Shift Request" and employee.shift_request_approver:
 		approvers.append(
-			frappe.db.get_value("User", employee.shift_request_approver, ["name", "first_name", "last_name"])
+			nts.db.get_value("User", employee.shift_request_approver, ["name", "first_name", "last_name"])
 		)
 
 	if filters.get("doctype") == "Leave Application":
@@ -69,7 +69,7 @@ def get_approvers(doctype, txt, searchfield, start, page_len, filters):
 		field_name = "Shift Request Approver"
 	if department_list:
 		for d in department_list:
-			approvers += frappe.db.sql(
+			approvers += nts.db.sql(
 				"""select user.name, user.first_name, user.last_name from
 				tabUser user, `tabDepartment Approver` approver where
 				approver.parent = %s
@@ -82,13 +82,13 @@ def get_approvers(doctype, txt, searchfield, start, page_len, filters):
 
 	if len(approvers) == 0:
 		error_msg = _("Please set {0} for the Employee: {1}").format(
-			frappe.bold(_(field_name)),
+			nts.bold(_(field_name)),
 			get_link_to_form("Employee", filters.get("employee"), employee.employee_name),
 		)
 		if department_list:
 			error_msg += " " + _("or for the Employee's Department: {0}").format(
 				get_link_to_form("Department", employee_department)
 			)
-		frappe.throw(error_msg, title=_("{0} Missing").format(_(field_name)))
+		nts.throw(error_msg, title=_("{0} Missing").format(_(field_name)))
 
 	return set(tuple(approver) for approver in approvers)

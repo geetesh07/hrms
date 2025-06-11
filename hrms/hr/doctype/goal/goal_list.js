@@ -1,4 +1,4 @@
-frappe.listview_settings["Goal"] = {
+nts.listview_settings["Goal"] = {
 	add_fields: ["end_date", "status"],
 
 	get_indicator: function (doc) {
@@ -63,7 +63,7 @@ frappe.listview_settings["Goal"] = {
 				Unarchived: "Unarchive",
 				Reopened: "Reopen",
 			};
-			frappe.confirm(
+			nts.confirm(
 				__("{0} {1} {2}?", [
 					simple_present_tense[status],
 					items_to_be_updated.length.toString(),
@@ -75,7 +75,7 @@ frappe.listview_settings["Goal"] = {
 				},
 			);
 		} else {
-			frappe.confirm(
+			nts.confirm(
 				__("Mark {0} {1} as {2}?", [
 					items_to_be_updated.length.toString(),
 					items_to_be_updated.length === 1 ? __("goal") : __("goals"),
@@ -91,12 +91,12 @@ frappe.listview_settings["Goal"] = {
 
 	trigger_error_dialogs: function (checked_items, status) {
 		if (!checked_items.length) {
-			frappe.throw(__("No items selected"));
+			nts.throw(__("No items selected"));
 			return;
 		}
 
 		if (checked_items.some((item) => item.is_group))
-			frappe.msgprint({
+			nts.msgprint({
 				title: __("Error"),
 				message: __("Cannot update status of Goal groups"),
 				indicator: "orange",
@@ -104,10 +104,10 @@ frappe.listview_settings["Goal"] = {
 
 		const applicable_statuses = get_applicable_current_statuses(status);
 		if (checked_items.some((item) => !applicable_statuses.includes(item.status)))
-			frappe.msgprint({
+			nts.msgprint({
 				title: __("Error"),
 				message: __("Only {0} Goals can be {1}", [
-					frappe.utils.comma_and(applicable_statuses),
+					nts.utils.comma_and(applicable_statuses),
 					status,
 				]),
 				indicator: "orange",
@@ -115,7 +115,7 @@ frappe.listview_settings["Goal"] = {
 	},
 
 	update_status: function (status, goals, listview) {
-		frappe
+		nts
 			.call({
 				method: "hrms.hr.doctype.goal.goal.update_status",
 				args: {
@@ -125,12 +125,12 @@ frappe.listview_settings["Goal"] = {
 			})
 			.then((r) => {
 				if (!r.exc && r.message) {
-					frappe.show_alert({
+					nts.show_alert({
 						message: __("Goals updated successfully"),
 						indicator: "green",
 					});
 				} else {
-					frappe.msgprint(__("Could not update goals"));
+					nts.msgprint(__("Could not update goals"));
 				}
 				listview.clear_checked_items();
 				listview.refresh();

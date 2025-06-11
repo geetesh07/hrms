@@ -1,11 +1,11 @@
-# Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2023, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.attendance.attendance import mark_attendance
 from hrms.hr.doctype.employee_attendance_tool.employee_attendance_tool import (
@@ -17,9 +17,9 @@ from hrms.hr.doctype.shift_type.test_shift_type import setup_shift_type
 from hrms.payroll.doctype.salary_slip.test_salary_slip import make_leave_application
 
 
-class TestEmployeeAttendanceTool(FrappeTestCase):
+class TestEmployeeAttendanceTool(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Attendance")
+		nts.db.delete("Attendance")
 
 		self.employee1 = make_employee("test_present@example.com", company="_Test Company")
 		self.employee2 = make_employee("test_absent@example.com", company="_Test Company")
@@ -58,7 +58,7 @@ class TestEmployeeAttendanceTool(FrappeTestCase):
 			late_entry=1,
 		)
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance",
 			{"employee": self.employee1, "attendance_date": date},
 			["status", "shift", "late_entry"],
@@ -71,7 +71,7 @@ class TestEmployeeAttendanceTool(FrappeTestCase):
 
 	def test_get_employees_for_half_day_attendance(self):
 		# only half day attendance created from leave type should be fetched to update in the tool
-		employee = frappe.get_doc("Employee", self.employee1)
+		employee = nts.get_doc("Employee", self.employee1)
 		leave_type = create_leave_type(leave_type_name="_Test Employee Attendance Tool", include_holidays=0)
 		date = add_days(getdate(), -1)
 		create_leave_allocation(employee, leave_type)
@@ -93,8 +93,8 @@ class TestEmployeeAttendanceTool(FrappeTestCase):
 		shift = setup_shift_type(
 			shift_type="Test Attendance Tool", start_time="08:00:00", end_time="12:00:00"
 		)
-		employee4 = frappe.get_doc("Employee", self.employee4)
-		employee2 = frappe.get_doc("Employee", self.employee2)
+		employee4 = nts.get_doc("Employee", self.employee4)
+		employee2 = nts.get_doc("Employee", self.employee2)
 		leave_type = create_leave_type(leave_type_name="_Test Employee Attendance Tool", include_holidays=0)
 		date = add_days(getdate(), 1)
 		create_leave_allocation(employee2, leave_type)
@@ -127,7 +127,7 @@ class TestEmployeeAttendanceTool(FrappeTestCase):
 			half_day_status="Present",
 			half_day_employee_list=[employee2.name, employee4.name],
 		)
-		attendances = frappe.get_all(
+		attendances = nts.get_all(
 			"Attendance",
 			filters={"attendance_date": date},
 			fields=["employee", "status", "half_day_status", "shift", "late_entry", "early_exit"],
@@ -144,7 +144,7 @@ class TestEmployeeAttendanceTool(FrappeTestCase):
 
 
 def create_leave_allocation(employee, leave_type):
-	frappe.get_doc(
+	nts.get_doc(
 		{
 			"doctype": "Leave Allocation",
 			"employee": employee.name,

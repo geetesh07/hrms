@@ -2,22 +2,22 @@ from collections.abc import Generator
 
 import requests
 
-import frappe
-from frappe.utils import add_days, date_diff
+import nts
+from nts.utils import add_days, date_diff
 
 country_info = {}
 
 
-@frappe.whitelist(allow_guest=True)
+@nts.whitelist(allow_guest=True)
 def get_country(fields=None):
 	global country_info
-	ip = frappe.local.request_ip
+	ip = nts.local.request_ip
 
 	if ip not in country_info:
 		fields = ["countryCode", "country", "regionName", "city"]
 		res = requests.get(
 			"https://pro.ip-api.com/json/{ip}?key={key}&fields={fields}".format(
-				ip=ip, key=frappe.conf.get("ip-api-key"), fields=",".join(fields)
+				ip=ip, key=nts.conf.get("ip-api-key"), fields=",".join(fields)
 			)
 		)
 
@@ -47,7 +47,7 @@ def generate_date_range(start_date: str, end_date: str, reverse: bool = False) -
 
 
 def get_employee_email(employee_id: str) -> str | None:
-	employee_emails = frappe.db.get_value(
+	employee_emails = nts.db.get_value(
 		"Employee",
 		employee_id,
 		["prefered_email", "user_id", "company_email", "personal_email"],

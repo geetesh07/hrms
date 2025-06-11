@@ -1,7 +1,7 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
+import nts
 
 
 def setup():
@@ -11,7 +11,7 @@ def setup():
 def create_gratuity_rules_for_uae():
 	docs = get_gratuity_rules()
 	for d in docs:
-		doc = frappe.get_doc(d)
+		doc = nts.get_doc(d)
 		doc.insert(ignore_if_duplicate=True, ignore_permissions=True, ignore_mandatory=True)
 
 

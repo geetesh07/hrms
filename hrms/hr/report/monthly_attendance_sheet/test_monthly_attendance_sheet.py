@@ -1,11 +1,11 @@
 from dateutil.relativedelta import relativedelta
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import get_year_ending, get_year_start, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import get_year_ending, get_year_start, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 
 from hrms.hr.doctype.attendance.attendance import mark_attendance
 from hrms.hr.doctype.leave_application.test_leave_application import make_allocation_record
@@ -18,13 +18,13 @@ from hrms.payroll.doctype.salary_slip.test_salary_slip import (
 from hrms.tests.test_utils import create_company, get_first_day_for_prev_month
 
 
-class TestMonthlyAttendanceSheet(FrappeTestCase):
+class TestMonthlyAttendanceSheet(ntsTestCase):
 	def setUp(self):
 		self.company = "_Test Company"
 		self.employee = make_employee("test_employee@example.com", company=self.company)
-		frappe.db.delete("Attendance")
+		nts.db.delete("Attendance")
 
-		if not frappe.db.exists("Shift Type", "Day Shift"):
+		if not nts.db.exists("Shift Type", "Day Shift"):
 			setup_shift_type(shift_type="Day Shift")
 
 		date = getdate()
@@ -44,7 +44,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		employee_on_leave_with_shift = make_employee("employee@leave.com", company=self.company)
 		mark_attendance(employee_on_leave_with_shift, previous_month_first, "On Leave", "Day Shift")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -77,7 +77,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		mark_attendance(self.employee, previous_month_first + relativedelta(days=2), "On Leave")
 		mark_attendance(self.employee, previous_month_first + relativedelta(days=3), "Present")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -110,7 +110,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		# attendance without shift
 		mark_attendance(self.employee, previous_month_first + relativedelta(days=2), "On Leave")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -135,7 +135,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		# attendance without shift
 		mark_attendance(self.employee, previous_month_first, "On Leave")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -172,7 +172,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 
 		leave_application = get_leave_application(self.employee)
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -213,7 +213,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		)
 		mark_attendance(departmentless_employee, previous_month_first + relativedelta(days=3), "Present")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -223,7 +223,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		)
 		report = execute(filters=filters)
 
-		department = frappe.db.get_value("Employee", self.employee, "department")
+		department = nts.db.get_value("Employee", self.employee, "department")
 		department_row = report[1][0]
 		self.assertIn(department, department_row["department"])
 
@@ -259,7 +259,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		mark_attendance(employee3, previous_month_first + relativedelta(days=1), "Present")
 		mark_attendance(employee3, previous_month_first + relativedelta(days=2), "On Leave")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -298,7 +298,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		mark_attendance(employee2, previous_month_first, "Present")
 		mark_attendance(employee3, previous_month_first, "Present")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -334,7 +334,7 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 		mark_attendance(employee3, previous_month_first + relativedelta(days=1), "Present")
 		mark_attendance(employee3, previous_month_first + relativedelta(days=2), "On Leave")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -363,12 +363,12 @@ class TestMonthlyAttendanceSheet(FrappeTestCase):
 	@set_holiday_list("Salary Slip Test Holiday List", "_Test Company")
 	def test_validations(self):
 		# validation error for filters without month and year
-		self.assertRaises(frappe.ValidationError, execute_report_with_invalid_filters)
+		self.assertRaises(nts.ValidationError, execute_report_with_invalid_filters)
 
 		# execute report without attendance record
 		previous_month_first = get_first_day_for_prev_month()
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"month": previous_month_first.month,
 				"year": previous_month_first.year,
@@ -395,5 +395,5 @@ def get_leave_application(employee):
 
 
 def execute_report_with_invalid_filters():
-	filters = frappe._dict({"company": "_Test Company", "group_by": "Department"})
+	filters = nts._dict({"company": "_Test Company", "group_by": "Department"})
 	execute(filters=filters)

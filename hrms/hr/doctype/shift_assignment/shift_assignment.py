@@ -1,24 +1,24 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
 from datetime import datetime, timedelta
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.query_builder import Criterion
-from frappe.utils import add_days, cint, cstr, get_link_to_form, get_time, getdate, now_datetime
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.query_builder import Criterion
+from nts.utils import add_days, cint, cstr, get_link_to_form, get_time, getdate, now_datetime
 
 from hrms.hr.utils import validate_active_employee
 from hrms.utils import generate_date_range
 
 
-class OverlappingShiftError(frappe.ValidationError):
+class OverlappingShiftError(nts.ValidationError):
 	pass
 
 
-class MultipleShiftError(frappe.ValidationError):
+class MultipleShiftError(nts.ValidationError):
 	pass
 
 
@@ -39,7 +39,7 @@ class ShiftAssignment(Document):
 		self.validate_attendance()
 
 	def validate_employee_checkin(self):
-		checkins = frappe.get_all(
+		checkins = nts.get_all(
 			"Employee Checkin",
 			filters={
 				"employee": self.employee,
@@ -49,14 +49,14 @@ class ShiftAssignment(Document):
 			pluck="name",
 		)
 		if checkins:
-			frappe.throw(
+			nts.throw(
 				_("Cannot cancel Shift Assignment: {0} as it is linked to Employee Checkin: {1}").format(
 					self.name, get_link_to_form("Employee Checkin", checkins[0])
 				)
 			)
 
 	def validate_attendance(self):
-		attendances = frappe.get_all(
+		attendances = nts.get_all(
 			"Attendance",
 			filters={
 				"employee": self.employee,
@@ -66,7 +66,7 @@ class ShiftAssignment(Document):
 			pluck="name",
 		)
 		if attendances:
-			frappe.throw(
+			nts.throw(
 				_("Cannot cancel Shift Assignment: {0} as it is linked to Attendance: {1}").format(
 					self.name, get_link_to_form("Attendance", attendances[0])
 				)
@@ -85,28 +85,28 @@ class ShiftAssignment(Document):
 					self.throw_overlap_error(d)
 
 	def validate_same_date_multiple_shifts(self, overlapping_dates):
-		if cint(frappe.db.get_single_value("HR Settings", "allow_multiple_shift_assignments")):
+		if cint(nts.db.get_single_value("HR Settings", "allow_multiple_shift_assignments")):
 			if not self.docstatus:
-				frappe.msgprint(
+				nts.msgprint(
 					_(
 						"Warning: {0} already has an active Shift Assignment {1} for some/all of these dates."
 					).format(
-						frappe.bold(self.employee),
+						nts.bold(self.employee),
 						get_link_to_form("Shift Assignment", overlapping_dates[0].name),
 					)
 				)
 		else:
 			msg = _("{0} already has an active Shift Assignment {1} for some/all of these dates.").format(
-				frappe.bold(self.employee),
+				nts.bold(self.employee),
 				get_link_to_form("Shift Assignment", overlapping_dates[0].name),
 			)
 			msg += "<br><br>"
 			msg += _("To allow this, enable {0} under {1}.").format(
-				frappe.bold(_("Allow Multiple Shift Assignments for Same Date")),
+				nts.bold(_("Allow Multiple Shift Assignments for Same Date")),
 				get_link_to_form("HR Settings", "HR Settings"),
 			)
 
-			frappe.throw(
+			nts.throw(
 				title=_("Multiple Shift Assignments"),
 				msg=msg,
 				exc=MultipleShiftError,
@@ -116,9 +116,9 @@ class ShiftAssignment(Document):
 		if not self.name:
 			self.name = "New Shift Assignment"
 
-		shift = frappe.qb.DocType("Shift Assignment")
+		shift = nts.qb.DocType("Shift Assignment")
 		query = (
-			frappe.qb.from_(shift)
+			nts.qb.from_(shift)
 			.select(shift.name, shift.shift_type, shift.docstatus, shift.status)
 			.where(
 				(shift.employee == self.employee)
@@ -135,16 +135,16 @@ class ShiftAssignment(Document):
 		return query.run(as_dict=True)
 
 	def throw_overlap_error(self, shift_details):
-		shift_details = frappe._dict(shift_details)
+		shift_details = nts._dict(shift_details)
 		if shift_details.docstatus == 1 and shift_details.status == "Active":
 			msg = _(
 				"Employee {0} already has an active Shift {1}: {2} that overlaps within this period."
 			).format(
-				frappe.bold(self.employee),
-				frappe.bold(shift_details.shift_type),
+				nts.bold(self.employee),
+				nts.bold(shift_details.shift_type),
 				get_link_to_form("Shift Assignment", shift_details.name),
 			)
-			frappe.throw(msg, title=_("Overlapping Shifts"), exc=OverlappingShiftError)
+			nts.throw(msg, title=_("Overlapping Shifts"), exc=OverlappingShiftError)
 
 
 def has_overlapping_timings(shift_1: str, shift_2: str) -> bool:
@@ -152,8 +152,8 @@ def has_overlapping_timings(shift_1: str, shift_2: str) -> bool:
 	Accepts two shift types and checks whether their timings are overlapping
 	"""
 
-	s1 = frappe.db.get_value("Shift Type", shift_1, ["start_time", "end_time"], as_dict=True)
-	s2 = frappe.db.get_value("Shift Type", shift_2, ["start_time", "end_time"], as_dict=True)
+	s1 = nts.db.get_value("Shift Type", shift_1, ["start_time", "end_time"], as_dict=True)
+	s2 = nts.db.get_value("Shift Type", shift_2, ["start_time", "end_time"], as_dict=True)
 
 	for d in [s1, s2]:
 		if d.end_time <= d.start_time:
@@ -162,10 +162,10 @@ def has_overlapping_timings(shift_1: str, shift_2: str) -> bool:
 	return s1.end_time > s2.start_time and s1.start_time < s2.end_time
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_events(start, end, filters=None):
-	employee = frappe.db.get_value(
-		"Employee", {"user_id": frappe.session.user}, ["name", "company"], as_dict=True
+	employee = nts.db.get_value(
+		"Employee", {"user_id": nts.session.user}, ["name", "company"], as_dict=True
 	)
 	if employee:
 		employee = employee.name
@@ -188,7 +188,7 @@ def get_shift_assignments(start: str, end: str, filters: str | list | None = Non
 
 	or_filters = [["end_date", ">=", start], ["end_date", "is", "not set"]]
 
-	return frappe.get_list(
+	return nts.get_list(
 		"Shift Assignment",
 		filters=filters,
 		or_filters=or_filters,
@@ -216,13 +216,13 @@ def get_shift_events(assignments: list[dict]) -> list[dict]:
 
 		delta = timedelta(days=1)
 		while daily_event_start <= daily_event_end:
-			start_timing = frappe.utils.get_datetime(daily_event_start) + shift_start
+			start_timing = nts.utils.get_datetime(daily_event_start) + shift_start
 
 			if shift_start > shift_end:
 				# shift spans across 2 days
-				end_timing = frappe.utils.get_datetime(daily_event_start) + shift_end + delta
+				end_timing = nts.utils.get_datetime(daily_event_start) + shift_end + delta
 			else:
-				end_timing = frappe.utils.get_datetime(daily_event_start) + shift_end
+				end_timing = nts.utils.get_datetime(daily_event_start) + shift_end
 
 			event = {
 				"name": d.name,
@@ -244,7 +244,7 @@ def get_shift_events(assignments: list[dict]) -> list[dict]:
 
 def get_shift_type_timing(shift_types):
 	shift_timing_map = {}
-	data = frappe.get_all(
+	data = nts.get_all(
 		"Shift Type",
 		filters={"name": ("IN", shift_types)},
 		fields=["name", "start_time", "end_time"],
@@ -366,9 +366,9 @@ def get_shifts_for_date(employee: str, for_timestamp: datetime) -> list[dict[str
 	prev_day = add_days(for_date, -1)
 	next_day = add_days(for_date, 1)
 
-	assignment = frappe.qb.DocType("Shift Assignment")
+	assignment = nts.qb.DocType("Shift Assignment")
 	return (
-		frappe.qb.from_(assignment)
+		nts.qb.from_(assignment)
 		.select(assignment.name, assignment.shift_type, assignment.start_date, assignment.end_date)
 		.where(
 			(assignment.employee == employee)
@@ -422,7 +422,7 @@ def get_employee_shift(
 	shift_details = get_shift_for_timestamp(employee, for_timestamp)
 
 	# if shift assignment is not found, consider default shift
-	default_shift = frappe.db.get_value("Employee", employee, "default_shift", cache=True)
+	default_shift = nts.db.get_value("Employee", employee, "default_shift", cache=True)
 	if not shift_details and consider_default_shift:
 		shift_details = get_shift_details(default_shift, for_timestamp)
 
@@ -456,7 +456,7 @@ def get_prev_or_next_shift(
 	else:
 		direction = "<" if next_shift_direction == "reverse" else ">"
 		sort_order = "desc" if next_shift_direction == "reverse" else "asc"
-		shift_dates = frappe.get_all(
+		shift_dates = nts.get_all(
 			"Shift Assignment",
 			["start_date", "end_date"],
 			{
@@ -584,7 +584,7 @@ def get_shift_details(shift_type_name: str, for_timestamp: datetime | None = Non
 	:param for_timestamp (datetime, optional): Datetime value of checkin, if not provided considers current datetime
 	"""
 	if not shift_type_name:
-		return frappe._dict()
+		return nts._dict()
 
 	if for_timestamp is None:
 		for_timestamp = now_datetime()
@@ -595,7 +595,7 @@ def get_shift_details(shift_type_name: str, for_timestamp: datetime | None = Non
 	actual_start = start_datetime - timedelta(minutes=shift_type.begin_check_in_before_shift_start_time)
 	actual_end = end_datetime + timedelta(minutes=shift_type.allow_check_out_after_shift_end_time)
 
-	return frappe._dict(
+	return nts._dict(
 		{
 			"shift_type": shift_type,
 			"start_datetime": start_datetime,
@@ -607,7 +607,7 @@ def get_shift_details(shift_type_name: str, for_timestamp: datetime | None = Non
 
 
 def get_shift_type(shift_type_name: str) -> dict:
-	return frappe.get_cached_value(
+	return nts.get_cached_value(
 		"Shift Type",
 		shift_type_name,
 		[

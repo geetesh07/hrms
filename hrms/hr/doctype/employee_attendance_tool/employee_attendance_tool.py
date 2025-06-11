@@ -1,20 +1,20 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
 import datetime
 import json
 
-import frappe
-from frappe.model.document import Document
-from frappe.utils import getdate
+import nts
+from nts.model.document import Document
+from nts.utils import getdate
 
 
 class EmployeeAttendanceTool(Document):
 	pass
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_employees(
 	date: str | datetime.date,
 	department: str | None = None,
@@ -37,14 +37,14 @@ def get_employees(
 		if value:
 			filters[field] = value
 	# list of all employees
-	employee_list = frappe.get_list(
+	employee_list = nts.get_list(
 		"Employee",
 		fields=["employee", "employee_name"],
 		filters=filters,
 		order_by="employee_name",
 	)
 	# marked attendance
-	attendance_list = frappe.get_list(
+	attendance_list = nts.get_list(
 		"Attendance",
 		fields=["employee", "employee_name", "status", "shift", "leave_type"],
 		filters={
@@ -54,7 +54,7 @@ def get_employees(
 		},
 		order_by="employee_name",
 	)
-	half_day_attendance_list = frappe.get_list(
+	half_day_attendance_list = nts.get_list(
 		"Attendance",
 		fields=["employee", "employee_name"],
 		filters={
@@ -86,7 +86,7 @@ def _get_unmarked_attendance(employee_list: list[dict], attendance_list: list[di
 	return unmarked_attendance
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def mark_employee_attendance(
 	employee_list: list | str,
 	status: str,
@@ -108,7 +108,7 @@ def mark_employee_attendance(
 		if status == "On Leave" and leave_type:
 			leave_type = leave_type
 
-		attendance = frappe.get_doc(
+		attendance = nts.get_doc(
 			dict(
 				doctype="Attendance",
 				employee=employee,
@@ -125,9 +125,9 @@ def mark_employee_attendance(
 	if mark_half_day:
 		if isinstance(half_day_employee_list, str):
 			half_day_employee_list = json.loads(half_day_employee_list)
-		Attendance = frappe.qb.DocType("Attendance")
+		Attendance = nts.qb.DocType("Attendance")
 		for employee in half_day_employee_list:
-			frappe.qb.update(Attendance).where(
+			nts.qb.update(Attendance).where(
 				(Attendance.employee == employee) & (Attendance.attendance_date == date)
 			).set(Attendance.half_day_status, half_day_status).set(Attendance.shift, shift).set(
 				Attendance.late_entry, late_entry

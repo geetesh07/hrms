@@ -1,7 +1,7 @@
-// Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Interview", {
+nts.ui.form.on("Interview", {
 	refresh: function (frm) {
 		frm.set_query("job_applicant", function () {
 			let job_applicant_filters = {
@@ -17,7 +17,7 @@ frappe.ui.form.on("Interview", {
 
 		frm.trigger("add_custom_buttons");
 
-		frappe.run_serially([
+		nts.run_serially([
 			() => frm.trigger("load_skills_average_rating"),
 			() => frm.trigger("load_feedback"),
 		]);
@@ -37,10 +37,10 @@ frappe.ui.form.on("Interview", {
 			);
 		}
 
-		const has_submitted_feedback = await frappe.db.get_value(
+		const has_submitted_feedback = await nts.db.get_value(
 			"Interview Feedback",
 			{
-				interviewer: frappe.session.user,
+				interviewer: nts.session.user,
 				interview: frm.doc.name,
 				docstatus: ["!=", 2],
 			},
@@ -50,7 +50,7 @@ frappe.ui.form.on("Interview", {
 		if (has_submitted_feedback?.message?.name) return;
 
 		const allow_feedback_submission = frm.doc.interview_details.some(
-			(interviewer) => interviewer.interviewer === frappe.session.user,
+			(interviewer) => interviewer.interviewer === nts.session.user,
 		);
 
 		if (allow_feedback_submission) {
@@ -69,7 +69,7 @@ frappe.ui.form.on("Interview", {
 	},
 
 	submit_feedback: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.interview.interview.get_expected_skill_set",
 			args: {
 				interview_round: frm.doc.interview_round,
@@ -82,7 +82,7 @@ frappe.ui.form.on("Interview", {
 	},
 
 	show_reschedule_dialog: function (frm) {
-		let d = new frappe.ui.Dialog({
+		let d = new nts.ui.Dialog({
 			title: "Reschedule Interview",
 			fields: [
 				{
@@ -129,7 +129,7 @@ frappe.ui.form.on("Interview", {
 	show_feedback_dialog: async function (frm, data) {
 		let fields = await frm.events.get_fields_for_feedback();
 
-		let d = new frappe.ui.Dialog({
+		let d = new nts.ui.Dialog({
 			title: __("Submit Feedback"),
 			fields: [
 				{
@@ -159,13 +159,13 @@ frappe.ui.form.on("Interview", {
 			minimizable: true,
 			static: true,
 			primary_action: function (values) {
-				frappe
+				nts
 					.call({
 						method: "hrms.hr.doctype.interview.interview.create_interview_feedback",
 						args: {
 							data: values,
 							interview_name: frm.doc.name,
-							interviewer: frappe.session.user,
+							interviewer: nts.session.user,
 							job_applicant: frm.doc.job_applicant,
 						},
 					})
@@ -181,8 +181,8 @@ frappe.ui.form.on("Interview", {
 
 	get_fields_for_feedback: async function () {
 		return new Promise((resolve, reject) => {
-			frappe.model.with_doctype("Skill Assessment", () => {
-				let meta = frappe.get_meta("Skill Assessment");
+			nts.model.with_doctype("Skill Assessment", () => {
+				let meta = nts.get_meta("Skill Assessment");
 				let fields = meta.fields.map((field) => {
 					return {
 						fieldtype: field.fieldtype,
@@ -206,7 +206,7 @@ frappe.ui.form.on("Interview", {
 	job_applicant: function (frm) {
 		if (!frm.doc.interview_round) {
 			frm.set_value("job_applicant", "");
-			frappe.throw(__("Select Interview Round First"));
+			nts.throw(__("Select Interview Round First"));
 		}
 
 		if (frm.doc.job_applicant && !frm.doc.designation) {
@@ -215,7 +215,7 @@ frappe.ui.form.on("Interview", {
 	},
 
 	set_applicable_interviewers(frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.interview.interview.get_interviewers",
 			args: {
 				interview_round: frm.doc.interview_round || "",
@@ -231,7 +231,7 @@ frappe.ui.form.on("Interview", {
 	},
 
 	load_skills_average_rating(frm) {
-		frappe
+		nts
 			.call({
 				method: "hrms.hr.doctype.interview.interview.get_skill_wise_average_rating",
 				args: { interview: frm.doc.name },
@@ -242,7 +242,7 @@ frappe.ui.form.on("Interview", {
 	},
 
 	load_feedback(frm) {
-		frappe
+		nts
 			.call({
 				method: "hrms.hr.doctype.interview.interview.get_feedback",
 				args: { interview: frm.doc.name },
@@ -255,9 +255,9 @@ frappe.ui.form.on("Interview", {
 	},
 
 	render_feedback(frm) {
-		frappe.require("interview.bundle.js", () => {
+		nts.require("interview.bundle.js", () => {
 			const wrapper = $(frm.fields_dict.feedback_html.wrapper);
-			const feedback_html = frappe.render_template("interview_feedback", {
+			const feedback_html = nts.render_template("interview_feedback", {
 				feedbacks: frm.feedback,
 				average_rating: flt(frm.doc.average_rating * 5, 2),
 				reviews_per_rating: frm.reviews_per_rating,

@@ -1,10 +1,10 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.provide("hrms.hr");
-frappe.provide("erpnext.accounts.dimensions");
+nts.provide("hrms.hr");
+nts.provide("prodman.accounts.dimensions");
 
-frappe.ui.form.on("Expense Claim", {
+nts.ui.form.on("Expense Claim", {
 	setup: function (frm) {
 		frm.set_query("employee_advance", "advances", function () {
 			return {
@@ -61,7 +61,7 @@ frappe.ui.form.on("Expense Claim", {
 
 		frm.set_query("employee", function () {
 			return {
-				query: "erpnext.controllers.queries.employee_query",
+				query: "prodman.controllers.queries.employee_query",
 			};
 		});
 
@@ -75,10 +75,10 @@ frappe.ui.form.on("Expense Claim", {
 	},
 
 	onload: function (frm) {
-		erpnext.accounts.dimensions.setup_dimension_filters(frm, frm.doctype);
+		prodman.accounts.dimensions.setup_dimension_filters(frm, frm.doctype);
 
 		if (frm.doc.docstatus == 0) {
-			return frappe.call({
+			return nts.call({
 				method: "hrms.hr.doctype.leave_application.leave_application.get_mandatory_approval",
 				args: {
 					doctype: frm.doc.doctype,
@@ -99,7 +99,7 @@ frappe.ui.form.on("Expense Claim", {
 		if (
 			frm.doc.docstatus === 1 &&
 			frm.doc.status !== "Paid" &&
-			frappe.model.can_create("Payment Entry")
+			nts.model.can_create("Payment Entry")
 		) {
 			frm.add_custom_button(
 				__("Payment"),
@@ -120,7 +120,7 @@ frappe.ui.form.on("Expense Claim", {
 			frm.add_custom_button(
 				__("Accounting Ledger"),
 				function () {
-					frappe.route_options = {
+					nts.route_options = {
 						voucher_no: frm.doc.name,
 						company: frm.doc.company,
 						from_date: frm.doc.posting_date,
@@ -128,7 +128,7 @@ frappe.ui.form.on("Expense Claim", {
 						group_by: "",
 						show_cancelled_entries: frm.doc.docstatus === 2,
 					};
-					frappe.set_route("query-report", "General Ledger");
+					nts.set_route("query-report", "General Ledger");
 				},
 				__("View"),
 			);
@@ -148,18 +148,18 @@ frappe.ui.form.on("Expense Claim", {
 
 			if (
 				cint(frm.doc.total_amount_reimbursed) > 0 &&
-				frappe.model.can_read(entry_doctype)
+				nts.model.can_read(entry_doctype)
 			) {
-				// nosemgrep: frappe-semgrep-rules.rules.frappe-cur-frm-usage
+				// nosemgrep: nts-semgrep-rules.rules.nts-cur-frm-usage
 				frm.add_custom_button(
 					__("Bank Entries"),
 					function () {
-						frappe.route_options = {
+						nts.route_options = {
 							party_type: "Employee",
 							party: frm.doc.employee,
 							company: frm.doc.company,
 						};
-						frappe.set_route("List", entry_doctype);
+						nts.set_route("List", entry_doctype);
 					},
 					__("View"),
 				);
@@ -218,28 +218,28 @@ frappe.ui.form.on("Expense Claim", {
 		if (frm.doc.__onload && frm.doc.__onload.make_payment_via_journal_entry) {
 			method = "hrms.hr.doctype.expense_claim.expense_claim.make_bank_entry";
 		}
-		return frappe.call({
+		return nts.call({
 			method: method,
 			args: {
 				dt: frm.doc.doctype,
 				dn: frm.doc.name,
 			},
 			callback: function (r) {
-				var doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				var doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},
 
 	company: function (frm) {
-		erpnext.accounts.dimensions.update_dimension(frm, frm.doctype);
+		prodman.accounts.dimensions.update_dimension(frm, frm.doctype);
 		var expenses = frm.doc.expenses;
 		for (var i = 0; i < expenses.length; i++) {
 			var expense = expenses[i];
 			if (!expense.expense_type) {
 				continue;
 			}
-			frappe.call({
+			nts.call({
 				method: "hrms.hr.doctype.expense_claim.expense_claim.get_expense_claim_account_and_cost_center",
 				args: {
 					expense_claim_type: expense.expense_type,
@@ -286,7 +286,7 @@ frappe.ui.form.on("Expense Claim", {
 	get_taxes: function (frm) {
 		if (!frm.doc.taxes.length) return;
 
-		frappe.call({
+		nts.call({
 			method: "calculate_taxes",
 			doc: frm.doc,
 			callback: () => {
@@ -297,9 +297,9 @@ frappe.ui.form.on("Expense Claim", {
 	},
 
 	get_advances: function (frm) {
-		frappe.model.clear_table(frm.doc, "advances");
+		nts.model.clear_table(frm.doc, "advances");
 		if (frm.doc.employee) {
-			return frappe.call({
+			return nts.call({
 				method: "hrms.hr.doctype.expense_claim.expense_claim.get_advances",
 				args: {
 					employee: frm.doc.employee,
@@ -307,7 +307,7 @@ frappe.ui.form.on("Expense Claim", {
 				callback: function (r, rt) {
 					if (r.message) {
 						$.each(r.message, function (i, d) {
-							var row = frappe.model.add_child(
+							var row = nts.model.add_child(
 								frm.doc,
 								"Expense Claim Advance",
 								"advances",
@@ -332,12 +332,12 @@ frappe.ui.form.on("Expense Claim", {
 	},
 });
 
-frappe.ui.form.on("Expense Claim Detail", {
+nts.ui.form.on("Expense Claim Detail", {
 	expense_type: function (frm, cdt, cdn) {
 		var d = locals[cdt][cdn];
 		if (!frm.doc.company) {
 			d.expense_type = "";
-			frappe.msgprint(__("Please set the Company"));
+			nts.msgprint(__("Please set the Company"));
 			this.frm.refresh_fields();
 			return;
 		}
@@ -345,7 +345,7 @@ frappe.ui.form.on("Expense Claim Detail", {
 		if (!d.expense_type) {
 			return;
 		}
-		return frappe.call({
+		return nts.call({
 			method: "hrms.hr.doctype.expense_claim.expense_claim.get_expense_claim_account_and_cost_center",
 			args: {
 				expense_claim_type: d.expense_type,
@@ -362,7 +362,7 @@ frappe.ui.form.on("Expense Claim Detail", {
 
 	amount: function (frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
-		frappe.model.set_value(cdt, cdn, "sanctioned_amount", child.amount);
+		nts.model.set_value(cdt, cdn, "sanctioned_amount", child.amount);
 	},
 
 	sanctioned_amount: function (frm, cdt, cdn) {
@@ -372,19 +372,19 @@ frappe.ui.form.on("Expense Claim Detail", {
 	},
 
 	cost_center: function (frm, cdt, cdn) {
-		erpnext.utils.copy_value_in_all_rows(frm.doc, cdt, cdn, "expenses", "cost_center");
+		prodman.utils.copy_value_in_all_rows(frm.doc, cdt, cdn, "expenses", "cost_center");
 	},
 });
 
-frappe.ui.form.on("Expense Claim Advance", {
+nts.ui.form.on("Expense Claim Advance", {
 	employee_advance: function (frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		if (!frm.doc.employee) {
-			frappe.msgprint(__("Select an employee to get the employee advance."));
+			nts.msgprint(__("Select an employee to get the employee advance."));
 			frm.doc.advances = [];
 			refresh_field("advances");
 		} else {
-			return frappe.call({
+			return nts.call({
 				method: "hrms.hr.doctype.expense_claim.expense_claim.get_advances",
 				args: {
 					employee: frm.doc.employee,
@@ -413,7 +413,7 @@ frappe.ui.form.on("Expense Claim Advance", {
 	},
 });
 
-frappe.ui.form.on("Expense Taxes and Charges", {
+nts.ui.form.on("Expense Taxes and Charges", {
 	account_head: function (frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		if (child.account_head && !child.description) {

@@ -1,13 +1,13 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_years, cstr, date_diff, get_first_day, nowdate
-from frappe.utils.make_random import get_random
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_years, cstr, date_diff, get_first_day, nowdate
+from nts.utils.make_random import get_random
 
-import erpnext
-from erpnext.setup.doctype.employee.test_employee import make_employee
+import prodman
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.payroll.doctype.employee_tax_exemption_declaration.test_employee_tax_exemption_declaration import (
 	create_payroll_period,
@@ -24,15 +24,15 @@ from hrms.tests.test_utils import create_employee_grade
 test_dependencies = ["Fiscal Year"]
 
 
-class TestSalaryStructure(FrappeTestCase):
+class TestSalaryStructure(ntsTestCase):
 	def setUp(self):
 		for dt in ["Salary Slip", "Salary Structure", "Salary Structure Assignment"]:
-			frappe.db.sql("delete from `tab%s`" % dt)
+			nts.db.sql("delete from `tab%s`" % dt)
 
 		self.make_holiday_list()
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Company",
-			erpnext.get_default_company(),
+			prodman.get_default_company(),
 			"default_holiday_list",
 			"Salary Structure Test Holiday List",
 		)
@@ -40,8 +40,8 @@ class TestSalaryStructure(FrappeTestCase):
 		make_employee("test_employee_2@salary.com")
 
 	def make_holiday_list(self):
-		if not frappe.db.get_value("Holiday List", "Salary Structure Test Holiday List"):
-			holiday_list = frappe.get_doc(
+		if not nts.db.get_value("Holiday List", "Salary Structure Test Holiday List"):
+			holiday_list = nts.get_doc(
 				{
 					"doctype": "Holiday List",
 					"holiday_list_name": "Salary Structure Test Holiday List",
@@ -76,9 +76,9 @@ class TestSalaryStructure(FrappeTestCase):
 		self.assertEqual(assignment.base * 0.2, ss.deductions[0].amount)
 
 	def test_amount_totals(self):
-		frappe.db.set_single_value("Payroll Settings", "include_holidays_in_total_working_days", 0)
+		nts.db.set_single_value("Payroll Settings", "include_holidays_in_total_working_days", 0)
 		emp_id = make_employee("test_employee_2@salary.com")
-		salary_slip = frappe.get_value("Salary Slip", {"employee": emp_id})
+		salary_slip = nts.get_value("Salary Slip", {"employee": emp_id})
 
 		if not salary_slip:
 			salary_slip = make_employee_salary_slip(emp_id, "Monthly", "Salary Structure Sample")
@@ -110,14 +110,14 @@ class TestSalaryStructure(FrappeTestCase):
 			self.assertFalse("\n" in cstr(row.formula) or "\n" in cstr(row.condition))
 
 	def test_salary_structures_assignment(self):
-		company_currency = erpnext.get_default_currency()
+		company_currency = prodman.get_default_currency()
 		salary_structure = make_salary_structure(
 			"Salary Structure Sample", "Monthly", currency=company_currency
 		)
 		employee = "test_assign_stucture@salary.com"
 		employee_doc_name = make_employee(employee)
 		# clear the already assigned stuctures
-		frappe.db.sql(
+		nts.db.sql(
 			"""delete from `tabSalary Structure Assignment` where employee=%s and salary_structure=%s """,
 			("test_assign_stucture@salary.com", salary_structure.name),
 		)
@@ -125,7 +125,7 @@ class TestSalaryStructure(FrappeTestCase):
 		salary_structure.assign_salary_structure(
 			employee=employee_doc_name, from_date="2013-01-01", base=5000, variable=200
 		)
-		salary_structure_assignment = frappe.get_doc(
+		salary_structure_assignment = nts.get_doc(
 			"Salary Structure Assignment", {"employee": employee_doc_name, "from_date": "2013-01-01"}
 		)
 		self.assertEqual(salary_structure_assignment.docstatus, 1)
@@ -141,7 +141,7 @@ class TestSalaryStructure(FrappeTestCase):
 
 		# structure assignment should have the default salary structure and base pay
 		salary_structure.assign_salary_structure(employee=employee, from_date=nowdate())
-		structure, base = frappe.db.get_value(
+		structure, base = nts.db.get_value(
 			"Salary Structure Assignment",
 			{"employee": employee, "salary_structure": salary_structure.name, "from_date": nowdate()},
 			["salary_structure", "base"],
@@ -170,15 +170,15 @@ def make_salary_structure(
 	base=None,
 ):
 	if not currency:
-		currency = erpnext.get_default_currency()
+		currency = prodman.get_default_currency()
 
-	if frappe.db.exists("Salary Structure", salary_structure):
-		frappe.db.delete("Salary Structure", salary_structure)
+	if nts.db.exists("Salary Structure", salary_structure):
+		nts.db.delete("Salary Structure", salary_structure)
 
 	details = {
 		"doctype": "Salary Structure",
 		"name": salary_structure,
-		"company": company or erpnext.get_default_company(),
+		"company": company or prodman.get_default_company(),
 		"earnings": make_earning_salary_component(
 			setup=True,
 			test_tax=test_tax,
@@ -194,7 +194,7 @@ def make_salary_structure(
 	}
 	if other_details and isinstance(other_details, dict):
 		details.update(other_details)
-	salary_structure_doc = frappe.get_doc(details)
+	salary_structure_doc = nts.get_doc(details)
 	salary_structure_doc.insert()
 	if not dont_submit:
 		salary_structure_doc.submit()
@@ -208,7 +208,7 @@ def make_salary_structure(
 
 	if (
 		employee
-		and not frappe.db.get_value("Salary Structure Assignment", filters)
+		and not nts.db.get_value("Salary Structure Assignment", filters)
 		and salary_structure_doc.docstatus == 1
 	):
 		create_salary_structure_assignment(
@@ -235,27 +235,27 @@ def create_salary_structure_assignment(
 	allow_duplicate=False,
 ):
 	if not currency:
-		currency = erpnext.get_default_currency()
+		currency = prodman.get_default_currency()
 
-	if not allow_duplicate and frappe.db.exists("Salary Structure Assignment", {"employee": employee}):
-		frappe.db.sql("""delete from `tabSalary Structure Assignment` where employee=%s""", (employee))
+	if not allow_duplicate and nts.db.exists("Salary Structure Assignment", {"employee": employee}):
+		nts.db.sql("""delete from `tabSalary Structure Assignment` where employee=%s""", (employee))
 
 	if not payroll_period:
 		payroll_period = create_payroll_period(company="_Test Company")
 
-	income_tax_slab = frappe.db.get_value("Income Tax Slab", {"currency": currency})
+	income_tax_slab = nts.db.get_value("Income Tax Slab", {"currency": currency})
 
 	if not income_tax_slab:
 		income_tax_slab = create_tax_slab(payroll_period, allow_tax_exemption=True, currency=currency)
 
-	salary_structure_assignment = frappe.new_doc("Salary Structure Assignment")
+	salary_structure_assignment = nts.new_doc("Salary Structure Assignment")
 	salary_structure_assignment.employee = employee
 	salary_structure_assignment.base = base or 50000
 	salary_structure_assignment.variable = 5000
 
 	if not from_date:
 		from_date = get_first_day(nowdate())
-		joining_date = frappe.get_cached_value("Employee", employee, "date_of_joining")
+		joining_date = nts.get_cached_value("Employee", employee, "date_of_joining")
 		if date_diff(joining_date, from_date) > 0:
 			from_date = joining_date
 
@@ -263,7 +263,7 @@ def create_salary_structure_assignment(
 	salary_structure_assignment.salary_structure = salary_structure
 	salary_structure_assignment.currency = currency
 	salary_structure_assignment.payroll_payable_account = get_payable_account(company)
-	salary_structure_assignment.company = company or erpnext.get_default_company()
+	salary_structure_assignment.company = company or prodman.get_default_company()
 	salary_structure_assignment.income_tax_slab = income_tax_slab
 	salary_structure_assignment.save(ignore_permissions=True)
 	salary_structure_assignment.submit()
@@ -272,5 +272,5 @@ def create_salary_structure_assignment(
 
 def get_payable_account(company=None):
 	if not company:
-		company = erpnext.get_default_company()
-	return frappe.db.get_value("Company", company, "default_payroll_payable_account")
+		company = prodman.get_default_company()
+	return nts.db.get_value("Company", company, "default_payroll_payable_account")

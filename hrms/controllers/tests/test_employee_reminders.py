@@ -1,24 +1,24 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 from datetime import timedelta
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_months, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_months, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.controllers.employee_reminders import send_holidays_reminder_in_advance
 from hrms.hr.doctype.hr_settings.hr_settings import set_proceed_with_frequency_change
 from hrms.hr.utils import get_holidays_for_employee
 
 
-class TestEmployeeReminders(FrappeTestCase):
+class TestEmployeeReminders(ntsTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
-		from erpnext.setup.doctype.holiday_list.test_holiday_list import make_holiday_list
+		from prodman.setup.doctype.holiday_list.test_holiday_list import make_holiday_list
 
 		# Create a test holiday list
 		test_holiday_dates = cls.get_test_holiday_dates()
@@ -36,7 +36,7 @@ class TestEmployeeReminders(FrappeTestCase):
 			to_date=getdate() + timedelta(weeks=5),
 		)
 
-		test_employee = frappe.get_doc("Employee", make_employee("test@gopher.io", company="_Test Company"))
+		test_employee = nts.get_doc("Employee", make_employee("test@gopher.io", company="_Test Company"))
 
 		# Attach the holiday list to employee
 		test_employee.holiday_list = test_holiday_list.name
@@ -48,7 +48,7 @@ class TestEmployeeReminders(FrappeTestCase):
 
 		# Employee without holidays in this month/week
 		test_employee_2 = make_employee("test@empwithoutholiday.io", company="_Test Company")
-		test_employee_2 = frappe.get_doc("Employee", test_employee_2)
+		test_employee_2 = nts.get_doc("Employee", test_employee_2)
 
 		test_holiday_list = make_holiday_list(
 			"TestHolidayRemindersList2",
@@ -78,11 +78,11 @@ class TestEmployeeReminders(FrappeTestCase):
 
 	def setUp(self):
 		# Clear Email Queue
-		frappe.db.sql("delete from `tabEmail Queue`")
-		frappe.db.sql("delete from `tabEmail Queue Recipient`")
+		nts.db.sql("delete from `tabEmail Queue`")
+		nts.db.sql("delete from `tabEmail Queue Recipient`")
 
 	def test_is_holiday(self):
-		from erpnext.setup.doctype.employee.employee import is_holiday
+		from prodman.setup.doctype.employee.employee import is_holiday
 
 		self.assertTrue(is_holiday(self.test_employee.name))
 		self.assertTrue(is_holiday(self.test_employee.name, date=self.test_holiday_dates[1]))
@@ -100,8 +100,8 @@ class TestEmployeeReminders(FrappeTestCase):
 		self.assertTrue("test holiday1" in descriptions)
 
 	def test_birthday_reminders(self):
-		employee = frappe.get_doc("Employee", frappe.db.sql_list("select name from tabEmployee limit 1")[0])
-		employee.date_of_birth = "1992" + frappe.utils.nowdate()[4:]
+		employee = nts.get_doc("Employee", nts.db.sql_list("select name from tabEmployee limit 1")[0])
+		employee.date_of_birth = "1992" + nts.utils.nowdate()[4:]
 		employee.company_email = "test@example.com"
 		employee.company = "_Test Company"
 		employee.save()
@@ -114,13 +114,13 @@ class TestEmployeeReminders(FrappeTestCase):
 		employees_born_today = get_employees_who_are_born_today()
 		self.assertTrue(employees_born_today.get("_Test Company"))
 
-		hr_settings = frappe.get_doc("HR Settings", "HR Settings")
+		hr_settings = nts.get_doc("HR Settings", "HR Settings")
 		hr_settings.send_birthday_reminders = 1
 		hr_settings.save()
 
 		send_birthday_reminders()
 
-		email_queue = frappe.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
+		email_queue = nts.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
 		self.assertTrue("Subject: Birthday Reminder" in email_queue[0].message)
 
 	def test_work_anniversary_reminders(self):
@@ -132,7 +132,7 @@ class TestEmployeeReminders(FrappeTestCase):
 		make_employee(
 			"test_emp_work_anniversary@gmail.com",
 			company="_Test Company",
-			date_of_joining=frappe.utils.add_years(getdate(), -2),
+			date_of_joining=nts.utils.add_years(getdate(), -2),
 		)
 
 		employees_having_work_anniversary = get_employees_having_an_event_today("work_anniversary")
@@ -143,13 +143,13 @@ class TestEmployeeReminders(FrappeTestCase):
 
 		self.assertTrue("test_emp_work_anniversary@gmail.com" in user_ids)
 
-		hr_settings = frappe.get_doc("HR Settings", "HR Settings")
+		hr_settings = nts.get_doc("HR Settings", "HR Settings")
 		hr_settings.send_work_anniversary_reminders = 1
 		hr_settings.save()
 
 		send_work_anniversary_reminders()
 
-		email_queue = frappe.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
+		email_queue = nts.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
 		self.assertTrue("Subject: Work Anniversary Reminder" in email_queue[0].message)
 
 	def test_work_anniversary_reminder_not_sent_for_0_years(self):
@@ -182,7 +182,7 @@ class TestEmployeeReminders(FrappeTestCase):
 
 		send_holidays_reminder_in_advance(self.test_employee.get("name"), holidays)
 
-		email_queue = frappe.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
+		email_queue = nts.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
 		self.assertEqual(len(email_queue), 1)
 		self.assertTrue("Holidays this Week." in email_queue[0].message)
 
@@ -192,22 +192,22 @@ class TestEmployeeReminders(FrappeTestCase):
 		setup_hr_settings("Monthly")
 
 		# disable emp 2, set same holiday list
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Employee",
 			self.test_employee_2.name,
 			{"status": "Left", "holiday_list": self.test_employee.holiday_list},
 		)
 
 		send_reminders_in_advance_monthly()
-		email_queue = frappe.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
+		email_queue = nts.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
 		self.assertTrue(len(email_queue) > 0)
 
 		# even though emp 2 has holiday, non-active employees should not be recipients
-		recipients = frappe.db.get_all("Email Queue Recipient", pluck="recipient")
+		recipients = nts.db.get_all("Email Queue Recipient", pluck="recipient")
 		self.assertTrue(self.test_employee_2.user_id not in recipients)
 
 		# teardown: enable emp 2
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Employee",
 			self.test_employee_2.name,
 			{"status": "Active", "holiday_list": self.holiday_list_2.name},
@@ -219,22 +219,22 @@ class TestEmployeeReminders(FrappeTestCase):
 		setup_hr_settings("Weekly")
 
 		# disable emp 2, set same holiday list
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Employee",
 			self.test_employee_2.name,
 			{"status": "Left", "holiday_list": self.test_employee.holiday_list},
 		)
 
 		send_reminders_in_advance_weekly()
-		email_queue = frappe.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
+		email_queue = nts.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
 		self.assertTrue(len(email_queue) > 0)
 
 		# even though emp 2 has holiday, non-active employees should not be recipients
-		recipients = frappe.db.get_all("Email Queue Recipient", pluck="recipient")
+		recipients = nts.db.get_all("Email Queue Recipient", pluck="recipient")
 		self.assertTrue(self.test_employee_2.user_id not in recipients)
 
 		# teardown: enable emp 2
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Employee",
 			self.test_employee_2.name,
 			{"status": "Active", "holiday_list": self.holiday_list_2.name},
@@ -252,13 +252,13 @@ class TestEmployeeReminders(FrappeTestCase):
 			raise_exception=False,
 		)
 		send_holidays_reminder_in_advance(self.test_employee_2.get("name"), holidays)
-		email_queue = frappe.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
+		email_queue = nts.db.sql("""select * from `tabEmail Queue`""", as_dict=True)
 		self.assertEqual(len(email_queue), 0)
 
 
 def setup_hr_settings(frequency=None):
 	# Get HR settings and enable advance holiday reminders
-	hr_settings = frappe.get_doc("HR Settings", "HR Settings")
+	hr_settings = nts.get_doc("HR Settings", "HR Settings")
 	hr_settings.send_holiday_reminders = 1
 	set_proceed_with_frequency_change()
 	hr_settings.frequency = frequency or "Weekly"

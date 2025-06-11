@@ -1,8 +1,8 @@
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.payroll.doctype.employee_tax_exemption_declaration.test_employee_tax_exemption_declaration import (
 	create_payroll_period,
@@ -16,23 +16,23 @@ from hrms.payroll.doctype.salary_structure.test_salary_structure import make_sal
 from hrms.payroll.report.income_tax_computation.income_tax_computation import execute
 
 
-class TestIncomeTaxComputation(FrappeTestCase):
+class TestIncomeTaxComputation(ntsTestCase):
 	def setUp(self):
 		self.cleanup_records()
 		self.create_records()
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 	def cleanup_records(self):
-		frappe.db.sql("delete from `tabEmployee Tax Exemption Declaration`")
-		frappe.db.sql("delete from `tabPayroll Period`")
-		frappe.db.sql("delete from `tabIncome Tax Slab`")
-		frappe.db.sql("delete from `tabSalary Component`")
-		frappe.db.sql("delete from `tabEmployee Benefit Application`")
-		frappe.db.sql("delete from `tabEmployee Benefit Claim`")
-		frappe.db.sql("delete from `tabEmployee` where company='_Test Company'")
-		frappe.db.sql("delete from `tabSalary Slip`")
+		nts.db.sql("delete from `tabEmployee Tax Exemption Declaration`")
+		nts.db.sql("delete from `tabPayroll Period`")
+		nts.db.sql("delete from `tabIncome Tax Slab`")
+		nts.db.sql("delete from `tabSalary Component`")
+		nts.db.sql("delete from `tabEmployee Benefit Application`")
+		nts.db.sql("delete from `tabEmployee Benefit Claim`")
+		nts.db.sql("delete from `tabEmployee` where company='_Test Company'")
+		nts.db.sql("delete from `tabSalary Slip`")
 
 	def create_records(self):
 		self.employee = make_employee(
@@ -66,7 +66,7 @@ class TestIncomeTaxComputation(FrappeTestCase):
 		)
 
 	def test_report(self):
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"company": "_Test Company",
 				"payroll_period": self.payroll_period.name,

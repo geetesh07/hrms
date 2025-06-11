@@ -1,20 +1,20 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, getdate
 
 from hrms.payroll.doctype.salary_structure.test_salary_structure import make_employee
 
 
-class TestEmployeePromotion(FrappeTestCase):
+class TestEmployeePromotion(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Employee Promotion")
+		nts.db.delete("Employee Promotion")
 
 	def test_submit_before_promotion_date(self):
 		employee = make_employee("employee@promotions.com")
-		promotion = frappe.get_doc(
+		promotion = nts.get_doc(
 			{
 				"doctype": "Employee Promotion",
 				"employee": employee,
@@ -29,7 +29,7 @@ class TestEmployeePromotion(FrappeTestCase):
 			}
 		)
 		promotion.promotion_date = add_days(getdate(), 1)
-		self.assertRaises(frappe.DocstatusTransitionError, promotion.submit)
+		self.assertRaises(nts.DocstatusTransitionError, promotion.submit)
 
 		promotion.promotion_date = getdate()
 		promotion.submit()
@@ -37,7 +37,7 @@ class TestEmployeePromotion(FrappeTestCase):
 
 	def test_employee_history(self):
 		for grade in ["L1", "L2"]:
-			frappe.get_doc({"doctype": "Employee Grade", "__newname": grade}).insert()
+			nts.get_doc({"doctype": "Employee Grade", "__newname": grade}).insert()
 
 		employee = make_employee(
 			"test_employee_promotion@example.com",
@@ -50,7 +50,7 @@ class TestEmployeePromotion(FrappeTestCase):
 			ctc="500000",
 		)
 
-		promotion = frappe.get_doc(
+		promotion = nts.get_doc(
 			{
 				"doctype": "Employee Promotion",
 				"employee": employee,
@@ -69,7 +69,7 @@ class TestEmployeePromotion(FrappeTestCase):
 		).submit()
 
 		# employee fields updated
-		employee = frappe.get_doc("Employee", employee)
+		employee = nts.get_doc("Employee", employee)
 		self.assertEqual(employee.grade, "L2")
 		self.assertEqual(employee.designation, "Project Manager")
 		self.assertEqual(employee.ctc, 1000000)

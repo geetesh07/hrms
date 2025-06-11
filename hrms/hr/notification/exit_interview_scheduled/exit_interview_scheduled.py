@@ -1,4 +1,4 @@
-# import frappe
+# import nts
 
 
 def get_context(context):

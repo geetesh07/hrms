@@ -1,9 +1,9 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 
 def execute(filters=None):
@@ -11,7 +11,7 @@ def execute(filters=None):
 		filters = {}
 
 	if not filters["company"]:
-		frappe.throw(_("{0} is mandatory").format(_("Company")))
+		nts.throw(_("{0} is mandatory").format(_("Company")))
 
 	columns = get_columns()
 	employees = get_employees(filters)
@@ -48,8 +48,8 @@ def get_conditions(filters):
 
 def get_employees(filters):
 	conditions = get_conditions(filters)
-	# nosemgrep: frappe-semgrep-rules.rules.frappe-using-db-sql
-	return frappe.db.sql(
+	# nosemgrep: nts-semgrep-rules.rules.nts-using-db-sql
+	return nts.db.sql(
 		"""select name, employee_name, date_of_birth,
 	branch, department, designation,
 	gender, company from `tabEmployee` where status = 'Active' %s"""
@@ -64,7 +64,7 @@ def get_parameters(filters):
 	else:
 		parameter = filters.get("parameter")
 
-	return frappe.db.sql("""select name from `tab""" + parameter + """` """, as_list=1)
+	return nts.db.sql("""select name from `tab""" + parameter + """` """, as_list=1)
 
 
 def get_chart_data(parameters, employees, filters):
@@ -75,7 +75,7 @@ def get_chart_data(parameters, employees, filters):
 	label = []
 	for parameter in parameters:
 		if parameter:
-			total_employee = frappe.db.sql(
+			total_employee = nts.db.sql(
 				"""select count(*) from
 				`tabEmployee` where """
 				+ parameter_field_name
@@ -89,7 +89,7 @@ def get_chart_data(parameters, employees, filters):
 
 	values = [value for value in datasets if value != 0]
 
-	total_employee = frappe.db.count("Employee", {"status": "Active"})
+	total_employee = nts.db.count("Employee", {"status": "Active"})
 	others = total_employee - sum(values)
 
 	label.append(["Not Set"])

@@ -1,12 +1,12 @@
 import os
 
-import frappe
-from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
-from frappe.desk.page.setup_wizard.install_fixtures import (
+import nts
+from nts.custom.doctype.custom_field.custom_field import create_custom_fields
+from nts.desk.page.setup_wizard.install_fixtures import (
 	_,  # NOTE: this is not the real translation function
 )
-from frappe.desk.page.setup_wizard.setup_wizard import make_records
-from frappe.installer import update_site_config
+from nts.desk.page.setup_wizard.setup_wizard import make_records
+from nts.installer import update_site_config
 
 from hrms.overrides.company import delete_company_fixtures
 
@@ -50,7 +50,7 @@ def before_app_uninstall(app_name):
 
 
 def get_custom_fields():
-	"""HR specific custom fields that need to be added to the masters in ERPNext"""
+	"""HR specific custom fields that need to be added to the masters in prodman"""
 	return {
 		"Company": [
 			{
@@ -413,10 +413,10 @@ def make_fixtures():
 
 
 def setup_notifications():
-	base_path = frappe.get_app_path("hrms", "hr", "doctype")
+	base_path = nts.get_app_path("hrms", "hr", "doctype")
 
 	# Leave Application
-	response = frappe.read_file(
+	response = nts.read_file(
 		os.path.join(base_path, "leave_application/leave_application_email_template.html")
 	)
 	records = [
@@ -425,7 +425,7 @@ def setup_notifications():
 			"name": _("Leave Approval Notification"),
 			"response": response,
 			"subject": _("Leave Approval Notification"),
-			"owner": frappe.session.user,
+			"owner": nts.session.user,
 		}
 	]
 	records += [
@@ -434,12 +434,12 @@ def setup_notifications():
 			"name": _("Leave Status Notification"),
 			"response": response,
 			"subject": _("Leave Status Notification"),
-			"owner": frappe.session.user,
+			"owner": nts.session.user,
 		}
 	]
 
 	# Interview
-	response = frappe.read_file(
+	response = nts.read_file(
 		os.path.join(base_path, "interview/interview_reminder_notification_template.html")
 	)
 	records += [
@@ -448,10 +448,10 @@ def setup_notifications():
 			"name": _("Interview Reminder"),
 			"response": response,
 			"subject": _("Interview Reminder"),
-			"owner": frappe.session.user,
+			"owner": nts.session.user,
 		}
 	]
-	response = frappe.read_file(
+	response = nts.read_file(
 		os.path.join(base_path, "interview/interview_feedback_reminder_template.html")
 	)
 	records += [
@@ -460,12 +460,12 @@ def setup_notifications():
 			"name": _("Interview Feedback Reminder"),
 			"response": response,
 			"subject": _("Interview Feedback Reminder"),
-			"owner": frappe.session.user,
+			"owner": nts.session.user,
 		}
 	]
 
 	# Exit Interview
-	response = frappe.read_file(
+	response = nts.read_file(
 		os.path.join(base_path, "exit_interview/exit_questionnaire_notification_template.html")
 	)
 	records += [
@@ -474,7 +474,7 @@ def setup_notifications():
 			"name": _("Exit Questionnaire Notification"),
 			"response": response,
 			"subject": _("Exit Questionnaire Notification"),
-			"owner": frappe.session.user,
+			"owner": nts.session.user,
 		}
 	]
 
@@ -482,7 +482,7 @@ def setup_notifications():
 
 
 def update_hr_defaults():
-	hr_settings = frappe.get_doc("HR Settings")
+	hr_settings = nts.get_doc("HR Settings")
 	hr_settings.emp_created_by = "Naming Series"
 	hr_settings.leave_approval_notification_template = _("Leave Approval Notification")
 	hr_settings.leave_status_notification_template = _("Leave Status Notification")
@@ -500,7 +500,7 @@ def update_hr_defaults():
 
 def set_single_defaults():
 	for dt in ("HR Settings", "Payroll Settings"):
-		default_values = frappe.get_all(
+		default_values = nts.get_all(
 			"DocField",
 			filters={"parent": dt},
 			fields=["fieldname", "default"],
@@ -508,21 +508,21 @@ def set_single_defaults():
 		)
 		if default_values:
 			try:
-				doc = frappe.get_doc(dt, dt)
+				doc = nts.get_doc(dt, dt)
 				for fieldname, value in default_values:
 					doc.set(fieldname, value)
 				doc.flags.ignore_mandatory = True
 				doc.save()
-			except frappe.ValidationError:
+			except nts.ValidationError:
 				pass
 
 
 def create_default_role_profiles():
 	for role_profile_name, roles in DEFAULT_ROLE_PROFILES.items():
-		if frappe.db.exists("Role Profile", role_profile_name):
+		if nts.db.exists("Role Profile", role_profile_name):
 			continue
 
-		role_profile = frappe.new_doc("Role Profile")
+		role_profile = nts.new_doc("Role Profile")
 		role_profile.role_profile = role_profile_name
 		for role in roles:
 			role_profile.append("roles", {"role": role})
@@ -532,20 +532,20 @@ def create_default_role_profiles():
 
 def get_post_install_patches():
 	return (
-		"erpnext.patches.v13_0.move_tax_slabs_from_payroll_period_to_income_tax_slab",
-		"erpnext.patches.v13_0.move_doctype_reports_and_notification_from_hr_to_payroll",
-		"erpnext.patches.v13_0.move_payroll_setting_separately_from_hr_settings",
-		"erpnext.patches.v13_0.update_start_end_date_for_old_shift_assignment",
-		"erpnext.patches.v13_0.updates_for_multi_currency_payroll",
-		"erpnext.patches.v13_0.update_reason_for_resignation_in_employee",
-		"erpnext.patches.v13_0.set_company_in_leave_ledger_entry",
-		"erpnext.patches.v13_0.rename_stop_to_send_birthday_reminders",
-		"erpnext.patches.v13_0.set_training_event_attendance",
-		"erpnext.patches.v14_0.set_payroll_cost_centers",
-		"erpnext.patches.v13_0.update_employee_advance_status",
-		"erpnext.patches.v13_0.update_expense_claim_status_for_paid_advances",
-		"erpnext.patches.v14_0.delete_employee_transfer_property_doctype",
-		"erpnext.patches.v13_0.set_payroll_entry_status",
+		"prodman.patches.v13_0.move_tax_slabs_from_payroll_period_to_income_tax_slab",
+		"prodman.patches.v13_0.move_doctype_reports_and_notification_from_hr_to_payroll",
+		"prodman.patches.v13_0.move_payroll_setting_separately_from_hr_settings",
+		"prodman.patches.v13_0.update_start_end_date_for_old_shift_assignment",
+		"prodman.patches.v13_0.updates_for_multi_currency_payroll",
+		"prodman.patches.v13_0.update_reason_for_resignation_in_employee",
+		"prodman.patches.v13_0.set_company_in_leave_ledger_entry",
+		"prodman.patches.v13_0.rename_stop_to_send_birthday_reminders",
+		"prodman.patches.v13_0.set_training_event_attendance",
+		"prodman.patches.v14_0.set_payroll_cost_centers",
+		"prodman.patches.v13_0.update_employee_advance_status",
+		"prodman.patches.v13_0.update_expense_claim_status_for_paid_advances",
+		"prodman.patches.v14_0.delete_employee_transfer_property_doctype",
+		"prodman.patches.v13_0.set_payroll_entry_status",
 		# HRMS
 		"create_country_fixtures",
 		"update_allocate_on_in_leave_type",
@@ -557,7 +557,7 @@ def run_post_install_patches():
 	print("\nPatching Existing Data...")
 
 	POST_INSTALL_PATCHES = get_post_install_patches()
-	frappe.flags.in_patch = True
+	nts.flags.in_patch = True
 
 	try:
 		for patch in POST_INSTALL_PATCHES:
@@ -565,19 +565,19 @@ def run_post_install_patches():
 			if not patch_name:
 				continue
 
-			frappe.get_attr(f"hrms.patches.post_install.{patch_name}.execute")()
+			nts.get_attr(f"hrms.patches.post_install.{patch_name}.execute")()
 	finally:
-		frappe.flags.in_patch = False
+		nts.flags.in_patch = False
 
 
 # LENDING APP SETUP & CLEANUP
 def create_salary_slip_loan_fields():
-	if "lending" in frappe.get_installed_apps():
+	if "lending" in nts.get_installed_apps():
 		create_custom_fields(get_salary_slip_loan_fields(), ignore_validate=True)
 
 
 def add_lending_docperms_to_ess():
-	doc = frappe.get_doc("User Type", "Employee Self Service")
+	doc = nts.get_doc("User Type", "Employee Self Service")
 
 	loan_docperms = get_lending_docperms_for_ess()
 	append_docperms_to_user_type(loan_docperms, doc)
@@ -587,7 +587,7 @@ def add_lending_docperms_to_ess():
 
 
 def remove_lending_docperms_from_ess():
-	doc = frappe.get_doc("User Type", "Employee Self Service")
+	doc = nts.get_doc("User Type", "Employee Self Service")
 
 	loan_docperms = get_lending_docperms_for_ess()
 
@@ -615,7 +615,7 @@ def update_user_type_doctype_limit(user_types=None):
 
 	user_type_limit = {}
 	for user_type, __ in user_types.items():
-		user_type_limit.setdefault(frappe.scrub(user_type), 40)
+		user_type_limit.setdefault(nts.scrub(user_type), 40)
 
 	update_site_config("user_type_doctype_limit", user_type_limit)
 
@@ -671,18 +671,18 @@ def get_lending_docperms_for_ess():
 
 
 def create_custom_role(data):
-	if data.get("role") and not frappe.db.exists("Role", data.get("role")):
-		frappe.get_doc(
+	if data.get("role") and not nts.db.exists("Role", data.get("role")):
+		nts.get_doc(
 			{"doctype": "Role", "role_name": data.get("role"), "desk_access": 1, "is_custom": 1}
 		).insert(ignore_permissions=True)
 
 
 def create_user_type(user_type, data):
-	if frappe.db.exists("User Type", user_type):
-		doc = frappe.get_cached_doc("User Type", user_type)
+	if nts.db.exists("User Type", user_type):
+		doc = nts.get_cached_doc("User Type", user_type)
 		doc.user_doctypes = []
 	else:
-		doc = frappe.new_doc("User Type")
+		doc = nts.new_doc("User Type")
 		doc.update(
 			{
 				"name": user_type,
@@ -693,7 +693,7 @@ def create_user_type(user_type, data):
 		)
 
 	docperms = data.get("doctypes")
-	if doc.role == "Employee Self Service" and "lending" in frappe.get_installed_apps():
+	if doc.role == "Employee Self Service" and "lending" in nts.get_installed_apps():
 		docperms.update(get_lending_docperms_for_ess())
 
 	append_docperms_to_user_type(docperms, doc)
@@ -717,17 +717,17 @@ def append_docperms_to_user_type(docperms, doc):
 
 
 def update_select_perm_after_install():
-	if not frappe.flags.update_select_perm_after_migrate:
+	if not nts.flags.update_select_perm_after_migrate:
 		return
 
-	frappe.flags.ignore_select_perm = False
-	for row in frappe.get_all("User Type", filters={"is_standard": 0}):
+	nts.flags.ignore_select_perm = False
+	for row in nts.get_all("User Type", filters={"is_standard": 0}):
 		print("Updating user type :- ", row.name)
-		doc = frappe.get_doc("User Type", row.name)
+		doc = nts.get_doc("User Type", row.name)
 		doc.flags.ignore_links = True
 		doc.save()
 
-	frappe.flags.update_select_perm_after_migrate = False
+	nts.flags.update_select_perm_after_migrate = False
 
 
 def delete_custom_fields(custom_fields: dict):
@@ -735,7 +735,7 @@ def delete_custom_fields(custom_fields: dict):
 	:param custom_fields: a dict like `{'Salary Slip': [{fieldname: 'loans', ...}]}`
 	"""
 	for doctype, fields in custom_fields.items():
-		frappe.db.delete(
+		nts.db.delete(
 			"Custom Field",
 			{
 				"fieldname": ("in", [field["fieldname"] for field in fields]),
@@ -743,7 +743,7 @@ def delete_custom_fields(custom_fields: dict):
 			},
 		)
 
-		frappe.clear_cache(doctype=doctype)
+		nts.clear_cache(doctype=doctype)
 
 
 DEFAULT_ROLE_PROFILES = {

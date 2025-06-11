@@ -1,14 +1,14 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.naming import set_name_from_naming_options
-from frappe.utils import get_link_to_form, getdate, pretty_date
-from frappe.website.website_generator import WebsiteGenerator
+import nts
+from nts import _
+from nts.model.naming import set_name_from_naming_options
+from nts.utils import get_link_to_form, getdate, pretty_date
+from nts.website.website_generator import WebsiteGenerator
 
 from hrms.hr.doctype.staffing_plan.staffing_plan import (
 	get_active_staffing_plan_details,
@@ -17,18 +17,18 @@ from hrms.hr.doctype.staffing_plan.staffing_plan import (
 
 
 class JobOpening(WebsiteGenerator):
-	website = frappe._dict(
+	website = nts._dict(
 		template="templates/generators/job_opening.html",
 		condition_field="publish",
 		page_title_field="job_title",
 	)
 
 	def autoname(self):
-		self.name = set_name_from_naming_options(frappe.get_meta(self.doctype).autoname, self)
+		self.name = set_name_from_naming_options(nts.get_meta(self.doctype).autoname, self)
 
 	def validate(self):
 		if not self.route:
-			self.route = f"jobs/{frappe.scrub(self.company)}/{frappe.scrub(self.job_title).replace('_', '-')}"
+			self.route = f"jobs/{nts.scrub(self.company)}/{nts.scrub(self.job_title).replace('_', '-')}"
 		self.update_closing_date()
 		self.validate_dates()
 		self.validate_current_vacancies()
@@ -62,7 +62,7 @@ class JobOpening(WebsiteGenerator):
 				self.staffing_plan = staffing_plan[0].name
 				self.planned_vacancies = staffing_plan[0].vacancies
 		elif not self.planned_vacancies:
-			self.planned_vacancies = frappe.db.get_value(
+			self.planned_vacancies = nts.db.get_value(
 				"Staffing Plan Detail",
 				{"parent": self.staffing_plan, "designation": self.designation},
 				"vacancies",
@@ -72,25 +72,25 @@ class JobOpening(WebsiteGenerator):
 			designation_counts = get_designation_counts(self.designation, self.company, self.name)
 			current_count = designation_counts["employee_count"] + designation_counts["job_openings"]
 
-			number_of_positions = frappe.db.get_value(
+			number_of_positions = nts.db.get_value(
 				"Staffing Plan Detail",
 				{"parent": self.staffing_plan, "designation": self.designation},
 				"number_of_positions",
 			)
 
 			if number_of_positions <= current_count:
-				frappe.throw(
+				nts.throw(
 					_(
 						"Job Openings for the designation {0} are already open or the hiring is complete as per the Staffing Plan {1}"
 					).format(
-						frappe.bold(self.designation), get_link_to_form("Staffing Plan", self.staffing_plan)
+						nts.bold(self.designation), get_link_to_form("Staffing Plan", self.staffing_plan)
 					),
 					title=_("Vacancies fulfilled"),
 				)
 
 	def update_job_requisition_status(self):
 		if self.status == "Closed" and self.job_requisition:
-			job_requisition = frappe.get_doc("Job Requisition", self.job_requisition)
+			job_requisition = nts.get_doc("Job Requisition", self.job_requisition)
 			job_requisition.status = "Filled"
 			job_requisition.completed_on = getdate()
 			job_requisition.flags.ignore_permissions = True
@@ -98,7 +98,7 @@ class JobOpening(WebsiteGenerator):
 			job_requisition.save()
 
 	def get_context(self, context):
-		context.no_of_applications = frappe.db.count("Job Applicant", {"job_title": self.name})
+		context.no_of_applications = nts.db.count("Job Applicant", {"job_title": self.name})
 		context.parents = [{"route": "jobs", "title": _("All Jobs")}]
 		context.posted_on = pretty_date(self.posted_on)
 
@@ -106,15 +106,15 @@ class JobOpening(WebsiteGenerator):
 def close_expired_job_openings():
 	today = getdate()
 
-	Opening = frappe.qb.DocType("Job Opening")
+	Opening = nts.qb.DocType("Job Opening")
 	openings = (
-		frappe.qb.from_(Opening)
+		nts.qb.from_(Opening)
 		.select(Opening.name)
 		.where((Opening.status == "Open") & (Opening.closes_on.isnotnull()) & (Opening.closes_on < today))
 	).run(pluck=True)
 
 	for d in openings:
-		doc = frappe.get_doc("Job Opening", d)
+		doc = nts.get_doc("Job Opening", d)
 		doc.status = "Closed"
 		doc.flags.ignore_permissions = True
 		doc.flags.ignore_mandatory = True

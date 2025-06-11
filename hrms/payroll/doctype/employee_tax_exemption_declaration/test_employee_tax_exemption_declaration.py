@@ -1,12 +1,12 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_months, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_months, getdate
 
-import erpnext
-from erpnext.setup.doctype.employee.test_employee import make_employee
+import prodman
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.utils import DuplicateDeclarationError
 
@@ -15,11 +15,11 @@ PAYROLL_PERIOD_START = "2022-01-01"
 PAYROLL_PERIOD_END = "2022-12-31"
 
 
-class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
+class TestEmployeeTaxExemptionDeclaration(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Employee Tax Exemption Declaration")
-		frappe.db.delete("Salary Structure Assignment")
-		frappe.db.delete("Salary Slip")
+		nts.db.delete("Employee Tax Exemption Declaration")
+		nts.db.delete("Salary Structure Assignment")
+		nts.db.delete("Salary Slip")
 
 		make_employee("employee@taxexemption.com", company="_Test Company")
 		make_employee("employee1@taxexemption.com", company="_Test Company")
@@ -33,13 +33,13 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 		create_exemption_category()
 
 	def test_duplicate_category_in_declaration(self):
-		declaration = frappe.get_doc(
+		declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
-				"employee": frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name"),
-				"company": erpnext.get_default_company(),
+				"employee": nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name"),
+				"company": prodman.get_default_company(),
 				"payroll_period": PAYROLL_PERIOD_NAME,
-				"currency": erpnext.get_default_currency(),
+				"currency": prodman.get_default_currency(),
 				"declarations": [
 					dict(
 						exemption_sub_category="_Test Sub Category",
@@ -54,16 +54,16 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 				],
 			}
 		)
-		self.assertRaises(frappe.ValidationError, declaration.save)
+		self.assertRaises(nts.ValidationError, declaration.save)
 
 	def test_duplicate_entry_for_payroll_period(self):
-		frappe.get_doc(
+		nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
-				"employee": frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name"),
-				"company": erpnext.get_default_company(),
+				"employee": nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name"),
+				"company": prodman.get_default_company(),
 				"payroll_period": PAYROLL_PERIOD_NAME,
-				"currency": erpnext.get_default_currency(),
+				"currency": prodman.get_default_currency(),
 				"declarations": [
 					dict(
 						exemption_sub_category="_Test Sub Category",
@@ -79,13 +79,13 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 			}
 		).insert()
 
-		duplicate_declaration = frappe.get_doc(
+		duplicate_declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
-				"employee": frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name"),
-				"company": erpnext.get_default_company(),
+				"employee": nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name"),
+				"company": prodman.get_default_company(),
 				"payroll_period": PAYROLL_PERIOD_NAME,
-				"currency": erpnext.get_default_currency(),
+				"currency": prodman.get_default_currency(),
 				"declarations": [
 					dict(
 						exemption_sub_category="_Test Sub Category",
@@ -96,19 +96,19 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 			}
 		)
 		self.assertRaises(DuplicateDeclarationError, duplicate_declaration.insert)
-		duplicate_declaration.employee = frappe.get_value(
+		duplicate_declaration.employee = nts.get_value(
 			"Employee", {"user_id": "employee1@taxexemption.com"}, "name"
 		)
 		self.assertTrue(duplicate_declaration.insert)
 
 	def test_exemption_amount(self):
-		declaration = frappe.get_doc(
+		declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
-				"employee": frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name"),
-				"company": erpnext.get_default_company(),
+				"employee": nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name"),
+				"company": prodman.get_default_company(),
 				"payroll_period": PAYROLL_PERIOD_NAME,
-				"currency": erpnext.get_default_currency(),
+				"currency": prodman.get_default_currency(),
 				"declarations": [
 					dict(
 						exemption_sub_category="_Test Sub Category",
@@ -128,14 +128,14 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 
 	def test_india_hra_exemption(self):
 		# set country
-		current_country = frappe.flags.country
-		frappe.flags.country = "India"
+		current_country = nts.flags.country
+		nts.flags.country = "India"
 
-		employee = frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
+		employee = nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
 		# structure assigned before payroll period should still be considered as active
 		setup_hra_exemption_prerequisites("Monthly", employee, from_date=add_months(PAYROLL_PERIOD_START, -1))
 
-		declaration = frappe.get_doc(
+		declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
 				"employee": employee,
@@ -167,17 +167,17 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 		self.assertEqual(declaration.total_exemption_amount, 136000)
 
 		# reset
-		frappe.flags.country = current_country
+		nts.flags.country = current_country
 
 	def test_india_hra_exemption_with_daily_payroll_frequency(self):
 		# set country
-		current_country = frappe.flags.country
-		frappe.flags.country = "India"
+		current_country = nts.flags.country
+		nts.flags.country = "India"
 
-		employee = frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
+		employee = nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
 		setup_hra_exemption_prerequisites("Daily", employee)
 
-		declaration = frappe.get_doc(
+		declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
 				"employee": employee,
@@ -204,17 +204,17 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 		self.assertEqual(declaration.total_exemption_amount, 265000)
 
 		# reset
-		frappe.flags.country = current_country
+		nts.flags.country = current_country
 
 	def test_india_hra_exemption_with_weekly_payroll_frequency(self):
 		# set country
-		current_country = frappe.flags.country
-		frappe.flags.country = "India"
+		current_country = nts.flags.country
+		nts.flags.country = "India"
 
-		employee = frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
+		employee = nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
 		setup_hra_exemption_prerequisites("Weekly", employee)
 
-		declaration = frappe.get_doc(
+		declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
 				"employee": employee,
@@ -241,17 +241,17 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 		self.assertEqual(declaration.total_exemption_amount, 206000)
 
 		# reset
-		frappe.flags.country = current_country
+		nts.flags.country = current_country
 
 	def test_india_hra_exemption_with_fortnightly_payroll_frequency(self):
 		# set country
-		current_country = frappe.flags.country
-		frappe.flags.country = "India"
+		current_country = nts.flags.country
+		nts.flags.country = "India"
 
-		employee = frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
+		employee = nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
 		setup_hra_exemption_prerequisites("Fortnightly", employee)
 
-		declaration = frappe.get_doc(
+		declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
 				"employee": employee,
@@ -278,17 +278,17 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 		self.assertEqual(declaration.total_exemption_amount, 128000)
 
 		# reset
-		frappe.flags.country = current_country
+		nts.flags.country = current_country
 
 	def test_india_hra_exemption_with_bimonthly_payroll_frequency(self):
 		# set country
-		current_country = frappe.flags.country
-		frappe.flags.country = "India"
+		current_country = nts.flags.country
+		nts.flags.country = "India"
 
-		employee = frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
+		employee = nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
 		setup_hra_exemption_prerequisites("Bimonthly", employee)
 
-		declaration = frappe.get_doc(
+		declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
 				"employee": employee,
@@ -320,7 +320,7 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 		self.assertEqual(declaration.total_exemption_amount, 118000)
 
 		# reset
-		frappe.flags.country = current_country
+		nts.flags.country = current_country
 
 	def test_india_hra_exemption_with_multiple_assignments(self):
 		from hrms.payroll.doctype.salary_slip.test_salary_slip import create_tax_slab
@@ -330,12 +330,12 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 		)
 
 		# set country
-		current_country = frappe.flags.country
-		frappe.flags.country = "India"
+		current_country = nts.flags.country
+		nts.flags.country = "India"
 
 		employee = make_employee("employee@taxexemption2.com", company="_Test Company")
 
-		payroll_period = frappe.get_doc("Payroll Period", PAYROLL_PERIOD_NAME)
+		payroll_period = nts.get_doc("Payroll Period", PAYROLL_PERIOD_NAME)
 		create_tax_slab(
 			payroll_period,
 			allow_tax_exemption=True,
@@ -344,7 +344,7 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 			company="_Test Company",
 		)
 
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Company", "_Test Company", {"basic_component": "Basic Salary", "hra_component": "HRA"}
 		)
 
@@ -392,7 +392,7 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 			allow_duplicate=True,
 		)
 
-		declaration = frappe.get_doc(
+		declaration = nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Declaration",
 				"employee": employee,
@@ -419,32 +419,32 @@ class TestEmployeeTaxExemptionDeclaration(FrappeTestCase):
 		self.assertEqual(declaration.total_exemption_amount, 152000)
 
 		# reset
-		frappe.flags.country = current_country
+		nts.flags.country = current_country
 
 
 def create_payroll_period(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 	name = args.name or "_Test Payroll Period"
-	if not frappe.db.exists("Payroll Period", name):
+	if not nts.db.exists("Payroll Period", name):
 		from datetime import date
 
-		payroll_period = frappe.get_doc(
+		payroll_period = nts.get_doc(
 			dict(
 				doctype="Payroll Period",
 				name=name,
-				company=args.company or erpnext.get_default_company(),
+				company=args.company or prodman.get_default_company(),
 				start_date=args.start_date or date(date.today().year, 1, 1),
 				end_date=args.end_date or date(date.today().year, 12, 31),
 			)
 		).insert()
 		return payroll_period
 	else:
-		return frappe.get_doc("Payroll Period", name)
+		return nts.get_doc("Payroll Period", name)
 
 
 def create_exemption_category():
-	if not frappe.db.exists("Employee Tax Exemption Category", "_Test Category"):
-		frappe.get_doc(
+	if not nts.db.exists("Employee Tax Exemption Category", "_Test Category"):
+		nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Category",
 				"name": "_Test Category",
@@ -452,8 +452,8 @@ def create_exemption_category():
 				"max_amount": 100000,
 			}
 		).insert()
-	if not frappe.db.exists("Employee Tax Exemption Sub Category", "_Test Sub Category"):
-		frappe.get_doc(
+	if not nts.db.exists("Employee Tax Exemption Sub Category", "_Test Sub Category"):
+		nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Sub Category",
 				"name": "_Test Sub Category",
@@ -462,8 +462,8 @@ def create_exemption_category():
 				"is_active": 1,
 			}
 		).insert()
-	if not frappe.db.exists("Employee Tax Exemption Sub Category", "_Test1 Sub Category"):
-		frappe.get_doc(
+	if not nts.db.exists("Employee Tax Exemption Sub Category", "_Test1 Sub Category"):
+		nts.get_doc(
 			{
 				"doctype": "Employee Tax Exemption Sub Category",
 				"name": "_Test1 Sub Category",
@@ -485,7 +485,7 @@ def setup_hra_exemption_prerequisites(frequency, employee=None, from_date=None):
 		end_date=PAYROLL_PERIOD_END,
 	)
 	if not employee:
-		employee = frappe.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
+		employee = nts.get_value("Employee", {"user_id": "employee@taxexemption.com"}, "name")
 
 	create_tax_slab(
 		payroll_period,
@@ -505,6 +505,6 @@ def setup_hra_exemption_prerequisites(frequency, employee=None, from_date=None):
 		from_date=from_date,
 	)
 
-	frappe.db.set_value(
+	nts.db.set_value(
 		"Company", "_Test Company", {"basic_component": "Basic Salary", "hra_component": "HRA"}
 	)

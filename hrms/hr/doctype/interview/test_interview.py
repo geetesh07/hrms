@@ -1,17 +1,17 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
 import datetime
 import os
 
-import frappe
-from frappe import _
-from frappe.core.doctype.user_permission.test_user_permission import create_user
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, get_datetime, get_time, getdate, nowtime
+import nts
+from nts import _
+from nts.core.doctype.user_permission.test_user_permission import create_user
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, get_datetime, get_time, getdate, nowtime
 
-from erpnext.setup.doctype.designation.test_designation import create_designation
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.designation.test_designation import create_designation
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.interview.interview import (
 	DuplicateInterviewRoundError,
@@ -23,7 +23,7 @@ from hrms.hr.doctype.job_applicant.job_applicant import get_interview_details
 from hrms.tests.test_utils import create_job_applicant, get_email_by_subject
 
 
-class TestInterview(FrappeTestCase):
+class TestInterview(ntsTestCase):
 	def test_validations_for_designation(self):
 		job_applicant = create_job_applicant()
 		interview = create_interview_and_dependencies(
@@ -41,7 +41,7 @@ class TestInterview(FrappeTestCase):
 		)
 
 		previous_scheduled_date = interview.scheduled_on
-		frappe.db.sql("DELETE FROM `tabEmail Queue`")
+		nts.db.sql("DELETE FROM `tabEmail Queue`")
 
 		interview.reschedule_interview(
 			add_days(getdate(previous_scheduled_date), 2), from_time="11:00:00", to_time="12:00:00"
@@ -52,7 +52,7 @@ class TestInterview(FrappeTestCase):
 		self.assertEqual(get_time(interview.from_time), get_time("11:00:00"))
 		self.assertEqual(get_time(interview.to_time), get_time("12:00:00"))
 
-		notification = frappe.get_all(
+		notification = nts.get_all(
 			"Email Queue", filters={"message": ("like", "%Your Interview session is rescheduled from%")}
 		)
 		self.assertIsNotNone(notification)
@@ -67,13 +67,13 @@ class TestInterview(FrappeTestCase):
 
 		create_interview_and_dependencies(job_applicant.name, scheduled_on=scheduled_on)
 
-		frappe.db.delete("Email Queue")
+		nts.db.delete("Email Queue")
 
-		frappe.db.set_single_value("HR Settings", "send_interview_reminder", 0)
+		nts.db.set_single_value("HR Settings", "send_interview_reminder", 0)
 		send_interview_reminder()
 		self.assertFalse(get_email_by_subject("Subject: Interview Reminder"))
 
-		frappe.db.set_single_value("HR Settings", "send_interview_reminder", 1)
+		nts.db.set_single_value("HR Settings", "send_interview_reminder", 1)
 		send_interview_reminder()
 		self.assertTrue(get_email_by_subject("Subject: Interview Reminder"))
 
@@ -88,13 +88,13 @@ class TestInterview(FrappeTestCase):
 			job_applicant.name, scheduled_on=scheduled_on, status="Under Review"
 		)
 
-		frappe.db.delete("Email Queue")
+		nts.db.delete("Email Queue")
 
-		frappe.db.set_single_value("HR Settings", "send_interview_feedback_reminder", 0)
+		nts.db.set_single_value("HR Settings", "send_interview_feedback_reminder", 0)
 		send_daily_feedback_reminder()
 		self.assertFalse(get_email_by_subject("Subject: Interview Feedback Reminder"))
 
-		frappe.db.set_single_value("HR Settings", "send_interview_feedback_reminder", 1)
+		nts.db.set_single_value("HR Settings", "send_interview_feedback_reminder", 1)
 		send_daily_feedback_reminder()
 		self.assertTrue(get_email_by_subject("Subject: Interview Feedback Reminder"))
 
@@ -144,7 +144,7 @@ class TestInterview(FrappeTestCase):
 			"test_interviewer2@example.com",
 			company="_Test Company",
 			first_name="Test",
-			date_of_joining=frappe.utils.add_years(getdate(), -2),
+			date_of_joining=nts.utils.add_years(getdate(), -2),
 			designation="Engineer",
 			user_id="test_interviewer2@example.com",
 		)
@@ -194,7 +194,7 @@ class TestInterview(FrappeTestCase):
 		self.assertEqual(job_applicant.status, "Accepted")
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 
 def create_interview_and_dependencies(
@@ -220,7 +220,7 @@ def create_interview_and_dependencies(
 		True,
 	)
 
-	interview = frappe.new_doc("Interview")
+	interview = nts.new_doc("Interview")
 	interview.interview_round = interview_round.name
 	interview.job_applicant = job_applicant
 	interview.scheduled_on = scheduled_on or getdate()
@@ -240,7 +240,7 @@ def create_interview_and_dependencies(
 
 def create_interview_round(name, skill_set, interviewers=None, designation=None, save=True):
 	create_skill_set(skill_set)
-	interview_round = frappe.new_doc("Interview Round")
+	interview_round = nts.new_doc("Interview Round")
 	interview_round.round_name = name
 	interview_round.interview_type = create_interview_type()
 	# average rating = 4
@@ -262,17 +262,17 @@ def create_interview_round(name, skill_set, interviewers=None, designation=None,
 
 def create_skill_set(skill_set):
 	for skill in skill_set:
-		if not frappe.db.exists("Skill", skill):
-			doc = frappe.new_doc("Skill")
+		if not nts.db.exists("Skill", skill):
+			doc = nts.new_doc("Skill")
 			doc.skill_name = skill
 			doc.save()
 
 
 def create_interview_type(name="test_interview_type"):
-	if frappe.db.exists("Interview Type", name):
-		return frappe.get_doc("Interview Type", name).name
+	if nts.db.exists("Interview Type", name):
+		return nts.get_doc("Interview Type", name).name
 	else:
-		doc = frappe.new_doc("Interview Type")
+		doc = nts.new_doc("Interview Type")
 		doc.name = name
 		doc.description = "_Test_Description"
 		doc.save()
@@ -281,39 +281,39 @@ def create_interview_type(name="test_interview_type"):
 
 
 def setup_reminder_settings():
-	if not frappe.db.exists("Email Template", _("Interview Reminder")):
-		base_path = frappe.get_app_path("erpnext", "hr", "doctype")
-		response = frappe.read_file(
+	if not nts.db.exists("Email Template", _("Interview Reminder")):
+		base_path = nts.get_app_path("prodman", "hr", "doctype")
+		response = nts.read_file(
 			os.path.join(base_path, "interview/interview_reminder_notification_template.html")
 		)
 
-		frappe.get_doc(
+		nts.get_doc(
 			{
 				"doctype": "Email Template",
 				"name": _("Interview Reminder"),
 				"response": response,
 				"subject": _("Interview Reminder"),
-				"owner": frappe.session.user,
+				"owner": nts.session.user,
 			}
 		).insert(ignore_permissions=True)
 
-	if not frappe.db.exists("Email Template", _("Interview Feedback Reminder")):
-		base_path = frappe.get_app_path("erpnext", "hr", "doctype")
-		response = frappe.read_file(
+	if not nts.db.exists("Email Template", _("Interview Feedback Reminder")):
+		base_path = nts.get_app_path("prodman", "hr", "doctype")
+		response = nts.read_file(
 			os.path.join(base_path, "interview/interview_feedback_reminder_template.html")
 		)
 
-		frappe.get_doc(
+		nts.get_doc(
 			{
 				"doctype": "Email Template",
 				"name": _("Interview Feedback Reminder"),
 				"response": response,
 				"subject": _("Interview Feedback Reminder"),
-				"owner": frappe.session.user,
+				"owner": nts.session.user,
 			}
 		).insert(ignore_permissions=True)
 
-	hr_settings = frappe.get_doc("HR Settings")
+	hr_settings = nts.get_doc("HR Settings")
 	hr_settings.interview_reminder_template = _("Interview Reminder")
 	hr_settings.feedback_reminder_notification_template = _("Interview Feedback Reminder")
 	hr_settings.save()

@@ -1,12 +1,12 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.query_builder.functions import Avg
-from frappe.utils import flt, get_link_to_form, getdate
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.query_builder.functions import Avg
+from nts.utils import flt, get_link_to_form, getdate
 
 
 class InterviewFeedback(Document):
@@ -25,30 +25,30 @@ class InterviewFeedback(Document):
 	def validate_interviewer(self):
 		applicable_interviewers = get_applicable_interviewers(self.interview)
 		if self.interviewer not in applicable_interviewers:
-			frappe.throw(
+			nts.throw(
 				_("{0} is not allowed to submit Interview Feedback for the Interview: {1}").format(
-					frappe.bold(self.interviewer), frappe.bold(self.interview)
+					nts.bold(self.interviewer), nts.bold(self.interview)
 				)
 			)
 
 	def validate_interview_date(self):
-		scheduled_date = frappe.db.get_value("Interview", self.interview, "scheduled_on")
+		scheduled_date = nts.db.get_value("Interview", self.interview, "scheduled_on")
 
 		if getdate() < getdate(scheduled_date) and self.docstatus == 1:
-			frappe.throw(
+			nts.throw(
 				_("Submission of {0} before {1} is not allowed").format(
-					frappe.bold(_("Interview Feedback")), frappe.bold(_("Interview Scheduled Date"))
+					nts.bold(_("Interview Feedback")), nts.bold(_("Interview Scheduled Date"))
 				)
 			)
 
 	def validate_duplicate(self):
-		duplicate_feedback = frappe.db.exists(
+		duplicate_feedback = nts.db.exists(
 			"Interview Feedback",
 			{"interviewer": self.interviewer, "interview": self.interview, "docstatus": 1},
 		)
 
 		if duplicate_feedback:
-			frappe.throw(
+			nts.throw(
 				_(
 					"Feedback already submitted for the Interview {0}. Please cancel the previous Interview Feedback {1} to continue."
 				).format(self.interview, get_link_to_form("Interview Feedback", duplicate_feedback))
@@ -65,20 +65,20 @@ class InterviewFeedback(Document):
 		)
 
 	def update_interview_average_rating(self):
-		interview_feedback = frappe.qb.DocType("Interview Feedback")
+		interview_feedback = nts.qb.DocType("Interview Feedback")
 		query = (
-			frappe.qb.from_(interview_feedback)
+			nts.qb.from_(interview_feedback)
 			.where((interview_feedback.interview == self.interview) & (interview_feedback.docstatus == 1))
 			.select(Avg(interview_feedback.average_rating).as_("average"))
 		)
 		data = query.run(as_dict=True)
 		average_rating = data[0].average
 
-		interview = frappe.get_doc("Interview", self.interview)
+		interview = nts.get_doc("Interview", self.interview)
 		interview.db_set("average_rating", average_rating)
 		interview.notify_update()
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_applicable_interviewers(interview: str) -> list[str]:
-	return frappe.get_all("Interview Detail", filters={"parent": interview}, pluck="interviewer")
+	return nts.get_all("Interview Detail", filters={"parent": interview}, pluck="interviewer")

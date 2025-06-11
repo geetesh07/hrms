@@ -1,13 +1,13 @@
-# Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2020, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
 import json
 
-import frappe
-from frappe import _, bold
-from frappe.model.document import Document
-from frappe.utils import (
+import nts
+from nts import _, bold
+from nts.model.document import Document
+from nts.utils import (
 	add_months,
 	cint,
 	comma_and,
@@ -33,16 +33,16 @@ class LeavePolicyAssignment(Document):
 
 	def set_dates(self):
 		if self.assignment_based_on == "Leave Period":
-			self.effective_from, self.effective_to = frappe.db.get_value(
+			self.effective_from, self.effective_to = nts.db.get_value(
 				"Leave Period", self.leave_period, ["from_date", "to_date"]
 			)
 		elif self.assignment_based_on == "Joining Date":
-			self.effective_from = frappe.db.get_value("Employee", self.employee, "date_of_joining")
+			self.effective_from = nts.db.get_value("Employee", self.employee, "date_of_joining")
 			if not self.effective_to:
 				self.effective_to = get_last_day(add_months(self.effective_from, 12))
 
 	def validate_policy_assignment_overlap(self):
-		leave_policy_assignment = frappe.db.get_value(
+		leave_policy_assignment = nts.db.get_value(
 			"Leave Policy Assignment",
 			{
 				"employee": self.employee,
@@ -55,7 +55,7 @@ class LeavePolicyAssignment(Document):
 		)
 
 		if leave_policy_assignment:
-			frappe.throw(
+			nts.throw(
 				_("Leave Policy: {0} already assigned for Employee {1} for period {2} to {3}").format(
 					bold(leave_policy_assignment),
 					bold(self.employee),
@@ -70,25 +70,25 @@ class LeavePolicyAssignment(Document):
 			return
 
 		leave_types = get_leave_type_details()
-		leave_policy = frappe.get_doc("Leave Policy", self.leave_policy)
+		leave_policy = nts.get_doc("Leave Policy", self.leave_policy)
 
 		for policy in leave_policy.leave_policy_details:
 			leave_type = leave_types.get(policy.leave_type)
 			if not leave_type.is_carry_forward:
 				msg = _(
 					"Leaves for the Leave Type {0} won't be carry-forwarded since carry-forwarding is disabled."
-				).format(frappe.bold(get_link_to_form("Leave Type", leave_type.name)))
-				frappe.msgprint(msg, indicator="orange", alert=True)
+				).format(nts.bold(get_link_to_form("Leave Type", leave_type.name)))
+				nts.msgprint(msg, indicator="orange", alert=True)
 
 	def grant_leave_alloc_for_employee(self):
 		if self.leaves_allocated:
-			frappe.throw(_("Leave already have been assigned for this Leave Policy Assignment"))
+			nts.throw(_("Leave already have been assigned for this Leave Policy Assignment"))
 		else:
 			leave_allocations = {}
 			leave_type_details = get_leave_type_details()
 
-			leave_policy = frappe.get_doc("Leave Policy", self.leave_policy)
-			date_of_joining = frappe.db.get_value("Employee", self.employee, "date_of_joining")
+			leave_policy = nts.get_doc("Leave Policy", self.leave_policy)
+			date_of_joining = nts.db.get_value("Employee", self.employee, "date_of_joining")
 
 			for leave_policy_detail in leave_policy.leave_policy_details:
 				leave_details = leave_type_details.get(leave_policy_detail.leave_type)
@@ -114,7 +114,7 @@ class LeavePolicyAssignment(Document):
 
 		new_leaves_allocated = self.get_new_leaves(annual_allocation, leave_details, date_of_joining)
 
-		allocation = frappe.get_doc(
+		allocation = nts.get_doc(
 			dict(
 				doctype="Leave Allocation",
 				employee=self.employee,
@@ -133,10 +133,10 @@ class LeavePolicyAssignment(Document):
 		return allocation.name, new_leaves_allocated
 
 	def get_new_leaves(self, annual_allocation, leave_details, date_of_joining):
-		from frappe.model.meta import get_field_precision
+		from nts.model.meta import get_field_precision
 
-		precision = get_field_precision(frappe.get_meta("Leave Allocation").get_field("new_leaves_allocated"))
-		current_date = getdate(frappe.flags.current_date) or getdate()
+		precision = get_field_precision(nts.get_meta("Leave Allocation").get_field("new_leaves_allocated"))
+		current_date = getdate(nts.flags.current_date) or getdate()
 		# Earned Leaves and Compensatory Leaves are allocated by scheduler, initially allocate 0
 		if leave_details.is_compensatory:
 			new_leaves_allocated = 0
@@ -167,7 +167,7 @@ class LeavePolicyAssignment(Document):
 		from hrms.hr.utils import get_monthly_earned_leave
 
 		def _get_current_and_from_date():
-			current_date = frappe.flags.current_date or getdate()
+			current_date = nts.flags.current_date or getdate()
 			if current_date > getdate(self.effective_to):
 				current_date = getdate(self.effective_to)
 
@@ -197,7 +197,7 @@ class LeavePolicyAssignment(Document):
 
 		def _get_pro_rata_period_end_date(consider_current_month):
 			# for earned leave, pro-rata period ends on the last day of the month
-			date = getdate(frappe.flags.current_date) or getdate()
+			date = getdate(nts.flags.current_date) or getdate()
 			if consider_current_month:
 				period_end_date = get_last_day(date)
 			else:
@@ -255,7 +255,7 @@ def calculate_pro_rated_leaves(
 	if not leaves or getdate(date_of_joining) <= getdate(period_start_date):
 		return leaves
 
-	precision = cint(frappe.db.get_single_value("System Settings", "float_precision", cache=True))
+	precision = cint(nts.db.get_single_value("System Settings", "float_precision", cache=True))
 	actual_period = date_diff(period_end_date, date_of_joining) + 1
 	complete_period = date_diff(period_end_date, period_start_date) + 1
 
@@ -267,7 +267,7 @@ def calculate_pro_rated_leaves(
 
 
 def is_earned_leave_applicable_for_current_month(date_of_joining, allocate_on_day):
-	date = getdate(frappe.flags.current_date) or getdate()
+	date = getdate(nts.flags.current_date) or getdate()
 
 	# If the date of assignment creation is >= the leave type's "Allocate On" date,
 	# then the current month should be considered
@@ -281,13 +281,13 @@ def is_earned_leave_applicable_for_current_month(date_of_joining, allocate_on_da
 	return False
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def create_assignment_for_multiple_employees(employees, data):
 	if isinstance(employees, str):
 		employees = json.loads(employees)
 
 	if isinstance(data, str):
-		data = frappe._dict(json.loads(data))
+		data = nts._dict(json.loads(data))
 
 	docs_name = []
 	failed = []
@@ -296,10 +296,10 @@ def create_assignment_for_multiple_employees(employees, data):
 		assignment = create_assignment(employee, data)
 		savepoint = "before_assignment_submission"
 		try:
-			frappe.db.savepoint(savepoint)
+			nts.db.savepoint(savepoint)
 			assignment.submit()
 		except Exception:
-			frappe.db.rollback(save_point=savepoint)
+			nts.db.rollback(save_point=savepoint)
 			assignment.log_error("Leave Policy Assignment submission failed")
 			failed.append(assignment.name)
 
@@ -311,9 +311,9 @@ def create_assignment_for_multiple_employees(employees, data):
 	return docs_name
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def create_assignment(employee, data):
-	assignment = frappe.new_doc("Leave Policy Assignment")
+	assignment = nts.new_doc("Leave Policy Assignment")
 	assignment.employee = employee
 	assignment.assignment_based_on = data.assignment_based_on or None
 	assignment.leave_policy = data.leave_policy
@@ -326,7 +326,7 @@ def create_assignment(employee, data):
 
 
 def show_assignment_submission_status(failed):
-	frappe.clear_messages()
+	nts.clear_messages()
 	assignment_list = [get_link_to_form("Leave Policy Assignment", entry) for entry in failed]
 
 	msg = _("Failed to submit some leave policy assignments:")
@@ -337,7 +337,7 @@ def show_assignment_submission_status(failed):
 		.format(_("Error Log"))
 	)
 
-	frappe.msgprint(
+	nts.msgprint(
 		msg,
 		indicator="red",
 		title=_("Submission Failed"),
@@ -346,8 +346,8 @@ def show_assignment_submission_status(failed):
 
 
 def get_leave_type_details():
-	leave_type_details = frappe._dict()
-	leave_types = frappe.get_all(
+	leave_type_details = nts._dict()
+	leave_types = nts.get_all(
 		"Leave Type",
 		fields=[
 			"name",

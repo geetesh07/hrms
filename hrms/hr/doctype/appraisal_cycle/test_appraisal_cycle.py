@@ -1,17 +1,17 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
+import nts
+from nts.tests.utils import ntsTestCase
 
-from erpnext.setup.doctype.designation.test_designation import create_designation
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.designation.test_designation import create_designation
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.appraisal_template.test_appraisal_template import create_appraisal_template
 from hrms.tests.test_utils import create_company
 
 
-class TestAppraisalCycle(FrappeTestCase):
+class TestAppraisalCycle(ntsTestCase):
 	def setUp(self):
 		company = create_company("_Test Appraisal").name
 		self.template = create_appraisal_template()
@@ -35,10 +35,10 @@ class TestAppraisalCycle(FrappeTestCase):
 		cycle = create_appraisal_cycle(designation="Engineer")
 		cycle.create_appraisals()
 
-		appraisals = frappe.db.get_all("Appraisal", filters={"appraisal_cycle": cycle.name})
+		appraisals = nts.db.get_all("Appraisal", filters={"appraisal_cycle": cycle.name})
 		self.assertEqual(len(appraisals), 1)
 
-		appraisal = frappe.get_doc("Appraisal", appraisals[0].name)
+		appraisal = nts.get_doc("Appraisal", appraisals[0].name)
 
 		for i in range(2):
 			# check if KRAs are set
@@ -53,13 +53,13 @@ class TestAppraisalCycle(FrappeTestCase):
 
 
 def create_appraisal_cycle(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 
 	name = args.name or "Q1"
-	if frappe.db.exists("Appraisal Cycle", name):
-		frappe.delete_doc("Appraisal Cycle", name, force=True)
+	if nts.db.exists("Appraisal Cycle", name):
+		nts.delete_doc("Appraisal Cycle", name, force=True)
 
-	appraisal_cycle = frappe.get_doc(
+	appraisal_cycle = nts.get_doc(
 		{
 			"doctype": "Appraisal Cycle",
 			"cycle_name": name,

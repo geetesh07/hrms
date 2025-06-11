@@ -1,10 +1,10 @@
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, getdate
 
-from erpnext.projects.doctype.timesheet.test_timesheet import make_timesheet
-from erpnext.projects.doctype.timesheet.timesheet import make_sales_invoice
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.projects.doctype.timesheet.test_timesheet import make_timesheet
+from prodman.projects.doctype.timesheet.timesheet import make_sales_invoice
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.report.project_profitability.project_profitability import execute
 from hrms.payroll.doctype.salary_slip.salary_slip import make_salary_slip_from_timesheet
@@ -13,16 +13,16 @@ from hrms.payroll.doctype.salary_slip.test_salary_slip import make_salary_struct
 test_dependencies = ["Customer"]
 
 
-class TestProjectProfitability(FrappeTestCase):
+class TestProjectProfitability(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Timesheet")
+		nts.db.delete("Timesheet")
 		emp = make_employee("test_employee_9@salary.com", company="_Test Company")
 
-		frappe.db.set_single_value("HR Settings", "standard_working_hours", 8)
-		frappe.db.set_single_value("Payroll Settings", "include_holidays_in_total_working_days", 0)
+		nts.db.set_single_value("HR Settings", "standard_working_hours", 8)
+		nts.db.set_single_value("Payroll Settings", "include_holidays_in_total_working_days", 0)
 
-		if not frappe.db.exists("Salary Component", "Timesheet Component"):
-			frappe.get_doc(
+		if not nts.db.exists("Salary Component", "Timesheet Component"):
+			nts.get_doc(
 				{"doctype": "Salary Component", "salary_component": "Timesheet Component"}
 			).insert()
 
@@ -50,7 +50,7 @@ class TestProjectProfitability(FrappeTestCase):
 		report = execute(filters)
 
 		row = report[1][0]
-		timesheet = frappe.get_doc("Timesheet", self.timesheet.name)
+		timesheet = nts.get_doc("Timesheet", self.timesheet.name)
 
 		self.assertEqual(self.sales_invoice.customer, row.customer_name)
 		self.assertEqual(timesheet.title, row.employee_name)
@@ -59,7 +59,7 @@ class TestProjectProfitability(FrappeTestCase):
 		self.assertEqual(timesheet.total_billed_hours, row.total_billed_hours)
 		self.assertEqual(self.salary_slip.total_working_days, row.total_working_days)
 
-		standard_working_hours = frappe.db.get_single_value("HR Settings", "standard_working_hours")
+		standard_working_hours = nts.db.get_single_value("HR Settings", "standard_working_hours")
 		utilization = timesheet.total_billed_hours / (
 			self.salary_slip.total_working_days * standard_working_hours
 		)
@@ -73,7 +73,7 @@ class TestProjectProfitability(FrappeTestCase):
 
 
 def create_activity_type(activity_type: str) -> str:
-	doc = frappe.new_doc("Activity Type")
+	doc = nts.new_doc("Activity Type")
 	doc.activity_type = activity_type
 	doc.insert()
 	return doc.name

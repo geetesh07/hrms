@@ -5,7 +5,7 @@
  "docstatus": 0,
  "doctype": "Number Card",
  "document_type": "Attendance",
- "dynamic_filters_json": "[[\"Attendance\",\"company\",\"=\",\"frappe.defaults.get_user_default(\\\"Company\\\")\"]]",
+ "dynamic_filters_json": "[[\"Attendance\",\"company\",\"=\",\"nts.defaults.get_user_default(\\\"Company\\\")\"]]",
  "filters_json": "[[\"Attendance\",\"docstatus\",\"=\",\"1\",false],[\"Attendance\",\"status\",\"=\",\"Present\",false],[\"Attendance\",\"attendance_date\",\"Timespan\",\"this month\",false]]",
  "function": "Count",
  "idx": 0,

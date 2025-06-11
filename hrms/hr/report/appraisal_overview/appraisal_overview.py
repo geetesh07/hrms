@@ -1,12 +1,12 @@
-# Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2023, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 
 def execute(filters: dict | None = None) -> tuple:
-	filters = frappe._dict(filters or {})
+	filters = nts._dict(filters or {})
 	columns = get_columns()
 	data = get_data(filters)
 	chart = get_chart_data(data)
@@ -66,9 +66,9 @@ def get_columns() -> list[dict]:
 
 
 def get_data(filters: dict | None = None) -> list[dict]:
-	Appraisal = frappe.qb.DocType("Appraisal")
+	Appraisal = nts.qb.DocType("Appraisal")
 	query = (
-		frappe.qb.from_(Appraisal)
+		nts.qb.from_(Appraisal)
 		.select(
 			Appraisal.employee,
 			Appraisal.employee_name,
@@ -89,11 +89,11 @@ def get_data(filters: dict | None = None) -> list[dict]:
 			query = query.where(Appraisal[condition] == filters.get(condition))
 
 	query = query.orderby(Appraisal.appraisal_cycle)
-	query = query.orderby(Appraisal.final_score, order=frappe.qb.desc)
+	query = query.orderby(Appraisal.final_score, order=nts.qb.desc)
 	appraisals = query.run(as_dict=True)
 
 	for row in appraisals:
-		row["feedback_count"] = frappe.db.count(
+		row["feedback_count"] = nts.db.count(
 			"Employee Performance Feedback", {"appraisal": row.appraisal, "docstatus": 1}
 		)
 

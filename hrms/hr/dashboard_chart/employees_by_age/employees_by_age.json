@@ -7,7 +7,7 @@
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "",
- "dynamic_filters_json": "{\"company\":\"frappe.defaults.get_user_default(\\\"Company\\\")\"}",
+ "dynamic_filters_json": "{\"company\":\"nts.defaults.get_user_default(\\\"Company\\\")\"}",
  "filters_json": "{}",
  "group_by_type": "Count",
  "idx": 0,

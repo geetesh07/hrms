@@ -1,19 +1,19 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, today
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, today
 
-from erpnext.assets.doctype.asset.test_asset import create_asset_data
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.stock.doctype.purchase_receipt.test_purchase_receipt import make_purchase_receipt
+from prodman.assets.doctype.asset.test_asset import create_asset_data
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.stock.doctype.purchase_receipt.test_purchase_receipt import make_purchase_receipt
 
 
-class TestFullandFinalStatement(FrappeTestCase):
+class TestFullandFinalStatement(ntsTestCase):
 	def setUp(self):
 		for dt in ["Full and Final Statement", "Asset", "Asset Movement", "Asset Movement Item"]:
-			frappe.db.delete(dt)
+			nts.db.delete(dt)
 
 		self.setup_fnf()
 
@@ -73,7 +73,7 @@ class TestFullandFinalStatement(FrappeTestCase):
 
 
 def create_full_and_final_statement(employee):
-	fnf = frappe.new_doc("Full and Final Statement")
+	fnf = nts.new_doc("Full and Final Statement")
 	fnf.employee = employee
 	fnf.transaction_date = today()
 	fnf.save()
@@ -82,7 +82,7 @@ def create_full_and_final_statement(employee):
 
 def create_asset_movement(employee):
 	asset_name = create_asset()
-	movement = frappe.new_doc("Asset Movement")
+	movement = nts.new_doc("Asset Movement")
 	movement.company = "_Test Company"
 	movement.purpose = "Issue"
 	movement.transaction_date = today()
@@ -97,8 +97,8 @@ def create_asset_movement(employee):
 def create_asset():
 	pr = make_purchase_receipt(item_code="Macbook Pro", qty=1, rate=100000.0, location="Test Location")
 
-	asset_name = frappe.db.get_value("Asset", {"purchase_receipt": pr.name}, "name")
-	asset = frappe.get_doc("Asset", asset_name)
+	asset_name = nts.db.get_value("Asset", {"purchase_receipt": pr.name}, "name")
+	asset = nts.get_doc("Asset", asset_name)
 	asset.calculate_depreciation = 0
 	asset.available_for_use_date = today()
 	asset.submit()

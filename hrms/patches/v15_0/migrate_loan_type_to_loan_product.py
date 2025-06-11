@@ -1,4 +1,4 @@
-from frappe.model.utils.rename_field import rename_field
+from nts.model.utils.rename_field import rename_field
 
 
 def execute():

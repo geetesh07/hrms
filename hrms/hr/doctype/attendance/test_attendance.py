@@ -17,7 +17,7 @@ from frappe.utils import (
 	nowdate,
 )
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.attendance.attendance import (
 	DuplicateAttendanceError,

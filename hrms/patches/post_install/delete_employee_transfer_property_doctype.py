@@ -1,5 +1,5 @@
-import frappe
+import nts
 
 
 def execute():
-	frappe.delete_doc("DocType", "Employee Transfer Property", ignore_missing=True)
+	nts.delete_doc("DocType", "Employee Transfer Property", ignore_missing=True)

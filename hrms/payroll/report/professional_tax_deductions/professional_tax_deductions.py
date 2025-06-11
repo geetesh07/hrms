@@ -1,9 +1,9 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 from hrms.payroll.report.provident_fund_deductions.provident_fund_deductions import get_conditions
 
@@ -38,8 +38,8 @@ def get_columns(filters):
 def get_data(filters):
 	data = []
 
-	component_type_dict = frappe._dict(
-		frappe.db.sql(
+	component_type_dict = nts._dict(
+		nts.db.sql(
 			""" select name, component_type from `tabSalary Component`
 		where component_type = 'Professional Tax' """
 		)
@@ -50,8 +50,8 @@ def get_data(filters):
 
 	conditions = get_conditions(filters)
 
-	# nosemgrep: frappe-semgrep-rules.rules.frappe-using-db-sql
-	entry = frappe.db.sql(
+	# nosemgrep: nts-semgrep-rules.rules.nts-using-db-sql
+	entry = nts.db.sql(
 		"""SELECT sal.employee, sal.employee_name, ded.salary_component, ded.amount
 		FROM `tabSalary Slip` sal, `tabSalary Detail` ded
 		WHERE sal.name = ded.parent

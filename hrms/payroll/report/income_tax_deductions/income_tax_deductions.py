@@ -1,18 +1,18 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.query_builder.functions import Extract
+import nts
+from nts import _
+from nts.query_builder.functions import Extract
 
-import erpnext
+import prodman
 
-Filters = frappe._dict
+Filters = nts._dict
 
 
 def execute(filters: Filters = None) -> tuple:
-	is_indian_company = erpnext.get_region(filters.get("company")) == "India"
+	is_indian_company = prodman.get_region(filters.get("company")) == "India"
 	columns = get_columns(is_indian_company)
 	data = get_data(filters, is_indian_company)
 
@@ -68,8 +68,8 @@ def get_data(filters: Filters, is_indian_company: bool) -> list[dict]:
 
 	employee_pan_dict = {}
 	if is_indian_company:
-		employee_pan_dict = frappe._dict(
-			frappe.get_all("Employee", fields=["name", "pan_number"], as_list=True)
+		employee_pan_dict = nts._dict(
+			nts.get_all("Employee", fields=["name", "pan_number"], as_list=True)
 		)
 
 	deductions = get_income_tax_deductions(filters)
@@ -93,15 +93,15 @@ def get_data(filters: Filters, is_indian_company: bool) -> list[dict]:
 
 
 def get_income_tax_deductions(filters: Filters) -> list[dict]:
-	component_types = frappe.get_all("Salary Component", filters={"is_income_tax_component": 1}, pluck="name")
+	component_types = nts.get_all("Salary Component", filters={"is_income_tax_component": 1}, pluck="name")
 	if not component_types:
 		return []
 
-	SalarySlip = frappe.qb.DocType("Salary Slip")
-	SalaryDetail = frappe.qb.DocType("Salary Detail")
+	SalarySlip = nts.qb.DocType("Salary Slip")
+	SalaryDetail = nts.qb.DocType("Salary Detail")
 
 	query = (
-		frappe.qb.from_(SalarySlip)
+		nts.qb.from_(SalarySlip)
 		.inner_join(SalaryDetail)
 		.on(SalarySlip.name == SalaryDetail.parent)
 		.select(

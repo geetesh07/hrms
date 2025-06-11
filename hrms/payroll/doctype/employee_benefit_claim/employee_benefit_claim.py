@@ -1,11 +1,11 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import flt
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import flt
 
 from hrms.hr.utils import get_previous_claimed_amount, validate_active_employee
 from hrms.payroll.doctype.employee_benefit_application.employee_benefit_application import (
@@ -22,14 +22,14 @@ class EmployeeBenefitClaim(Document):
 		validate_active_employee(self.employee)
 		max_benefits = get_max_benefits(self.employee, self.claim_date)
 		if not max_benefits or max_benefits <= 0:
-			frappe.throw(_("Employee {0} has no maximum benefit amount").format(self.employee))
+			nts.throw(_("Employee {0} has no maximum benefit amount").format(self.employee))
 		payroll_period = get_payroll_period(
-			self.claim_date, self.claim_date, frappe.db.get_value("Employee", self.employee, "company")
+			self.claim_date, self.claim_date, nts.db.get_value("Employee", self.employee, "company")
 		)
 		if not payroll_period:
-			frappe.throw(
+			nts.throw(
 				_("{0} is not in a valid Payroll Period").format(
-					frappe.format(self.claim_date, dict(fieldtype="Date"))
+					nts.format(self.claim_date, dict(fieldtype="Date"))
 				)
 			)
 		self.validate_max_benefit_for_component(payroll_period)
@@ -42,7 +42,7 @@ class EmployeeBenefitClaim(Document):
 		claimed_amount = self.claimed_amount
 		claimed_amount += get_previous_claimed_amount(self.employee, payroll_period)
 		if max_benefits < claimed_amount:
-			frappe.throw(
+			nts.throw(
 				_(
 					"Maximum benefit of employee {0} exceeds {1} by the sum {2} of previous claimed amount"
 				).format(self.employee, max_benefits, claimed_amount - max_benefits)
@@ -50,7 +50,7 @@ class EmployeeBenefitClaim(Document):
 
 	def validate_max_benefit_for_sal_struct(self, max_benefits):
 		if self.claimed_amount > max_benefits:
-			frappe.throw(
+			nts.throw(
 				_("Maximum benefit amount of employee {0} exceeds {1}").format(self.employee, max_benefits)
 			)
 
@@ -61,7 +61,7 @@ class EmployeeBenefitClaim(Document):
 				self.employee, payroll_period, component=self.earning_component
 			)
 			if claimed_amount > self.max_amount_eligible:
-				frappe.throw(
+				nts.throw(
 					_("Maximum amount eligible for the component {0} exceeds {1}").format(
 						self.earning_component, self.max_amount_eligible
 					)
@@ -76,26 +76,26 @@ class EmployeeBenefitClaim(Document):
 			# get salary structure for the date and calculate pro-rata amount
 			sal_struct_name = get_assigned_salary_structure(self.employee, self.claim_date)
 			if sal_struct_name:
-				sal_struct = frappe.get_doc("Salary Structure", sal_struct_name)
+				sal_struct = nts.get_doc("Salary Structure", sal_struct_name)
 				pro_rata_amount = get_benefit_pro_rata_ratio_amount(
 					self.employee, self.claim_date, sal_struct
 				)
 
 		claimed_amount += get_previous_claimed_amount(self.employee, payroll_period, non_pro_rata=True)
 		if max_benefits < pro_rata_amount + claimed_amount:
-			frappe.throw(
+			nts.throw(
 				_(
 					"Maximum benefit of employee {0} exceeds {1} by the sum {2} of benefit application pro-rata component amount and previous claimed amount"
 				).format(self.employee, max_benefits, pro_rata_amount + claimed_amount - max_benefits)
 			)
 
 	def get_pro_rata_amount_in_application(self, payroll_period):
-		application = frappe.db.exists(
+		application = nts.db.exists(
 			"Employee Benefit Application",
 			{"employee": self.employee, "payroll_period": payroll_period, "docstatus": 1},
 		)
 		if application:
-			return frappe.db.get_value(
+			return nts.db.get_value(
 				"Employee Benefit Application", application, "pro_rata_dispensed_amount"
 			)
 		return False
@@ -106,21 +106,21 @@ def get_benefit_pro_rata_ratio_amount(employee, on_date, sal_struct):
 	benefit_amount_total = 0
 	for sal_struct_row in sal_struct.get("earnings"):
 		try:
-			pay_against_benefit_claim, max_benefit_amount = frappe.get_cached_value(
+			pay_against_benefit_claim, max_benefit_amount = nts.get_cached_value(
 				"Salary Component",
 				sal_struct_row.salary_component,
 				["pay_against_benefit_claim", "max_benefit_amount"],
 			)
 		except TypeError:
 			# show the error in tests?
-			frappe.throw(_("Unable to find Salary Component {0}").format(sal_struct_row.salary_component))
+			nts.throw(_("Unable to find Salary Component {0}").format(sal_struct_row.salary_component))
 
 		if sal_struct_row.is_flexible_benefit == 1 and pay_against_benefit_claim != 1:
 			total_pro_rata_max += max_benefit_amount
 
 	if total_pro_rata_max > 0:
 		for sal_struct_row in sal_struct.get("earnings"):
-			pay_against_benefit_claim, max_benefit_amount = frappe.get_cached_value(
+			pay_against_benefit_claim, max_benefit_amount = nts.get_cached_value(
 				"Salary Component",
 				sal_struct_row.salary_component,
 				["pay_against_benefit_claim", "max_benefit_amount"],
@@ -150,7 +150,7 @@ def get_benefit_claim_amount(employee, start_date, end_date, salary_component=No
 		query += " and earning_component = %(earning_component)s"
 
 	claimed_amount = flt(
-		frappe.db.sql(
+		nts.db.sql(
 			query,
 			{
 				"employee": employee,
@@ -167,12 +167,12 @@ def get_benefit_claim_amount(employee, start_date, end_date, salary_component=No
 def get_total_benefit_dispensed(employee, sal_struct, sal_slip_start_date, payroll_period):
 	pro_rata_amount = 0
 	claimed_amount = 0
-	application = frappe.db.exists(
+	application = nts.db.exists(
 		"Employee Benefit Application",
 		{"employee": employee, "payroll_period": payroll_period.name, "docstatus": 1},
 	)
 	if application:
-		application_obj = frappe.get_cached_value(
+		application_obj = nts.get_cached_value(
 			"Employee Benefit Application",
 			application,
 			["pro_rata_dispensed_amount", "max_benefits", "remaining_benefit"],
@@ -210,7 +210,7 @@ def get_last_payroll_period_benefits(
 		salary_components_array = []
 		for d in sal_struct.get("earnings"):
 			if d.is_flexible_benefit == 1:
-				salary_component = frappe.get_cached_doc("Salary Component", d.salary_component)
+				salary_component = nts.get_cached_doc("Salary Component", d.salary_component)
 				if salary_component.pay_against_benefit_claim == 1:
 					claimed_amount = get_benefit_claim_amount(
 						employee, payroll_period.start_date, sal_slip_end_date, d.salary_component

@@ -1,30 +1,30 @@
-// Copyright (c) 2017, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2017, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
 var in_progress = false;
 
-frappe.provide("erpnext.accounts.dimensions");
+nts.provide("prodman.accounts.dimensions");
 
-frappe.ui.form.on("Payroll Entry", {
+nts.ui.form.on("Payroll Entry", {
 	onload: function (frm) {
 		frm.ignore_doctypes_on_cancel_all = ["Salary Slip", "Journal Entry"];
 
 		if (!frm.doc.posting_date) {
-			frm.doc.posting_date = frappe.datetime.nowdate();
+			frm.doc.posting_date = nts.datetime.nowdate();
 		}
 		frm.toggle_reqd(["payroll_frequency"], !frm.doc.salary_slip_based_on_timesheet);
 
-		erpnext.accounts.dimensions.setup_dimension_filters(frm, frm.doctype);
+		prodman.accounts.dimensions.setup_dimension_filters(frm, frm.doctype);
 		frm.events.department_filters(frm);
 		frm.events.payroll_payable_account_filters(frm);
 
-		frappe.realtime.off("completed_salary_slip_creation");
-		frappe.realtime.on("completed_salary_slip_creation", function () {
+		nts.realtime.off("completed_salary_slip_creation");
+		nts.realtime.on("completed_salary_slip_creation", function () {
 			frm.reload_doc();
 		});
 
-		frappe.realtime.off("completed_salary_slip_submission");
-		frappe.realtime.on("completed_salary_slip_submission", function () {
+		nts.realtime.off("completed_salary_slip_submission");
+		nts.realtime.on("completed_salary_slip_submission", function () {
 			frm.reload_doc();
 		});
 	},
@@ -63,7 +63,7 @@ frappe.ui.form.on("Payroll Entry", {
 
 		if (
 			(frm.doc.employees || []).length &&
-			!frappe.model.has_workflow(frm.doctype) &&
+			!nts.model.has_workflow(frm.doctype) &&
 			!cint(frm.doc.salary_slips_created) &&
 			frm.doc.docstatus != 2
 		) {
@@ -106,7 +106,7 @@ frappe.ui.form.on("Payroll Entry", {
 	},
 
 	get_employee_details: function (frm) {
-		return frappe
+		return nts
 			.call({
 				doc: frm.doc,
 				method: "fill_employee_details",
@@ -193,13 +193,13 @@ frappe.ui.form.on("Payroll Entry", {
 
 			mandatory_fields.forEach((field) => {
 				if (!frm.doc[field]) {
-					error_fields.push(frappe.unscrub(field));
+					error_fields.push(nts.unscrub(field));
 				}
 			});
 
 			if (error_fields && error_fields.length) {
 				message = message + "<br><br><ul><li>" + error_fields.join("</li><li>") + "</ul>";
-				frappe.throw({
+				nts.throw({
 					message: message,
 					indicator: "red",
 					title: __("Missing Fields"),
@@ -253,15 +253,15 @@ frappe.ui.form.on("Payroll Entry", {
 
 	company: function (frm) {
 		frm.events.clear_employee_table(frm);
-		erpnext.accounts.dimensions.update_dimension(frm, frm.doctype);
+		prodman.accounts.dimensions.update_dimension(frm, frm.doctype);
 		frm.trigger("set_payable_account_and_currency");
 	},
 
 	set_payable_account_and_currency: function (frm) {
-		frappe.db.get_value("Company", { name: frm.doc.company }, "default_currency", (r) => {
+		nts.db.get_value("Company", { name: frm.doc.company }, "default_currency", (r) => {
 			frm.set_value("currency", r.default_currency);
 		});
-		frappe.db.get_value(
+		nts.db.get_value(
 			"Company",
 			{ name: frm.doc.company },
 			"default_payroll_payable_account",
@@ -274,14 +274,14 @@ frappe.ui.form.on("Payroll Entry", {
 	currency: function (frm) {
 		var company_currency;
 		if (!frm.doc.company) {
-			company_currency = erpnext.get_currency(frappe.defaults.get_default("Company"));
+			company_currency = prodman.get_currency(nts.defaults.get_default("Company"));
 		} else {
-			company_currency = erpnext.get_currency(frm.doc.company);
+			company_currency = prodman.get_currency(frm.doc.company);
 		}
 		if (frm.doc.currency) {
 			if (company_currency != frm.doc.currency) {
-				frappe.call({
-					method: "erpnext.setup.utils.get_exchange_rate",
+				nts.call({
+					method: "prodman.setup.utils.get_exchange_rate",
 					args: {
 						from_currency: frm.doc.currency,
 						to_currency: company_currency,
@@ -338,7 +338,7 @@ frappe.ui.form.on("Payroll Entry", {
 
 	set_start_end_dates: function (frm) {
 		if (frm.doc.payroll_frequency) {
-			frappe.call({
+			nts.call({
 				method: "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates",
 				args: {
 					payroll_frequency: frm.doc.payroll_frequency,
@@ -356,7 +356,7 @@ frappe.ui.form.on("Payroll Entry", {
 	},
 
 	set_end_date: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.payroll.doctype.payroll_entry.payroll_entry.get_end_date",
 			args: {
 				frequency: frm.doc.payroll_frequency,
@@ -372,7 +372,7 @@ frappe.ui.form.on("Payroll Entry", {
 
 	validate_attendance: function (frm) {
 		if (frm.doc.validate_attendance && frm.doc.employees?.length > 0) {
-			frappe.call({
+			nts.call({
 				method: "get_employees_with_unmarked_attendance",
 				args: {},
 				callback: function (r) {
@@ -396,12 +396,12 @@ frappe.ui.form.on("Payroll Entry", {
 // Submit salary slips
 
 const submit_salary_slip = function (frm) {
-	frappe.confirm(
+	nts.confirm(
 		__(
 			"This will submit Salary Slips and create accrual Journal Entry. Do you want to proceed?",
 		),
 		function () {
-			frappe.call({
+			nts.call({
 				method: "submit_salary_slips",
 				args: {},
 				doc: frm.doc,
@@ -410,8 +410,8 @@ const submit_salary_slip = function (frm) {
 			});
 		},
 		function () {
-			if (frappe.dom.freeze_count) {
-				frappe.dom.unfreeze();
+			if (nts.dom.freeze_count) {
+				nts.dom.unfreeze();
 			}
 		},
 	);
@@ -420,7 +420,7 @@ const submit_salary_slip = function (frm) {
 let make_bank_entry = function (frm, for_withheld_salaries = 0) {
 	const doc = frm.doc;
 	if (doc.payment_account) {
-		return frappe.call({
+		return nts.call({
 			method: "run_doc_method",
 			args: {
 				method: "make_bank_entry",
@@ -429,7 +429,7 @@ let make_bank_entry = function (frm, for_withheld_salaries = 0) {
 				args: { for_withheld_salaries: for_withheld_salaries },
 			},
 			callback: function () {
-				frappe.set_route("List", "Journal Entry", {
+				nts.set_route("List", "Journal Entry", {
 					"Journal Entry Account.reference_name": frm.doc.name,
 				});
 			},
@@ -437,14 +437,14 @@ let make_bank_entry = function (frm, for_withheld_salaries = 0) {
 			freeze_message: __("Creating Payment Entries......"),
 		});
 	} else {
-		frappe.msgprint(__("Payment Account is mandatory"));
+		nts.msgprint(__("Payment Account is mandatory"));
 		frm.scroll_to_field("payment_account");
 	}
 };
 
 let render_employee_attendance = function (frm, data) {
 	frm.fields_dict.attendance_detail_html.html(
-		frappe.render_template("employees_with_unmarked_attendance", {
+		nts.render_template("employees_with_unmarked_attendance", {
 			data: data,
 		}),
 	);

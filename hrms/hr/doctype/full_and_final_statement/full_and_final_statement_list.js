@@ -1,4 +1,4 @@
-frappe.listview_settings["Full and Final Statement"] = {
+nts.listview_settings["Full and Final Statement"] = {
 	get_indicator: function (doc) {
 		var colors = {
 			Draft: "red",

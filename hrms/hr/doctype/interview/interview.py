@@ -1,17 +1,17 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
 import datetime
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.query_builder.functions import Avg
-from frappe.utils import cint, cstr, get_datetime, get_link_to_form, getdate, nowtime
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.query_builder.functions import Avg
+from nts.utils import cint, cstr, get_datetime, get_link_to_form, getdate, nowtime
 
 
-class DuplicateInterviewRoundError(frappe.ValidationError):
+class DuplicateInterviewRoundError(nts.ValidationError):
 	pass
 
 
@@ -22,36 +22,36 @@ class Interview(Document):
 
 	def on_submit(self):
 		if self.status not in ["Cleared", "Rejected"]:
-			frappe.throw(
+			nts.throw(
 				_("Only Interviews with Cleared or Rejected status can be submitted."),
 				title=_("Not Allowed"),
 			)
 		self.show_job_applicant_update_dialog()
 
 	def validate_duplicate_interview(self):
-		duplicate_interview = frappe.db.exists(
+		duplicate_interview = nts.db.exists(
 			"Interview",
 			{"job_applicant": self.job_applicant, "interview_round": self.interview_round, "docstatus": 1},
 		)
 
 		if duplicate_interview:
-			frappe.throw(
+			nts.throw(
 				_(
 					"Job Applicants are not allowed to appear twice for the same Interview round. Interview {0} already scheduled for Job Applicant {1}"
 				).format(
-					frappe.bold(get_link_to_form("Interview", duplicate_interview)),
-					frappe.bold(self.job_applicant),
+					nts.bold(get_link_to_form("Interview", duplicate_interview)),
+					nts.bold(self.job_applicant),
 				)
 			)
 
 	def validate_designation(self):
-		applicant_designation = frappe.db.get_value("Job Applicant", self.job_applicant, "designation")
+		applicant_designation = nts.db.get_value("Job Applicant", self.job_applicant, "designation")
 		if self.designation:
 			if self.designation != applicant_designation:
-				frappe.throw(
+				nts.throw(
 					_(
 						"Interview Round {0} is only for Designation {1}. Job Applicant has applied for the role {2}"
-					).format(self.interview_round, frappe.bold(self.designation), applicant_designation),
+					).format(self.interview_round, nts.bold(self.designation), applicant_designation),
 					exc=DuplicateInterviewRoundError,
 				)
 		else:
@@ -62,11 +62,11 @@ class Interview(Document):
 		if not job_applicant_status:
 			return
 
-		job_application_name = frappe.db.get_value("Job Applicant", self.job_applicant, "applicant_name")
+		job_application_name = nts.db.get_value("Job Applicant", self.job_applicant, "applicant_name")
 
-		frappe.msgprint(
+		nts.msgprint(
 			_("Do you want to update the Job Applicant {0} as {1} based on this interview result?").format(
-				frappe.bold(job_application_name), frappe.bold(job_applicant_status)
+				nts.bold(job_application_name), nts.bold(job_applicant_status)
 			),
 			title=_("Update Job Applicant"),
 			primary_action={
@@ -80,10 +80,10 @@ class Interview(Document):
 		status_map = {"Cleared": "Accepted", "Rejected": "Rejected"}
 		return status_map.get(self.status, None)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def reschedule_interview(self, scheduled_on, from_time, to_time):
 		if scheduled_on == self.scheduled_on and from_time == self.from_time and to_time == self.to_time:
-			frappe.msgprint(
+			nts.msgprint(
 				_("No changes found in timings."), indicator="orange", title=_("Interview Not Rescheduled")
 			)
 			return
@@ -98,7 +98,7 @@ class Interview(Document):
 		recipients = get_recipients(self.name)
 
 		try:
-			frappe.sendmail(
+			nts.sendmail(
 				recipients=recipients,
 				subject=_("Interview: {0} Rescheduled").format(self.name),
 				message=_("Your Interview session is rescheduled from {0} {1} - {2} to {3} {4} - {5}").format(
@@ -113,43 +113,43 @@ class Interview(Document):
 				reference_name=self.name,
 			)
 		except Exception:
-			frappe.msgprint(
+			nts.msgprint(
 				_(
 					"Failed to send the Interview Reschedule notification. Please configure your email account."
 				)
 			)
 
-		frappe.msgprint(_("Interview Rescheduled successfully"), indicator="green")
+		nts.msgprint(_("Interview Rescheduled successfully"), indicator="green")
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_interviewers(interview_round: str) -> list[str]:
-	return frappe.get_all("Interviewer", filters={"parent": interview_round}, fields=["user as interviewer"])
+	return nts.get_all("Interviewer", filters={"parent": interview_round}, fields=["user as interviewer"])
 
 
 def get_recipients(name, for_feedback=0):
-	interview = frappe.get_doc("Interview", name)
+	interview = nts.get_doc("Interview", name)
 	interviewers = [d.interviewer for d in interview.interview_details]
 
 	if for_feedback:
-		feedback_given_interviewers = frappe.get_all(
+		feedback_given_interviewers = nts.get_all(
 			"Interview Feedback", filters={"interview": name, "docstatus": 1}, pluck="interviewer"
 		)
 		recipients = [d for d in interviewers if d not in feedback_given_interviewers]
 	else:
 		recipients = interviewers
-		recipients.append(frappe.db.get_value("Job Applicant", interview.job_applicant, "email_id"))
+		recipients.append(nts.db.get_value("Job Applicant", interview.job_applicant, "email_id"))
 
 	return recipients
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_feedback(interview: str) -> list[dict]:
-	interview_feedback = frappe.qb.DocType("Interview Feedback")
-	employee = frappe.qb.DocType("Employee")
+	interview_feedback = nts.qb.DocType("Interview Feedback")
+	employee = nts.qb.DocType("Employee")
 
 	return (
-		frappe.qb.from_(interview_feedback)
+		nts.qb.from_(interview_feedback)
 		.select(
 			interview_feedback.name,
 			interview_feedback.modified.as_("added_on"),
@@ -166,12 +166,12 @@ def get_feedback(interview: str) -> list[dict]:
 	).run(as_dict=True)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_skill_wise_average_rating(interview: str) -> list[dict]:
-	skill_assessment = frappe.qb.DocType("Skill Assessment")
-	interview_feedback = frappe.qb.DocType("Interview Feedback")
+	skill_assessment = nts.qb.DocType("Skill Assessment")
+	interview_feedback = nts.qb.DocType("Interview Feedback")
 	return (
-		frappe.qb.select(
+		nts.qb.select(
 			skill_assessment.skill,
 			Avg(skill_assessment.rating).as_("rating"),
 		)
@@ -184,7 +184,7 @@ def get_skill_wise_average_rating(interview: str) -> list[dict]:
 	).run(as_dict=True)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def update_job_applicant_status(args):
 	import json
 
@@ -193,20 +193,20 @@ def update_job_applicant_status(args):
 			args = json.loads(args)
 
 		if not args.get("job_applicant"):
-			frappe.throw(_("Please specify the job applicant to be updated."))
+			nts.throw(_("Please specify the job applicant to be updated."))
 
-		job_applicant = frappe.get_doc("Job Applicant", args["job_applicant"])
+		job_applicant = nts.get_doc("Job Applicant", args["job_applicant"])
 		job_applicant.status = args["status"]
 		job_applicant.save()
 
-		frappe.msgprint(
+		nts.msgprint(
 			_("Updated the Job Applicant status to {0}").format(job_applicant.status),
 			alert=True,
 			indicator="green",
 		)
 	except Exception:
 		job_applicant.log_error("Failed to update Job Applicant status")
-		frappe.msgprint(
+		nts.msgprint(
 			_("Failed to update the Job Applicant status"),
 			alert=True,
 			indicator="red",
@@ -214,7 +214,7 @@ def update_job_applicant_status(args):
 
 
 def send_interview_reminder():
-	reminder_settings = frappe.db.get_value(
+	reminder_settings = nts.db.get_value(
 		"HR Settings",
 		"HR Settings",
 		["send_interview_reminder", "interview_reminder_template", "hiring_sender_email"],
@@ -224,13 +224,13 @@ def send_interview_reminder():
 	if not cint(reminder_settings.send_interview_reminder):
 		return
 
-	remind_before = cstr(frappe.db.get_single_value("HR Settings", "remind_before")) or "01:00:00"
+	remind_before = cstr(nts.db.get_single_value("HR Settings", "remind_before")) or "01:00:00"
 	remind_before = datetime.datetime.strptime(remind_before, "%H:%M:%S")
 	reminder_date_time = datetime.datetime.now() + datetime.timedelta(
 		hours=remind_before.hour, minutes=remind_before.minute, seconds=remind_before.second
 	)
 
-	interviews = frappe.get_all(
+	interviews = nts.get_all(
 		"Interview",
 		filters={
 			"scheduled_on": ["between", (datetime.datetime.now(), reminder_date_time)],
@@ -240,15 +240,15 @@ def send_interview_reminder():
 		},
 	)
 
-	interview_template = frappe.get_doc("Email Template", reminder_settings.interview_reminder_template)
+	interview_template = nts.get_doc("Email Template", reminder_settings.interview_reminder_template)
 
 	for d in interviews:
-		doc = frappe.get_doc("Interview", d.name)
+		doc = nts.get_doc("Interview", d.name)
 		context = doc.as_dict()
-		message = frappe.render_template(interview_template.response, context)
+		message = nts.render_template(interview_template.response, context)
 		recipients = get_recipients(doc.name)
 
-		frappe.sendmail(
+		nts.sendmail(
 			sender=reminder_settings.hiring_sender_email,
 			recipients=recipients,
 			subject=interview_template.subject,
@@ -261,7 +261,7 @@ def send_interview_reminder():
 
 
 def send_daily_feedback_reminder():
-	reminder_settings = frappe.db.get_value(
+	reminder_settings = nts.db.get_value(
 		"HR Settings",
 		"HR Settings",
 		[
@@ -275,11 +275,11 @@ def send_daily_feedback_reminder():
 	if not cint(reminder_settings.send_interview_feedback_reminder):
 		return
 
-	interview_feedback_template = frappe.get_doc(
+	interview_feedback_template = nts.get_doc(
 		"Email Template", reminder_settings.feedback_reminder_notification_template
 	)
 
-	interviews = frappe.get_all(
+	interviews = nts.get_all(
 		"Interview",
 		filters={
 			"status": "Under Review",
@@ -293,13 +293,13 @@ def send_daily_feedback_reminder():
 	for interview in interviews:
 		recipients = get_recipients(interview, for_feedback=1)
 
-		doc = frappe.get_doc("Interview", interview)
+		doc = nts.get_doc("Interview", interview)
 		context = doc.as_dict()
 
-		message = frappe.render_template(interview_feedback_template.response, context)
+		message = nts.render_template(interview_feedback_template.response, context)
 
 		if len(recipients):
-			frappe.sendmail(
+			nts.sendmail(
 				sender=reminder_settings.hiring_sender_email,
 				recipients=recipients,
 				subject=interview_feedback_template.subject,
@@ -309,30 +309,30 @@ def send_daily_feedback_reminder():
 			)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_expected_skill_set(interview_round):
-	return frappe.get_all(
+	return nts.get_all(
 		"Expected Skill Set", filters={"parent": interview_round}, fields=["skill"], order_by="idx"
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def create_interview_feedback(data, interview_name, interviewer, job_applicant):
 	import json
 
 	if isinstance(data, str):
-		data = frappe._dict(json.loads(data))
+		data = nts._dict(json.loads(data))
 
-	if frappe.session.user != interviewer:
-		frappe.throw(_("Only Interviewer Are allowed to submit Interview Feedback"))
+	if nts.session.user != interviewer:
+		nts.throw(_("Only Interviewer Are allowed to submit Interview Feedback"))
 
-	interview_feedback = frappe.new_doc("Interview Feedback")
+	interview_feedback = nts.new_doc("Interview Feedback")
 	interview_feedback.interview = interview_name
 	interview_feedback.interviewer = interviewer
 	interview_feedback.job_applicant = job_applicant
 
 	for d in data.skill_set:
-		d = frappe._dict(d)
+		d = nts._dict(d)
 		interview_feedback.append("skill_assessment", d)
 
 	interview_feedback.feedback = data.feedback
@@ -341,15 +341,15 @@ def create_interview_feedback(data, interview_name, interviewer, job_applicant):
 	interview_feedback.save()
 	interview_feedback.submit()
 
-	frappe.msgprint(
+	nts.msgprint(
 		_("Interview Feedback {0} submitted successfully").format(
 			get_link_to_form("Interview Feedback", interview_feedback.name)
 		)
 	)
 
 
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
+@nts.whitelist()
+@nts.validate_and_sanitize_search_inputs
 def get_interviewer_list(doctype, txt, searchfield, start, page_len, filters):
 	filters = [
 		["Has Role", "parent", "like", f"%{txt}%"],
@@ -360,7 +360,7 @@ def get_interviewer_list(doctype, txt, searchfield, start, page_len, filters):
 	if filters and isinstance(filters, list):
 		filters.extend(filters)
 
-	return frappe.get_all(
+	return nts.get_all(
 		"Has Role",
 		limit_start=start,
 		limit_page_length=page_len,
@@ -370,7 +370,7 @@ def get_interviewer_list(doctype, txt, searchfield, start, page_len, filters):
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_events(start, end, filters=None):
 	"""Returns events for Gantt / Calendar view rendering.
 
@@ -378,7 +378,7 @@ def get_events(start, end, filters=None):
 	:param end: End date-time.
 	:param filters: Filters (JSON).
 	"""
-	from frappe.desk.calendar import get_event_conditions
+	from nts.desk.calendar import get_event_conditions
 
 	events = []
 
@@ -391,8 +391,8 @@ def get_events(start, end, filters=None):
 
 	conditions = get_event_conditions("Interview", filters)
 
-	# nosemgrep: frappe-semgrep-rules.rules.frappe-using-db-sql
-	interviews = frappe.db.sql(
+	# nosemgrep: nts-semgrep-rules.rules.nts-using-db-sql
+	interviews = nts.db.sql(
 		f"""
 			SELECT DISTINCT
 				`tabInterview`.name, `tabInterview`.job_applicant, `tabInterview`.interview_round,

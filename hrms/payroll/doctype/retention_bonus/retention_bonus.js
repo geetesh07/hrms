@@ -1,11 +1,11 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Retention Bonus", {
+nts.ui.form.on("Retention Bonus", {
 	setup: function (frm) {
 		frm.set_query("employee", function () {
 			if (!frm.doc.company) {
-				frappe.msgprint(__("Please Select Company First"));
+				nts.msgprint(__("Please Select Company First"));
 			}
 			return {
 				filters: {
@@ -26,7 +26,7 @@ frappe.ui.form.on("Retention Bonus", {
 
 	employee: function (frm) {
 		if (frm.doc.employee) {
-			frappe.call({
+			nts.call({
 				method: "hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment.get_employee_currency",
 				args: {
 					employee: frm.doc.employee,

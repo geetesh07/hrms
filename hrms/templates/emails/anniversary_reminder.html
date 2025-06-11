@@ -13,7 +13,7 @@
 				class="avatar-frame standard-image"
 				style="{{ css_style or '' }}"
 				title="{{ person.name }}">
-				{{ frappe.utils.get_abbr(person.name) }}
+				{{ nts.utils.get_abbr(person.name) }}
 			</span>
 			{% endif %}
 		{% endfor %}

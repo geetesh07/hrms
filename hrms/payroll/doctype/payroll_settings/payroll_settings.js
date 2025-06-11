@@ -1,7 +1,7 @@
-// Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2020, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Payroll Settings", {
+nts.ui.form.on("Payroll Settings", {
 	refresh: function (frm) {
 		frm.set_query("sender", () => {
 			return {
@@ -21,7 +21,7 @@ frappe.ui.form.on("Payroll Settings", {
 		let policy = frm.doc.password_policy;
 		if (policy) {
 			if (policy.includes(" ") || policy.includes("--")) {
-				frappe.msgprint(
+				nts.msgprint(
 					__(
 						"Password policy cannot contain spaces or simultaneous hyphens. The format will be restructured automatically",
 					),

@@ -1,18 +1,18 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import get_link_to_form
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import get_link_to_form
 
 from hrms.hr.doctype.shift_assignment.shift_assignment import has_overlapping_timings
 from hrms.hr.utils import share_doc_with_approver, validate_active_employee
 from hrms.mixins.pwa_notifications import PWANotificationsMixin
 
 
-class OverlappingShiftRequestError(frappe.ValidationError):
+class OverlappingShiftRequestError(nts.ValidationError):
 	pass
 
 
@@ -33,9 +33,9 @@ class ShiftRequest(Document, PWANotificationsMixin):
 
 	def on_submit(self):
 		if self.status not in ["Approved", "Rejected"]:
-			frappe.throw(_("Only Shift Request with status 'Approved' and 'Rejected' can be submitted"))
+			nts.throw(_("Only Shift Request with status 'Approved' and 'Rejected' can be submitted"))
 		if self.status == "Approved":
-			assignment_doc = frappe.new_doc("Shift Assignment")
+			assignment_doc = nts.new_doc("Shift Assignment")
 			assignment_doc.company = self.company
 			assignment_doc.shift_type = self.shift_type
 			assignment_doc.employee = self.employee
@@ -47,39 +47,39 @@ class ShiftRequest(Document, PWANotificationsMixin):
 			assignment_doc.insert()
 			assignment_doc.submit()
 
-			frappe.msgprint(
+			nts.msgprint(
 				_("Shift Assignment: {0} created for Employee: {1}").format(
-					frappe.bold(assignment_doc.name), frappe.bold(self.employee)
+					nts.bold(assignment_doc.name), nts.bold(self.employee)
 				)
 			)
 
 	def on_cancel(self):
-		shift_assignment_list = frappe.db.get_all(
+		shift_assignment_list = nts.db.get_all(
 			"Shift Assignment", {"employee": self.employee, "shift_request": self.name, "docstatus": 1}
 		)
 		if shift_assignment_list:
 			for shift in shift_assignment_list:
-				shift_assignment_doc = frappe.get_doc("Shift Assignment", shift["name"])
+				shift_assignment_doc = nts.get_doc("Shift Assignment", shift["name"])
 				shift_assignment_doc.cancel()
 
 	def validate_default_shift(self):
-		default_shift = frappe.get_value("Employee", self.employee, "default_shift")
+		default_shift = nts.get_value("Employee", self.employee, "default_shift")
 		if self.shift_type == default_shift:
-			frappe.throw(
-				_("You can not request for your Default Shift: {0}").format(frappe.bold(self.shift_type))
+			nts.throw(
+				_("You can not request for your Default Shift: {0}").format(nts.bold(self.shift_type))
 			)
 
 	def validate_approver(self):
-		department = frappe.get_value("Employee", self.employee, "department")
-		shift_approver = frappe.get_value("Employee", self.employee, "shift_request_approver")
-		approvers = frappe.db.sql(
+		department = nts.get_value("Employee", self.employee, "department")
+		shift_approver = nts.get_value("Employee", self.employee, "shift_request_approver")
+		approvers = nts.db.sql(
 			"""select approver from `tabDepartment Approver` where parent= %s and parentfield = 'shift_request_approver'""",
 			(department),
 		)
 		approvers = [approver[0] for approver in approvers]
 		approvers.append(shift_approver)
 		if self.approver not in approvers:
-			frappe.throw(_("Only Approvers can Approve this Request."))
+			nts.throw(_("Only Approvers can Approve this Request."))
 
 	def validate_overlapping_shift_requests(self):
 		overlapping_dates = self.get_overlapping_dates()
@@ -93,9 +93,9 @@ class ShiftRequest(Document, PWANotificationsMixin):
 		if not self.name:
 			self.name = "New Shift Request"
 
-		shift = frappe.qb.DocType("Shift Request")
+		shift = nts.qb.DocType("Shift Request")
 		query = (
-			frappe.qb.from_(shift)
+			nts.qb.from_(shift)
 			.select(shift.name, shift.shift_type)
 			.where(
 				(shift.employee == self.employee)
@@ -111,13 +111,13 @@ class ShiftRequest(Document, PWANotificationsMixin):
 		return query.run(as_dict=True)
 
 	def throw_overlap_error(self, shift_details):
-		shift_details = frappe._dict(shift_details)
+		shift_details = nts._dict(shift_details)
 		msg = _(
 			"Employee {0} has already applied for Shift {1}: {2} that overlaps within this period"
 		).format(
-			frappe.bold(self.employee),
-			frappe.bold(shift_details.shift_type),
+			nts.bold(self.employee),
+			nts.bold(shift_details.shift_type),
 			get_link_to_form("Shift Request", shift_details.name),
 		)
 
-		frappe.throw(msg, title=_("Overlapping Shift Requests"), exc=OverlappingShiftRequestError)
+		nts.throw(msg, title=_("Overlapping Shift Requests"), exc=OverlappingShiftRequestError)

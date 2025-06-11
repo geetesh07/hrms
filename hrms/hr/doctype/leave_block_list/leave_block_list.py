@@ -1,13 +1,13 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import getdate
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import getdate
 
 
 class LeaveBlockList(Document):
@@ -16,10 +16,10 @@ class LeaveBlockList(Document):
 		for d in self.get("leave_block_list_dates"):
 			# date is not repeated
 			if d.block_date in dates:
-				frappe.msgprint(_("Date is repeated") + ":" + d.block_date, raise_exception=1)
+				nts.msgprint(_("Date is repeated") + ":" + d.block_date, raise_exception=1)
 			dates.append(d.block_date)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def set_weekly_off_dates(self, start_date, end_date, days, reason):
 		date_list = self.get_block_dates_from_date(start_date, end_date, days)
 		for date in date_list:
@@ -45,7 +45,7 @@ class LeaveBlockList(Document):
 def get_applicable_block_dates(
 	from_date, to_date, employee=None, company=None, all_lists=False, leave_type=None
 ):
-	return frappe.db.get_all(
+	return nts.db.get_all(
 		"Leave Block List Date",
 		filters={
 			"parent": ["IN", get_applicable_block_lists(employee, company, all_lists, leave_type)],
@@ -64,10 +64,10 @@ def get_applicable_block_lists(employee=None, company=None, all_lists=False, lea
 				block_lists.append(d)
 
 	if not employee:
-		employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user})
+		employee = nts.db.get_value("Employee", {"user_id": nts.session.user})
 
 	if not company and employee:
-		company = frappe.db.get_value("Employee", employee, "company")
+		company = nts.db.get_value("Employee", employee, "company")
 
 	if company:
 		# global
@@ -75,14 +75,14 @@ def get_applicable_block_lists(employee=None, company=None, all_lists=False, lea
 		if leave_type:
 			conditions["leave_type"] = ["IN", (leave_type, "", None)]
 
-		add_block_list(frappe.db.get_all("Leave Block List", filters=conditions, pluck="name"))
+		add_block_list(nts.db.get_all("Leave Block List", filters=conditions, pluck="name"))
 
 	if employee:
 		# per department
-		department = frappe.db.get_value("Employee", employee, "department")
+		department = nts.db.get_value("Employee", employee, "department")
 		if department:
-			block_list = frappe.db.get_value("Department", department, "leave_block_list")
-			block_list_leave_type = frappe.db.get_value("Leave Block List", block_list, "leave_type")
+			block_list = nts.db.get_value("Department", department, "leave_block_list")
+			block_list_leave_type = nts.db.get_value("Leave Block List", block_list, "leave_type")
 			if not block_list_leave_type or not leave_type or block_list_leave_type == leave_type:
 				add_block_list([block_list])
 
@@ -90,8 +90,8 @@ def get_applicable_block_lists(employee=None, company=None, all_lists=False, lea
 
 
 def is_user_in_allow_list(block_list):
-	return frappe.db.get_value(
+	return nts.db.get_value(
 		"Leave Block List Allow",
-		{"parent": block_list, "allow_user": frappe.session.user},
+		{"parent": block_list, "allow_user": nts.session.user},
 		"allow_user",
 	)

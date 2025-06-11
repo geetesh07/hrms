@@ -1,11 +1,11 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe.model.document import Document
-from frappe.model.mapper import get_mapped_doc
-from frappe.utils import flt
+import nts
+from nts.model.document import Document
+from nts.model.mapper import get_mapped_doc
+from nts.utils import flt
 
 from hrms.hr.utils import (
 	calculate_annual_eligible_hra_exemption,
@@ -57,7 +57,7 @@ class EmployeeTaxExemptionDeclaration(Document):
 				)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def make_proof_submission(source_name, target_doc=None):
 	doclist = get_mapped_doc(
 		"Employee Tax Exemption Declaration",

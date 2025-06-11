@@ -1,11 +1,11 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import getdate
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import getdate
 
 from hrms.hr.utils import validate_overlap
 
@@ -17,4 +17,4 @@ class LeavePeriod(Document):
 
 	def validate_dates(self):
 		if getdate(self.from_date) >= getdate(self.to_date):
-			frappe.throw(_("To date can not be equal or less than from date"))
+			nts.throw(_("To date can not be equal or less than from date"))

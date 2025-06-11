@@ -5,7 +5,7 @@
  "custom_options": "{\n\t\t\"type\": \"line\",\n\t\t\"axisOptions\": {\n\t\t\t\"shortenYAxisNumbers\": 1\n\t\t},\n\t\t\"tooltipOptions\": {}\n\t}",
  "docstatus": 0,
  "doctype": "Dashboard Chart",
- "dynamic_filters_json": "{\"month\":\"frappe.datetime.str_to_obj(frappe.datetime.get_today()).getMonth() + 1\",\"year\":\"frappe.datetime.str_to_obj(frappe.datetime.get_today()).getFullYear();\",\"company\":\"frappe.defaults.get_user_default(\\\"Company\\\")\"}",
+ "dynamic_filters_json": "{\"month\":\"nts.datetime.str_to_obj(nts.datetime.get_today()).getMonth() + 1\",\"year\":\"nts.datetime.str_to_obj(nts.datetime.get_today()).getFullYear();\",\"company\":\"nts.defaults.get_user_default(\\\"Company\\\")\"}",
  "filters_json": "{\"summarized_view\":0}",
  "group_by_type": "Count",
  "idx": 0,

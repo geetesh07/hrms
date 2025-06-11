@@ -1,17 +1,17 @@
 app_name = "hrms"
-app_title = "Frappe HR"
-app_publisher = "Frappe Technologies Pvt. Ltd."
+app_title = "nts HR"
+app_publisher = "nts Technologies Pvt. Ltd."
 app_description = "Modern HR and Payroll Software"
-app_email = "contact@frappe.io"
+app_email = "contact@nts.io"
 app_license = "GNU General Public License (v3)"
-required_apps = ["frappe/erpnext"]
-source_link = "http://github.com/frappe/hrms"
+required_apps = ["nts/prodman"]
+source_link = "http://github.com/nts/hrms"
 
 add_to_apps_screen = [
 	{
 		"name": "hrms",
-		"logo": "/assets/hrms/images/frappe-hr-logo.svg",
-		"title": "Frappe HR",
+		"logo": "/assets/hrms/images/nts-hr-logo.svg",
+		"title": "nts HR",
 		"route": "/app/hr",
 		"has_permission": "hrms.hr.utils.check_app_permission",
 	}
@@ -45,14 +45,14 @@ app_include_css = "hrms.bundle.css"
 
 # include js in doctype views
 doctype_js = {
-	"Employee": "public/js/erpnext/employee.js",
-	"Company": "public/js/erpnext/company.js",
-	"Department": "public/js/erpnext/department.js",
-	"Timesheet": "public/js/erpnext/timesheet.js",
-	"Payment Entry": "public/js/erpnext/payment_entry.js",
-	"Journal Entry": "public/js/erpnext/journal_entry.js",
-	"Delivery Trip": "public/js/erpnext/delivery_trip.js",
-	"Bank Transaction": "public/js/erpnext/bank_transaction.js",
+	"Employee": "public/js/prodman/employee.js",
+	"Company": "public/js/prodman/company.js",
+	"Department": "public/js/prodman/department.js",
+	"Timesheet": "public/js/prodman/timesheet.js",
+	"Payment Entry": "public/js/prodman/payment_entry.js",
+	"Journal Entry": "public/js/prodman/journal_entry.js",
+	"Delivery Trip": "public/js/prodman/delivery_trip.js",
+	"Bank Transaction": "public/js/prodman/bank_transaction.js",
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -98,7 +98,7 @@ jinja = {
 after_install = "hrms.install.after_install"
 after_migrate = "hrms.setup.update_select_perm_after_install"
 
-setup_wizard_complete = "hrms.subscription_utils.update_erpnext_access"
+setup_wizard_complete = "hrms.subscription_utils.update_prodman_access"
 
 # Uninstallation
 # ------------
@@ -124,7 +124,7 @@ before_app_uninstall = "hrms.setup.before_app_uninstall"
 
 # Desk Notifications
 # ------------------
-# See frappe.core.notifications.get_notification_config
+# See nts.core.notifications.get_notification_config
 
 # notification_config = "hrms.notifications.get_notification_config"
 
@@ -133,14 +133,14 @@ before_app_uninstall = "hrms.setup.before_app_uninstall"
 # Permissions evaluated in scripted ways
 
 # permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+# 	"Event": "nts.desk.doctype.event.event.get_permission_query_conditions",
 # }
 #
 # has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
+# 	"Event": "nts.desk.doctype.event.event.has_permission",
 # }
 
-has_upload_permission = {"Employee": "erpnext.setup.doctype.employee.employee.has_upload_permission"}
+has_upload_permission = {"Employee": "prodman.setup.doctype.employee.employee.has_upload_permission"}
 
 # DocType Class
 # ---------------
@@ -159,8 +159,8 @@ override_doctype_class = {
 
 doc_events = {
 	"User": {
-		"validate": "erpnext.setup.doctype.employee.employee.validate_employee_role",
-		"on_update": "erpnext.setup.doctype.employee.employee.update_user_permissions",
+		"validate": "prodman.setup.doctype.employee.employee.validate_employee_role",
+		"on_update": "prodman.setup.doctype.employee.employee.update_user_permissions",
 	},
 	"Company": {
 		"validate": "hrms.overrides.company.validate_default_accounts",
@@ -276,7 +276,7 @@ regional_overrides = {
 	},
 }
 
-# ERPNext doctypes for Global Search
+# prodman doctypes for Global Search
 global_search_doctypes = {
 	"Default": [
 		{"doctype": "Salary Slip", "index": 19},
@@ -292,12 +292,12 @@ global_search_doctypes = {
 }
 
 # override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "hrms.event.get_events"
+# 	"nts.desk.doctype.event.event.get_events": "hrms.event.get_events"
 # }
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
-# along with any modifications made in other Frappe apps
+# along with any modifications made in other nts apps
 override_doctype_dashboards = {
 	"Employee": "hrms.overrides.dashboard_overrides.get_dashboard_for_employee",
 	"Holiday List": "hrms.overrides.dashboard_overrides.get_dashboard_for_holiday_list",

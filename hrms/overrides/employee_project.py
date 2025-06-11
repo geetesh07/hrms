@@ -1,11 +1,11 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
-from frappe.query_builder.functions import Max, Min, Sum
-from frappe.utils import flt
+import nts
+from nts.query_builder.functions import Max, Min, Sum
+from nts.utils import flt
 
-from erpnext.projects.doctype.project.project import Project
+from prodman.projects.doctype.project.project import Project
 
 
 class EmployeeProject(Project):
@@ -23,16 +23,16 @@ class EmployeeProject(Project):
 			self.per_gross_margin = (self.gross_margin / flt(self.total_billed_amount)) * 100
 
 	def update_costing(self):
-		ExpenseClaim = frappe.qb.DocType("Expense Claim")
+		ExpenseClaim = nts.qb.DocType("Expense Claim")
 		self.total_expense_claim = (
-			frappe.qb.from_(ExpenseClaim)
+			nts.qb.from_(ExpenseClaim)
 			.select(Sum(ExpenseClaim.total_sanctioned_amount))
 			.where((ExpenseClaim.docstatus == 1) & (ExpenseClaim.project == self.name))
 		).run()[0][0]
 
-		TimesheetDetail = frappe.qb.DocType("Timesheet Detail")
+		TimesheetDetail = nts.qb.DocType("Timesheet Detail")
 		from_time_sheet = (
-			frappe.qb.from_(TimesheetDetail)
+			nts.qb.from_(TimesheetDetail)
 			.select(
 				Sum(TimesheetDetail.costing_amount).as_("costing_amount"),
 				Sum(TimesheetDetail.billing_amount).as_("billing_amount"),

@@ -1,10 +1,10 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import flt, get_link_to_form, today
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import flt, get_link_to_form, today
 
 from hrms.hr.doctype.full_and_final_statement.full_and_final_statement_loan_utils import (
 	cancel_loan_repayment,
@@ -36,9 +36,9 @@ class FullandFinalStatement(Document):
 
 	def validate_relieving_date(self):
 		if not self.relieving_date:
-			frappe.throw(
+			nts.throw(
 				_("Please set {0} for Employee {1}").format(
-					frappe.bold(_("Relieving Date")),
+					nts.bold(_("Relieving Date")),
 					get_link_to_form("Employee", self.employee),
 				),
 				title=_("Missing Relieving Date"),
@@ -47,7 +47,7 @@ class FullandFinalStatement(Document):
 	def validate_settlement(self, component_type):
 		for data in self.get(component_type, []):
 			if data.status == "Unsettled":
-				frappe.throw(
+				nts.throw(
 					_("Settle all Payables and Receivables before submission"),
 					title=_("Unsettled Transactions"),
 				)
@@ -58,7 +58,7 @@ class FullandFinalStatement(Document):
 		for data in self.assets_allocated:
 			if data.action == "Return":
 				if data.status == "Owned":
-					pending_returns.append(_("Row {0}: {1}").format(data.idx, frappe.bold(data.asset_name)))
+					pending_returns.append(_("Row {0}: {1}").format(data.idx, nts.bold(data.asset_name)))
 			elif data.action == "Recover Cost":
 				data.status = "Owned"
 
@@ -66,12 +66,12 @@ class FullandFinalStatement(Document):
 			msg = _("All allocated assets should be returned before submission")
 			msg += "<br><br>"
 			msg += ", ".join(d for d in pending_returns)
-			frappe.throw(msg, title=_("Pending Asset Returns"))
+			nts.throw(msg, title=_("Pending Asset Returns"))
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_outstanding_statements(self):
 		if not self.relieving_date:
-			frappe.throw(
+			nts.throw(
 				_("Set Relieving Date for Employee: {0}").format(get_link_to_form("Employee", self.employee))
 			)
 
@@ -112,7 +112,7 @@ class FullandFinalStatement(Document):
 		)
 
 	def add_withheld_salary_slips(self):
-		salary_slips = frappe.get_all(
+		salary_slips = nts.get_all(
 			"Salary Slip",
 			filters={
 				"employee": self.employee,
@@ -156,12 +156,12 @@ class FullandFinalStatement(Document):
 
 	def get_receivable_component(self):
 		receivables = ["Employee Advance"]
-		if "lending" in frappe.get_installed_apps():
+		if "lending" in nts.get_installed_apps():
 			receivables.append("Loan")
 		return receivables
 
 	def get_assets_movement(self):
-		asset_movements = frappe.get_all(
+		asset_movements = nts.get_all(
 			"Asset Movement Item",
 			filters={"docstatus": 1},
 			fields=["asset", "from_employee", "to_employee", "parent", "asset_name"],
@@ -183,12 +183,12 @@ class FullandFinalStatement(Document):
 			inwards_counts = [movement.asset for movement in inward_movements].count(movement.asset)
 
 			if inwards_counts > outwards_count:
-				cost = frappe.db.get_value("Asset", movement.asset, "total_asset_cost")
+				cost = nts.db.get_value("Asset", movement.asset, "total_asset_cost")
 				data.append(
 					{
 						"reference": movement.parent,
 						"asset_name": movement.asset_name,
-						"date": frappe.db.get_value("Asset Movement", movement.parent, "transaction_date"),
+						"date": nts.db.get_value("Asset Movement", movement.parent, "transaction_date"),
 						"actual_cost": cost,
 						"cost": cost,
 						"action": "Return",
@@ -197,10 +197,10 @@ class FullandFinalStatement(Document):
 				)
 		return data
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def create_journal_entry(self):
-		precision = frappe.get_precision("Journal Entry Account", "debit_in_account_currency")
-		jv = frappe.new_doc("Journal Entry")
+		precision = nts.get_precision("Journal Entry Account", "debit_in_account_currency")
+		jv = nts.new_doc("Journal Entry")
 		jv.company = self.company
 		jv.voucher_type = "Bank Entry"
 		jv.posting_date = today()
@@ -258,7 +258,7 @@ class FullandFinalStatement(Document):
 		return jv
 
 	def update_reference_document_payment_status(self, payable):
-		doc = frappe.get_cached_doc(payable.reference_document_type, payable.reference_document)
+		doc = nts.get_cached_doc(payable.reference_document_type, payable.reference_document)
 		amount = payable.amount if self.docstatus == 1 and self.status == "Paid" else 0
 		doc.db_set("paid_amount", amount)
 		doc.set_status(update=True)
@@ -270,29 +270,29 @@ class FullandFinalStatement(Document):
 				self.update_reference_document_payment_status(payable)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_account_and_amount(ref_doctype, ref_document, company):
 	if not ref_doctype or not ref_document:
 		return None
 
 	if ref_doctype == "Salary Slip":
-		salary_details = frappe.db.get_value(
+		salary_details = nts.db.get_value(
 			"Salary Slip", ref_document, ["payroll_entry", "net_pay"], as_dict=1
 		)
 		amount = salary_details.net_pay
 		payable_account = (
-			frappe.db.get_value("Payroll Entry", salary_details.payroll_entry, "payroll_payable_account")
+			nts.db.get_value("Payroll Entry", salary_details.payroll_entry, "payroll_payable_account")
 			if salary_details.payroll_entry
 			else None
 		)
 		return [payable_account, amount]
 
 	if ref_doctype == "Gratuity":
-		payable_account, amount = frappe.db.get_value("Gratuity", ref_document, ["payable_account", "amount"])
+		payable_account, amount = nts.db.get_value("Gratuity", ref_document, ["payable_account", "amount"])
 		return [payable_account, amount]
 
 	if ref_doctype == "Expense Claim":
-		details = frappe.db.get_value(
+		details = nts.db.get_value(
 			"Expense Claim",
 			ref_document,
 			["payable_account", "grand_total", "total_amount_reimbursed", "total_advance_amount"],
@@ -303,7 +303,7 @@ def get_account_and_amount(ref_doctype, ref_document, company):
 		return [payable_account, amount]
 
 	if ref_doctype == "Loan":
-		details = frappe.db.get_value(
+		details = nts.db.get_value(
 			"Loan", ref_document, ["payment_account", "total_payment", "total_amount_paid"], as_dict=1
 		)
 		payment_account = details.payment_account
@@ -311,7 +311,7 @@ def get_account_and_amount(ref_doctype, ref_document, company):
 		return [payment_account, amount]
 
 	if ref_doctype == "Employee Advance":
-		details = frappe.db.get_value(
+		details = nts.db.get_value(
 			"Employee Advance",
 			ref_document,
 			["advance_account", "paid_amount", "claimed_amount", "return_amount"],
@@ -322,8 +322,8 @@ def get_account_and_amount(ref_doctype, ref_document, company):
 		return [payment_account, amount]
 
 	if ref_doctype == "Leave Encashment":
-		amount = frappe.db.get_value("Leave Encashment", ref_document, "encashment_amount")
-		payable_account = frappe.get_cached_value("Company", company, "default_payroll_payable_account")
+		amount = nts.db.get_value("Leave Encashment", ref_document, "encashment_amount")
+		payable_account = nts.get_cached_value("Company", company, "default_payroll_payable_account")
 		return [payable_account, amount]
 
 
@@ -333,7 +333,7 @@ def update_full_and_final_statement_status(doc, method=None):
 
 	for entry in doc.accounts:
 		if entry.reference_type == "Full and Final Statement":
-			fnf = frappe.get_doc("Full and Final Statement", entry.reference_name)
+			fnf = nts.get_doc("Full and Final Statement", entry.reference_name)
 			fnf.db_set("status", status)
 			fnf.notify_update()
 			fnf.update_linked_payable_documents()

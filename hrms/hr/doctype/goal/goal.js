@@ -1,7 +1,7 @@
-// Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2022, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Goal", {
+nts.ui.form.on("Goal", {
 	refresh(frm) {
 		frm.trigger("set_filters");
 		frm.trigger("add_custom_buttons");
@@ -99,7 +99,7 @@ frappe.ui.form.on("Goal", {
 		if (!frm.doc.appraisal_cycle) {
 			frm.set_value("kra", "");
 
-			frappe.msgprint({
+			nts.msgprint({
 				message: __("Please select the Appraisal Cycle first."),
 				title: __("Mandatory"),
 			});
@@ -115,11 +115,11 @@ frappe.ui.form.on("Goal", {
 		msg += "<br>";
 		msg += __("Do you still want to proceed?");
 
-		frappe.confirm(
+		nts.confirm(
 			msg,
 			() => {},
 			() => {
-				frappe.db.get_value("Goal", frm.doc.name, "kra", (r) =>
+				nts.db.get_value("Goal", frm.doc.name, "kra", (r) =>
 					frm.set_value("kra", r.kra),
 				);
 			},

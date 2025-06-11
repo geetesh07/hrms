@@ -1,12 +1,12 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
 from itertools import groupby
 
-import frappe
-from frappe import _
-from frappe.utils import add_days, cint, flt, getdate
+import nts
+from nts import _
+from nts.utils import add_days, cint, flt, getdate
 
 from hrms.hr.doctype.leave_allocation.leave_allocation import get_previous_allocation
 from hrms.hr.doctype.leave_application.leave_application import (
@@ -14,12 +14,12 @@ from hrms.hr.doctype.leave_application.leave_application import (
 	get_leaves_for_period,
 )
 
-Filters = frappe._dict
+Filters = nts._dict
 
 
 def execute(filters: Filters | None = None) -> tuple:
 	if filters.to_date <= filters.from_date:
-		frappe.throw(_('"From Date" can not be greater than or equal to "To Date"'))
+		nts.throw(_('"From Date" can not be greater than or equal to "To Date"'))
 
 	columns = get_columns()
 	data = get_data(filters)
@@ -87,7 +87,7 @@ def get_data(filters: Filters) -> list:
 	leave_types = get_leave_types()
 	active_employees = get_employees(filters)
 
-	precision = cint(frappe.db.get_single_value("System Settings", "float_precision"))
+	precision = cint(nts.db.get_single_value("System Settings", "float_precision"))
 	consolidate_leave_types = len(active_employees) > 1 and filters.consolidate_leave_types
 	row = None
 
@@ -97,13 +97,13 @@ def get_data(filters: Filters) -> list:
 		if consolidate_leave_types:
 			data.append({"leave_type": leave_type})
 		else:
-			row = frappe._dict({"leave_type": leave_type})
+			row = nts._dict({"leave_type": leave_type})
 
 		for employee in active_employees:
 			if consolidate_leave_types:
-				row = frappe._dict()
+				row = nts._dict()
 			else:
-				row = frappe._dict({"leave_type": leave_type})
+				row = nts._dict({"leave_type": leave_type})
 
 			row.employee = employee.name
 			row.employee_name = employee.employee_name
@@ -131,13 +131,13 @@ def get_data(filters: Filters) -> list:
 
 
 def get_leave_types() -> list[str]:
-	LeaveType = frappe.qb.DocType("Leave Type")
-	return (frappe.qb.from_(LeaveType).select(LeaveType.name).orderby(LeaveType.name)).run(pluck="name")
+	LeaveType = nts.qb.DocType("Leave Type")
+	return (nts.qb.from_(LeaveType).select(LeaveType.name).orderby(LeaveType.name)).run(pluck="name")
 
 
 def get_employees(filters: Filters) -> list[dict]:
-	Employee = frappe.qb.DocType("Employee")
-	query = frappe.qb.from_(Employee).select(
+	Employee = nts.qb.DocType("Employee")
+	query = nts.qb.from_(Employee).select(
 		Employee.name,
 		Employee.employee_name,
 		Employee.department,
@@ -212,9 +212,9 @@ def get_allocated_and_expired_leaves(
 
 
 def get_leave_ledger_entries(from_date: str, to_date: str, employee: str, leave_type: str) -> list[dict]:
-	ledger = frappe.qb.DocType("Leave Ledger Entry")
+	ledger = nts.qb.DocType("Leave Ledger Entry")
 	return (
-		frappe.qb.from_(ledger)
+		nts.qb.from_(ledger)
 		.select(
 			ledger.employee,
 			ledger.leave_type,
@@ -268,7 +268,7 @@ def get_dataset_for_chart(employee_data: list, datasets: list, labels: list) -> 
 		for grp in group:
 			if grp.closing_balance:
 				leaves.append(
-					frappe._dict({"leave_type": grp.leave_type, "closing_balance": grp.closing_balance})
+					nts._dict({"leave_type": grp.leave_type, "closing_balance": grp.closing_balance})
 				)
 
 		if leaves:

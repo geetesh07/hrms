@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 # For license information, please see license.txt
 
-import frappe
-from frappe.model.document import Document
-from frappe.utils import format_date
+import nts
+from nts.model.document import Document
+from nts.utils import format_date
 
 # Wether to proceed with frequency change
 PROCEED_WITH_FREQUENCY_CHANGE = False
@@ -22,7 +22,7 @@ class HRSettings(Document):
 		PROCEED_WITH_FREQUENCY_CHANGE = False
 
 	def set_naming_series(self):
-		from erpnext.utilities.naming import set_by_naming_series
+		from prodman.utilities.naming import set_by_naming_series
 
 		set_by_naming_series(
 			"Employee",
@@ -35,16 +35,16 @@ class HRSettings(Document):
 		weekly_job, monthly_job = None, None
 
 		try:
-			weekly_job = frappe.get_doc(
+			weekly_job = nts.get_doc(
 				"Scheduled Job Type",
 				{"method": "hrms.controllers.employee_reminders.send_reminders_in_advance_weekly"},
 			)
 
-			monthly_job = frappe.get_doc(
+			monthly_job = nts.get_doc(
 				"Scheduled Job Type",
 				{"method": "hrms.controllers.employee_reminders.send_reminders_in_advance_monthly"},
 			)
-		except frappe.DoesNotExistError:
+		except nts.DoesNotExistError:
 			return
 
 		next_weekly_trigger = weekly_job.get_next_execution()
@@ -65,32 +65,32 @@ class HRSettings(Document):
 		return self.has_value_changed("frequency") and self.frequency == "Weekly"
 
 	def show_freq_change_warning(self, from_date, to_date):
-		from_date = frappe.bold(format_date(from_date))
-		to_date = frappe.bold(format_date(to_date))
+		from_date = nts.bold(format_date(from_date))
+		to_date = nts.bold(format_date(to_date))
 
-		raise_exception = frappe.ValidationError
+		raise_exception = nts.ValidationError
 		if (
-			frappe.flags.in_test
-			or frappe.flags.in_patch
-			or frappe.flags.in_install
-			or frappe.flags.in_migrate
+			nts.flags.in_test
+			or nts.flags.in_patch
+			or nts.flags.in_install
+			or nts.flags.in_migrate
 		):
 			raise_exception = False
 
-		frappe.msgprint(
-			msg=frappe._(
+		nts.msgprint(
+			msg=nts._(
 				"Employees will miss holiday reminders from {} until {}. <br> Do you want to proceed with this change?"
 			).format(from_date, to_date),
 			title="Confirm change in Frequency",
 			primary_action={
-				"label": frappe._("Yes, Proceed"),
+				"label": nts._("Yes, Proceed"),
 				"client_action": "hrms.proceed_save_with_reminders_frequency_change",
 			},
 			raise_exception=raise_exception,
 		)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def set_proceed_with_frequency_change():
 	"""Enables proceed with frequency change"""
 	global PROCEED_WITH_FREQUENCY_CHANGE

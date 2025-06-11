@@ -1,11 +1,11 @@
-# Copyright (c) 2019, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2019, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import cint, get_datetime
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import cint, get_datetime
 
 from hrms.hr.doctype.shift_assignment.shift_assignment import get_actual_start_end_datetime_of_shift
 from hrms.hr.utils import (
@@ -15,7 +15,7 @@ from hrms.hr.utils import (
 )
 
 
-class CheckinRadiusExceededError(frappe.ValidationError):
+class CheckinRadiusExceededError(nts.ValidationError):
 	pass
 
 
@@ -32,7 +32,7 @@ class EmployeeCheckin(Document):
 		self.validate_distance_from_shift_location()
 
 	def validate_duplicate_log(self):
-		doc = frappe.db.exists(
+		doc = nts.db.exists(
 			"Employee Checkin",
 			{
 				"employee": self.employee,
@@ -42,25 +42,25 @@ class EmployeeCheckin(Document):
 			},
 		)
 		if doc:
-			doc_link = frappe.get_desk_link("Employee Checkin", doc)
-			frappe.throw(
+			doc_link = nts.get_desk_link("Employee Checkin", doc)
+			nts.throw(
 				_("This employee already has a log with the same timestamp.{0}").format("<Br>" + doc_link)
 			)
 
 	def validate_time_change(self):
 		if self.attendance and self.has_value_changed("time"):
-			frappe.throw(
+			nts.throw(
 				title=_("Cannot Modify Time"),
 				msg=_(
 					"An attendance record is linked to this checkin. Please cancel the attendance before modifying time."
 				),
 			)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def set_geolocation(self):
 		set_geolocation_from_coordinates(self)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def fetch_shift(self):
 		if not (
 			shift_actual_timings := get_actual_start_end_datetime_of_shift(
@@ -77,7 +77,7 @@ class EmployeeCheckin(Document):
 			and not self.log_type
 			and not self.skip_auto_attendance
 		):
-			frappe.throw(
+			nts.throw(
 				_("Log Type is required for check-ins falling in the shift: {0}.").format(
 					shift_actual_timings.shift_type.name
 				)
@@ -91,13 +91,13 @@ class EmployeeCheckin(Document):
 			self.shift_end = shift_actual_timings.end_datetime
 
 	def validate_distance_from_shift_location(self):
-		if not frappe.db.get_single_value("HR Settings", "allow_geolocation_tracking"):
+		if not nts.db.get_single_value("HR Settings", "allow_geolocation_tracking"):
 			return
 
 		if not (self.latitude or self.longitude):
-			frappe.throw(_("Latitude and longitude values are required for checking in."))
+			nts.throw(_("Latitude and longitude values are required for checking in."))
 
-		assignment_locations = frappe.get_all(
+		assignment_locations = nts.get_all(
 			"Shift Assignment",
 			filters={
 				"employee": self.employee,
@@ -113,7 +113,7 @@ class EmployeeCheckin(Document):
 		if not assignment_locations:
 			return
 
-		checkin_radius, latitude, longitude = frappe.db.get_value(
+		checkin_radius, latitude, longitude = nts.db.get_value(
 			"Shift Location", assignment_locations[0], ["checkin_radius", "latitude", "longitude"]
 		)
 		if checkin_radius <= 0:
@@ -121,13 +121,13 @@ class EmployeeCheckin(Document):
 
 		distance = get_distance_between_coordinates(latitude, longitude, self.latitude, self.longitude)
 		if distance > checkin_radius:
-			frappe.throw(
+			nts.throw(
 				_("You must be within {0} meters of your shift location to check in.").format(checkin_radius),
 				exc=CheckinRadiusExceededError,
 			)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def add_log_based_on_employee_field(
 	employee_field_value,
 	timestamp,
@@ -151,9 +151,9 @@ def add_log_based_on_employee_field(
 	"""
 
 	if not employee_field_value or not timestamp:
-		frappe.throw(_("'employee_field_value' and 'timestamp' are required."))
+		nts.throw(_("'employee_field_value' and 'timestamp' are required."))
 
-	employee = frappe.db.get_values(
+	employee = nts.db.get_values(
 		"Employee",
 		{employee_fieldname: employee_field_value},
 		["name", "employee_name", employee_fieldname],
@@ -162,13 +162,13 @@ def add_log_based_on_employee_field(
 	if employee:
 		employee = employee[0]
 	else:
-		frappe.throw(
+		nts.throw(
 			_("No Employee found for the given employee field value. '{}': {}").format(
 				employee_fieldname, employee_field_value
 			)
 		)
 
-	doc = frappe.new_doc("Employee Checkin")
+	doc = nts.new_doc("Employee Checkin")
 	doc.employee = employee.name
 	doc.employee_name = employee.employee_name
 	doc.time = timestamp
@@ -183,12 +183,12 @@ def add_log_based_on_employee_field(
 	return doc
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def bulk_fetch_shift(checkins: list[str] | str) -> None:
 	if isinstance(checkins, str):
-		checkins = frappe.json.loads(checkins)
+		checkins = nts.json.loads(checkins)
 	for d in checkins:
-		doc = frappe.get_doc("Employee Checkin", d)
+		doc = nts.get_doc("Employee Checkin", d)
 		doc.fetch_shift()
 		doc.flags.ignore_validate = True
 		doc.save()
@@ -222,9 +222,9 @@ def mark_attendance_and_link_log(
 
 	elif attendance_status in ("Present", "Absent", "Half Day"):
 		try:
-			frappe.db.savepoint("attendance_creation")
+			nts.db.savepoint("attendance_creation")
 			if attendance := get_existing_half_day_attendance(employee, attendance_date):
-				frappe.db.set_value(
+				nts.db.set_value(
 					"Attendance",
 					attendance.name,
 					{
@@ -239,7 +239,7 @@ def mark_attendance_and_link_log(
 					},
 				)
 			else:
-				attendance = frappe.new_doc("Attendance")
+				attendance = nts.new_doc("Attendance")
 				attendance.update(
 					{
 						"doctype": "Attendance",
@@ -264,15 +264,15 @@ def mark_attendance_and_link_log(
 			update_attendance_in_checkins(log_names, attendance.name)
 			return attendance
 
-		except frappe.ValidationError as e:
+		except nts.ValidationError as e:
 			handle_attendance_exception(log_names, e)
 
 	else:
-		frappe.throw(_("{} is an invalid Attendance Status.").format(attendance_status))
+		nts.throw(_("{} is an invalid Attendance Status.").format(attendance_status))
 
 
 def get_existing_half_day_attendance(employee, attendance_date):
-	attendance_name = frappe.db.exists(
+	attendance_name = nts.db.exists(
 		"Attendance",
 		{
 			"employee": employee,
@@ -284,7 +284,7 @@ def get_existing_half_day_attendance(employee, attendance_date):
 	)
 
 	if attendance_name:
-		attendance_doc = frappe.get_doc("Attendance", attendance_name)
+		attendance_doc = nts.get_doc("Attendance", attendance_name)
 		return attendance_doc
 	return None
 
@@ -358,19 +358,19 @@ def find_index_in_dict(dict_list, key, value):
 
 
 def handle_attendance_exception(log_names: list, error_message: str):
-	frappe.db.rollback(save_point="attendance_creation")
-	frappe.clear_messages()
+	nts.db.rollback(save_point="attendance_creation")
+	nts.clear_messages()
 	skip_attendance_in_checkins(log_names)
 	add_comment_in_checkins(log_names, error_message)
 
 
 def add_comment_in_checkins(log_names: list, error_message: str):
 	text = "{prefix}<br>{error_message}".format(
-		prefix=frappe.bold(_("Reason for skipping auto attendance:")), error_message=error_message
+		prefix=nts.bold(_("Reason for skipping auto attendance:")), error_message=error_message
 	)
 
 	for name in log_names:
-		frappe.get_doc(
+		nts.get_doc(
 			{
 				"doctype": "Comment",
 				"comment_type": "Comment",
@@ -382,18 +382,18 @@ def add_comment_in_checkins(log_names: list, error_message: str):
 
 
 def skip_attendance_in_checkins(log_names: list):
-	EmployeeCheckin = frappe.qb.DocType("Employee Checkin")
+	EmployeeCheckin = nts.qb.DocType("Employee Checkin")
 	(
-		frappe.qb.update(EmployeeCheckin)
+		nts.qb.update(EmployeeCheckin)
 		.set("skip_auto_attendance", 1)
 		.where(EmployeeCheckin.name.isin(log_names))
 	).run()
 
 
 def update_attendance_in_checkins(log_names: list, attendance_id: str):
-	EmployeeCheckin = frappe.qb.DocType("Employee Checkin")
+	EmployeeCheckin = nts.qb.DocType("Employee Checkin")
 	(
-		frappe.qb.update(EmployeeCheckin)
+		nts.qb.update(EmployeeCheckin)
 		.set("attendance", attendance_id)
 		.where(EmployeeCheckin.name.isin(log_names))
 	).run()

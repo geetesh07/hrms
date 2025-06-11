@@ -108,13 +108,13 @@
 							<div class="text-secondary text-uppercase" style="font-size: 11px">{{ _("Salary Range") }}</div>
 							<div class="font-weight-bold">
 								{%- if lower_range -%}
-									{{ frappe.format_value(frappe.utils.flt(lower_range) , currency=currency) }}
+									{{ nts.format_value(nts.utils.flt(lower_range) , currency=currency) }}
 								{% endif %}
 								{%- if lower_range and upper_range -%}
 									{{ " - " }}
 								{% endif %}
 								{%- if upper_range -%}
-									{{ frappe.format_value(frappe.utils.flt(upper_range) , currency=currency) }}
+									{{ nts.format_value(nts.utils.flt(upper_range) , currency=currency) }}
 								{% endif %}
 								/
 								{{ salary_per.lower() }}
@@ -187,7 +187,7 @@
 								{{ _("Closes On") if status == "Open" else _("Closed On") }}
 							</div>
 							<div class="font-weight-bold">
-								{{ frappe.utils.format_date(closes_on if status == "Open" else closed_on, "d MMM, YYYY") }}
+								{{ nts.utils.format_date(closes_on if status == "Open" else closed_on, "d MMM, YYYY") }}
 							</div>
 						</div>
 					</div>

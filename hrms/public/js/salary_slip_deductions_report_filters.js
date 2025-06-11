@@ -1,4 +1,4 @@
-frappe.provide("hrms.salary_slip_deductions_report_filters");
+nts.provide("hrms.salary_slip_deductions_report_filters");
 
 hrms.salary_slip_deductions_report_filters = {
 	filters: [
@@ -8,7 +8,7 @@ hrms.salary_slip_deductions_report_filters = {
 			fieldtype: "Link",
 			options: "Company",
 			reqd: 1,
-			default: frappe.defaults.get_user_default("Company"),
+			default: nts.defaults.get_user_default("Company"),
 		},
 		{
 			fieldname: "month",
@@ -29,7 +29,7 @@ hrms.salary_slip_deductions_report_filters = {
 				{ value: 11, label: __("Nov") },
 				{ value: 12, label: __("Dec") },
 			],
-			default: frappe.datetime.str_to_obj(frappe.datetime.get_today()).getMonth() + 1,
+			default: nts.datetime.str_to_obj(nts.datetime.get_today()).getMonth() + 1,
 		},
 		{
 			fieldname: "year",
@@ -51,10 +51,10 @@ hrms.salary_slip_deductions_report_filters = {
 		},
 	],
 	onload: function () {
-		return frappe.call({
+		return nts.call({
 			method: "hrms.payroll.report.provident_fund_deductions.provident_fund_deductions.get_years",
 			callback: function (r) {
-				var year_filter = frappe.query_report.get_filter("year");
+				var year_filter = nts.query_report.get_filter("year");
 				year_filter.df.options = r.message;
 				year_filter.df.default = r.message.split("\n")[0];
 				year_filter.refresh();

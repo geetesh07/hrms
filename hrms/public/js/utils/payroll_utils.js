@@ -1,17 +1,17 @@
 hrms.payroll_utils = {
 	set_autocompletions_for_condition_and_formula: function (frm, child_row = "") {
 		const autocompletions = [];
-		frappe.run_serially([
+		nts.run_serially([
 			...["Employee", "Salary Structure", "Salary Structure Assignment", "Salary Slip"].map(
 				(doctype) =>
-					frappe.model.with_doctype(doctype, () => {
+					nts.model.with_doctype(doctype, () => {
 						autocompletions.push(
 							...hrms.get_doctype_fields_for_autocompletion(doctype),
 						);
 					}),
 			),
 			() => {
-				frappe.db
+				nts.db
 					.get_list("Salary Component", {
 						fields: ["salary_component_abbr"],
 					})

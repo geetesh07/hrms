@@ -1,12 +1,12 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
 from datetime import date
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
+import nts
+from nts.tests.utils import ntsTestCase
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.leave_allocation.test_leave_allocation import create_leave_allocation
 from hrms.hr.doctype.leave_control_panel.leave_control_panel import LeaveControlPanel
@@ -15,18 +15,18 @@ from hrms.hr.doctype.leave_policy.test_leave_policy import create_leave_policy
 from hrms.tests.test_utils import create_company
 
 
-class TestLeaveControlPanel(FrappeTestCase):
+class TestLeaveControlPanel(ntsTestCase):
 	@classmethod
 	def setUpClass(self):
 		create_company()
 		super().setUpClass()
-		frappe.db.delete("Employee", {"company": "_Test Company"})
+		nts.db.delete("Employee", {"company": "_Test Company"})
 
 		self.create_records()
 
 	@classmethod
 	def tearDownClass(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 	@classmethod
 	def create_records(self):
@@ -65,7 +65,7 @@ class TestLeaveControlPanel(FrappeTestCase):
 		lcp = LeaveControlPanel(args)
 		lcp.allocate_leave([self.emp1, self.emp2])
 
-		leave_allocations = frappe.get_list(
+		leave_allocations = nts.get_list(
 			"Leave Allocation",
 			filters={"employee": ["in", [self.emp1, self.emp2]]},
 			fields=["leave_type", "total_leaves_allocated", "from_date", "to_date"],
@@ -87,7 +87,7 @@ class TestLeaveControlPanel(FrappeTestCase):
 		lcp = LeaveControlPanel(args)
 		lcp.allocate_leave([self.emp3])
 
-		lpa = frappe.get_value(
+		lpa = nts.get_value(
 			"Leave Policy Assignment",
 			{"employee": self.emp3},
 			["leave_policy", "leave_period", "effective_from", "effective_to"],
@@ -113,7 +113,7 @@ class TestLeaveControlPanel(FrappeTestCase):
 		lcp = LeaveControlPanel(arg)
 		lcp.allocate_leave([self.emp4])
 
-		lpa = frappe.get_value(
+		lpa = nts.get_value(
 			"Leave Policy Assignment",
 			{"employee": self.emp4},
 			["leave_policy", "leave_period", "effective_from", "effective_to"],

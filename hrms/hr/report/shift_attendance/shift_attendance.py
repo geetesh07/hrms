@@ -1,11 +1,11 @@
-# Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2023, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 from datetime import timedelta
 
-import frappe
-from frappe import _
-from frappe.utils import cint, flt, format_datetime, format_duration
+import nts
+from nts import _
+from nts.utils import cint, flt, format_datetime, format_duration
 
 
 def execute(filters=None):
@@ -210,12 +210,12 @@ def get_chart_data(data):
 
 
 def get_query(filters):
-	attendance = frappe.qb.DocType("Attendance")
-	checkin = frappe.qb.DocType("Employee Checkin")
-	shift_type = frappe.qb.DocType("Shift Type")
+	attendance = nts.qb.DocType("Attendance")
+	checkin = nts.qb.DocType("Employee Checkin")
+	shift_type = nts.qb.DocType("Shift Type")
 
 	query = (
-		frappe.qb.from_(attendance)
+		nts.qb.from_(attendance)
 		.inner_join(checkin)
 		.on(checkin.attendance == attendance.name)
 		.inner_join(shift_type)
@@ -279,7 +279,7 @@ def update_data(data, filters):
 
 
 def format_float_precision(value):
-	precision = cint(frappe.db.get_default("float_precision")) or 2
+	precision = cint(nts.db.get_default("float_precision")) or 2
 	return flt(value, precision)
 
 

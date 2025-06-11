@@ -1,29 +1,29 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.job_opening.job_opening import close_expired_job_openings
 from hrms.hr.doctype.staffing_plan.test_staffing_plan import make_company
 
 
-class TestJobOpening(FrappeTestCase):
+class TestJobOpening(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Staffing Plan")
-		frappe.db.delete("Staffing Plan Detail")
-		frappe.db.delete("Job Opening")
+		nts.db.delete("Staffing Plan")
+		nts.db.delete("Staffing Plan Detail")
+		nts.db.delete("Job Opening")
 
 		make_company("_Test Opening Company", "_TOC")
-		frappe.db.delete("Employee", {"company": "_Test Opening Company"})
+		nts.db.delete("Employee", {"company": "_Test Opening Company"})
 
 	def test_vacancies_fulfilled(self):
 		make_employee("test_job_opening@example.com", company="_Test Opening Company", designation="Designer")
 
-		staffing_plan = frappe.get_doc(
+		staffing_plan = nts.get_doc(
 			{
 				"doctype": "Staffing Plan",
 				"company": "_Test Opening Company",
@@ -48,7 +48,7 @@ class TestJobOpening(FrappeTestCase):
 
 		# vacancies as per staffing plan already fulfilled via job opening and existing employee count
 		opening_2 = get_job_opening(job_title="Designer New")
-		self.assertRaises(frappe.ValidationError, opening_2.insert)
+		self.assertRaises(nts.ValidationError, opening_2.insert)
 
 		# allows updating existing job opening
 		opening_1.status = "Closed"
@@ -75,13 +75,13 @@ class TestJobOpening(FrappeTestCase):
 
 
 def get_job_opening(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 
-	opening = frappe.db.exists("Job Opening", {"job_title": args.job_title or "Designer"})
+	opening = nts.db.exists("Job Opening", {"job_title": args.job_title or "Designer"})
 	if opening:
-		return frappe.get_doc("Job Opening", opening)
+		return nts.get_doc("Job Opening", opening)
 
-	opening = frappe.get_doc(
+	opening = nts.get_doc(
 		{
 			"doctype": "Job Opening",
 			"job_title": "Designer",

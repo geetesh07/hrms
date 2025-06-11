@@ -1,13 +1,13 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.query_builder.custom import ConstantColumn
-from frappe.query_builder.functions import Coalesce
-from frappe.query_builder.terms import SubQuery
-from frappe.utils import get_link_to_form
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.query_builder.custom import ConstantColumn
+from nts.query_builder.functions import Coalesce
+from nts.query_builder.terms import SubQuery
+from nts.utils import get_link_to_form
 
 from hrms.hr.utils import validate_bulk_tool_fields
 from hrms.payroll.doctype.salary_structure.salary_structure import (
@@ -16,7 +16,7 @@ from hrms.payroll.doctype.salary_structure.salary_structure import (
 
 
 class BulkSalaryStructureAssignment(Document):
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_employees(self, advanced_filters: list) -> list:
 		quick_filter_fields = [
 			"company",
@@ -29,18 +29,18 @@ class BulkSalaryStructureAssignment(Document):
 		filters = [[d, "=", self.get(d)] for d in quick_filter_fields if self.get(d)]
 		filters += advanced_filters
 
-		Assignment = frappe.qb.DocType("Salary Structure Assignment")
+		Assignment = nts.qb.DocType("Salary Structure Assignment")
 		employees_with_assignments = SubQuery(
-			frappe.qb.from_(Assignment)
+			nts.qb.from_(Assignment)
 			.select(Assignment.employee)
 			.distinct()
 			.where((Assignment.from_date == self.from_date) & (Assignment.docstatus == 1))
 		)
 
-		Employee = frappe.qb.DocType("Employee")
-		Grade = frappe.qb.DocType("Employee Grade")
+		Employee = nts.qb.DocType("Employee")
+		Grade = nts.qb.DocType("Employee Grade")
 		query = (
-			frappe.qb.get_query(
+			nts.qb.get_query(
 				Employee,
 				fields=[Employee.employee, Employee.employee_name, Employee.grade],
 				filters=filters,
@@ -60,7 +60,7 @@ class BulkSalaryStructureAssignment(Document):
 		)
 		return query.run(as_dict=True)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def bulk_assign_structure(self, employees: list) -> None:
 		mandatory_fields = ["salary_structure", "from_date", "company"]
 		validate_bulk_tool_fields(self, mandatory_fields, employees)
@@ -68,8 +68,8 @@ class BulkSalaryStructureAssignment(Document):
 		if len(employees) <= 30:
 			return self._bulk_assign_structure(employees)
 
-		frappe.enqueue(self._bulk_assign_structure, timeout=3000, employees=employees)
-		frappe.msgprint(
+		nts.enqueue(self._bulk_assign_structure, timeout=3000, employees=employees)
+		nts.msgprint(
 			_("Creation of Salary Structure Assignments has been queued. It may take a few minutes."),
 			alert=True,
 			indicator="blue",
@@ -82,7 +82,7 @@ class BulkSalaryStructureAssignment(Document):
 
 		for d in employees:
 			try:
-				frappe.db.savepoint(savepoint)
+				nts.db.savepoint(savepoint)
 				assignment = create_salary_structure_assignment(
 					employee=d["employee"],
 					salary_structure=self.salary_structure,
@@ -95,8 +95,8 @@ class BulkSalaryStructureAssignment(Document):
 					income_tax_slab=self.income_tax_slab,
 				)
 			except Exception:
-				frappe.db.rollback(save_point=savepoint)
-				frappe.log_error(
+				nts.db.rollback(save_point=savepoint)
+				nts.log_error(
 					f"Bulk Assignment - Salary Structure Assignment failed for employee {d['employee']}.",
 					reference_doctype="Salary Structure Assignment",
 				)
@@ -110,9 +110,9 @@ class BulkSalaryStructureAssignment(Document):
 				)
 
 			count += 1
-			frappe.publish_progress(count * 100 / len(employees), title=_("Assigning Structure..."))
+			nts.publish_progress(count * 100 / len(employees), title=_("Assigning Structure..."))
 
-		frappe.publish_realtime(
+		nts.publish_realtime(
 			"completed_bulk_salary_structure_assignment",
 			message={"success": success, "failure": failure},
 			doctype="Bulk Salary Structure Assignment",

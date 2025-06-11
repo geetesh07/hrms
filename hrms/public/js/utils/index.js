@@ -1,12 +1,12 @@
-frappe.provide("hrms");
+nts.provide("hrms");
 
 $.extend(hrms, {
 	proceed_save_with_reminders_frequency_change: () => {
-		frappe.ui.hide_open_dialog();
-		frappe.call({
+		nts.ui.hide_open_dialog();
+		nts.call({
 			method: "hrms.hr.doctype.hr_settings.hr_settings.set_proceed_with_frequency_change",
 			callback: () => {
-				// nosemgrep: frappe-semgrep-rules.rules.frappe-cur-frm-usage
+				// nosemgrep: nts-semgrep-rules.rules.nts-cur-frm-usage
 				cur_frm.save();
 			},
 		});
@@ -20,7 +20,7 @@ $.extend(hrms, {
 
 	get_current_employee: async (frm) => {
 		const employee = (
-			await frappe.db.get_value("Employee", { user_id: frappe.session.user }, "name")
+			await nts.db.get_value("Employee", { user_id: nts.session.user }, "name")
 		)?.message?.name;
 
 		return employee;
@@ -36,14 +36,14 @@ $.extend(hrms, {
 		if (missing_fields.length) {
 			let message = __("Mandatory fields required for this action:");
 			message += "<br><br><ul><li>" + missing_fields.join("</li><li>") + "</ul>";
-			frappe.throw({
+			nts.throw({
 				message: message,
 				title: __("Missing Fields"),
 			});
 		}
 
 		if (!selected_rows.length)
-			frappe.throw({
+			nts.throw({
 				message: __("Please select at least one row to perform this action."),
 				title: __("No {0} Selected", [__(items)]),
 			});
@@ -53,8 +53,8 @@ $.extend(hrms, {
 		const filter_wrapper = frm.fields_dict.filter_list.$wrapper;
 		filter_wrapper.empty();
 
-		frappe.model.with_doctype("Employee", () => {
-			frm.filter_list = new frappe.ui.FilterGroup({
+		nts.model.with_doctype("Employee", () => {
+			frm.filter_list = new nts.ui.FilterGroup({
 				parent: filter_wrapper,
 				doctype: "Employee",
 				on_change: () => {
@@ -109,12 +109,12 @@ $.extend(hrms, {
 			getEditor: get_editor,
 			events: events,
 		};
-		frm.employees_datatable = new frappe.DataTable(employee_wrapper.get(0), datatable_options);
+		frm.employees_datatable = new nts.DataTable(employee_wrapper.get(0), datatable_options);
 	},
 
 	handle_realtime_bulk_action_notification: (frm, event, doctype) => {
-		frappe.realtime.off(event);
-		frappe.realtime.on(event, (message) => {
+		nts.realtime.off(event);
+		nts.realtime.on(event, (message) => {
 			hrms.notify_bulk_action_status(
 				doctype,
 				message.failure,
@@ -141,7 +141,7 @@ $.extend(hrms, {
 
 		if (failure.length) {
 			message += __("Failed to {0} {1} for employees:", [action, doctype]);
-			message += " " + frappe.utils.comma_and(failure) + "<hr>";
+			message += " " + nts.utils.comma_and(failure) + "<hr>";
 			message += __(
 				"Check <a href='/app/List/Error Log?reference_doctype={0}'>{1}</a> for more details",
 				[doctype, __("Error Log")],
@@ -171,7 +171,7 @@ $.extend(hrms, {
 			message += "</table>";
 		}
 
-		frappe.msgprint({
+		nts.msgprint({
 			message,
 			title,
 			indicator,
@@ -181,7 +181,7 @@ $.extend(hrms, {
 
 	fetch_geolocation: async (frm) => {
 		if (!navigator.geolocation) {
-			frappe.msgprint({
+			nts.msgprint({
 				message: __("Geolocation is not supported by your current browser"),
 				title: __("Geolocation Error"),
 				indicator: "red",
@@ -190,7 +190,7 @@ $.extend(hrms, {
 			return;
 		}
 
-		frappe.dom.freeze(__("Fetching your geolocation") + "...");
+		nts.dom.freeze(__("Fetching your geolocation") + "...");
 
 		navigator.geolocation.getCurrentPosition(
 			async (position) => {
@@ -198,16 +198,16 @@ $.extend(hrms, {
 				frm.set_value("longitude", position.coords.longitude);
 
 				await frm.call("set_geolocation");
-				frappe.dom.unfreeze();
+				nts.dom.unfreeze();
 			},
 			(error) => {
-				frappe.dom.unfreeze();
+				nts.dom.unfreeze();
 
 				let msg = __("Unable to retrieve your location") + "<br><br>";
 				if (error) {
 					msg += __("ERROR({0}): {1}", [error.code, error.message]);
 				}
-				frappe.msgprint({
+				nts.msgprint({
 					message: msg,
 					title: __("Geolocation Error"),
 					indicator: "red",
@@ -217,11 +217,11 @@ $.extend(hrms, {
 	},
 
 	get_doctype_fields_for_autocompletion: (doctype) => {
-		const fields = frappe.get_meta(doctype).fields;
+		const fields = nts.get_meta(doctype).fields;
 		const autocompletions = [];
 
 		fields
-			.filter((df) => !frappe.model.no_value_type.includes(df.fieldtype))
+			.filter((df) => !nts.model.no_value_type.includes(df.fieldtype))
 			.map((df) => {
 				autocompletions.push({
 					value: df.fieldname,
@@ -237,11 +237,11 @@ $.extend(hrms, {
 		list_view.page.add_inner_button(
 			__("Shift Assignment Tool"),
 			() => {
-				const doc = frappe.model.get_new_doc("Shift Assignment Tool");
+				const doc = nts.model.get_new_doc("Shift Assignment Tool");
 				doc.action = action;
-				doc.company = frappe.defaults.get_default("company");
+				doc.company = nts.defaults.get_default("company");
 				doc.status = "Active";
-				frappe.set_route("Form", "Shift Assignment Tool", doc.name);
+				nts.set_route("Form", "Shift Assignment Tool", doc.name);
 			},
 			__("Shift Tools"),
 		);
@@ -259,11 +259,11 @@ $.extend(hrms, {
 		frm.add_custom_button(
 			__("Shift Assignment Tool"),
 			() => {
-				const doc = frappe.model.get_new_doc("Shift Assignment Tool");
+				const doc = nts.model.get_new_doc("Shift Assignment Tool");
 				Object.assign(doc, fields);
-				doc.company = frappe.defaults.get_default("company");
+				doc.company = nts.defaults.get_default("company");
 				doc.status = "Active";
-				frappe.set_route("Form", "Shift Assignment Tool", doc.name);
+				nts.set_route("Form", "Shift Assignment Tool", doc.name);
 			},
 			__("Shift Tools"),
 		);

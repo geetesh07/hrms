@@ -1,10 +1,10 @@
-// Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2022, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Job Requisition", {
+nts.ui.form.on("Job Requisition", {
 	refresh: function (frm) {
 		if (!frm.doc.__islocal && !["Filled", "On Hold", "Cancelled"].includes(frm.doc.status)) {
-			frappe.db
+			nts.db
 				.get_list("Employee Referral", {
 					filters: { for_designation: frm.doc.designation, status: "Pending" },
 				})
@@ -25,7 +25,7 @@ frappe.ui.form.on("Job Requisition", {
 
 						$("#referral_links").on("click", (e) => {
 							e.preventDefault();
-							frappe.set_route("List", "Employee Referral", {
+							nts.set_route("List", "Employee Referral", {
 								for_designation: frm.doc.designation,
 								status: "Pending",
 							});
@@ -38,7 +38,7 @@ frappe.ui.form.on("Job Requisition", {
 			frm.add_custom_button(
 				__("Create Job Opening"),
 				() => {
-					frappe.model.open_mapped_doc({
+					nts.model.open_mapped_doc({
 						method: "hrms.hr.doctype.job_requisition.job_requisition.make_job_opening",
 						frm: frm,
 					});
@@ -49,7 +49,7 @@ frappe.ui.form.on("Job Requisition", {
 			frm.add_custom_button(
 				__("Associate Job Opening"),
 				() => {
-					frappe.prompt(
+					nts.prompt(
 						{
 							label: __("Job Opening"),
 							fieldname: "job_opening",

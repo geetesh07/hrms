@@ -5,7 +5,7 @@ pull_request_rules:
         - and:
           - author!=ruchamahabal
           - author!=saurabh6790
-          - author!=frappe-pr-bot
+          - author!=nts-pr-bot
           - author!=mergify[bot]
         - or:
           - base=version-15

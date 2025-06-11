@@ -1,16 +1,16 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe import _
-from frappe.desk.doctype.dashboard_chart.dashboard_chart import get_result
-from frappe.utils import getdate
-from frappe.utils.dashboard import cache_source
-from frappe.utils.dateutils import get_period
+import nts
+from nts import _
+from nts.desk.doctype.dashboard_chart.dashboard_chart import get_result
+from nts.utils import getdate
+from nts.utils.dashboard import cache_source
+from nts.utils.dateutils import get_period
 
 
-@frappe.whitelist()
+@nts.whitelist()
 @cache_source
 def get_data(
 	chart_name=None,
@@ -24,7 +24,7 @@ def get_data(
 	heatmap_year=None,
 ) -> dict[str, list]:
 	if filters:
-		filters = frappe.parse_json(filters)
+		filters = nts.parse_json(filters)
 
 	from_date = filters.get("from_date")
 	to_date = filters.get("to_date")
@@ -54,7 +54,7 @@ def get_records(from_date: str, to_date: str, datefield: str, company: str) -> t
 		["Employee", datefield, "<=", to_date, False],
 	]
 
-	data = frappe.db.get_list(
+	data = nts.db.get_list(
 		"Employee",
 		fields=[f"{datefield} as _unit", "SUM(1)", "COUNT(*)"],
 		filters=filters,

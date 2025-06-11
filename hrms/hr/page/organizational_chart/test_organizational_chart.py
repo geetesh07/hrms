@@ -1,19 +1,19 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
+import nts
+from nts.tests.utils import ntsTestCase
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.page.organizational_chart.organizational_chart import get_children
 from hrms.tests.test_utils import create_company
 
 
-class TestOrganizationalChart(FrappeTestCase):
+class TestOrganizationalChart(ntsTestCase):
 	def setUp(self):
 		self.company = create_company("Test Org Chart").name
-		frappe.db.delete("Employee", {"company": self.company})
+		nts.db.delete("Employee", {"company": self.company})
 
 	def test_get_children(self):
 		create_company("Test Org Chart").name

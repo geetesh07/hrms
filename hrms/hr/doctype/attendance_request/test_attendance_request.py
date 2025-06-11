@@ -1,9 +1,9 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, add_months, get_year_ending, get_year_start, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, add_months, get_year_ending, get_year_start, getdate
 
 from hrms.hr.doctype.attendance.attendance import mark_attendance
 from hrms.hr.doctype.attendance_request.attendance_request import OverlappingAttendanceRequestError
@@ -17,10 +17,10 @@ from hrms.tests.test_utils import add_date_to_holiday_list, get_first_sunday
 test_dependencies = ["Employee"]
 
 
-class TestAttendanceRequest(FrappeTestCase):
+class TestAttendanceRequest(ntsTestCase):
 	def setUp(self):
 		for doctype in ["Attendance Request", "Attendance"]:
-			frappe.db.delete(doctype)
+			nts.db.delete(doctype)
 
 		self.from_date = get_year_start(add_months(getdate(), -1))
 		self.to_date = get_year_ending(getdate())
@@ -29,7 +29,7 @@ class TestAttendanceRequest(FrappeTestCase):
 		)
 
 		self.employee = get_employee()
-		frappe.db.set_value("Employee", self.employee.name, "holiday_list", self.holiday_list)
+		nts.db.set_value("Employee", self.employee.name, "holiday_list", self.holiday_list)
 
 	def test_attendance_request_overlap(self):
 		create_attendance_request(employee=self.employee.name, reason="On Duty", company="_Test Company")
@@ -41,7 +41,7 @@ class TestAttendanceRequest(FrappeTestCase):
 			(today, add_days(today, 1)),
 			(add_days(today, -2), add_days(today, 2)),
 		]
-		attendance_request = frappe.get_doc(
+		attendance_request = nts.get_doc(
 			{
 				"doctype": "Attendance Request",
 				"employee": self.employee.name,
@@ -99,7 +99,7 @@ class TestAttendanceRequest(FrappeTestCase):
 		attendance_request = create_attendance_request(
 			employee=self.employee.name, reason="Work From Home", company="_Test Company"
 		)
-		prev_attendance = frappe.get_doc("Attendance", attendance_name)
+		prev_attendance = nts.get_doc("Attendance", attendance_name)
 
 		# attendance request should overwrite attendance status from Absent to Work From Home
 		self.assertEqual(prev_attendance.status, "Work From Home")
@@ -120,8 +120,8 @@ class TestAttendanceRequest(FrappeTestCase):
 		self.assertEqual(records[0].status, "Present")
 
 	def test_skip_attendance_on_leave(self):
-		frappe.delete_doc_if_exists("Leave Type", "Test Skip Attendance", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Skip Attendance", force=1)
+		leave_type = nts.get_doc(
 			dict(leave_type_name="Test Skip Attendance", doctype="Leave Type")
 		).insert()
 
@@ -160,7 +160,7 @@ class TestAttendanceRequest(FrappeTestCase):
 		self.assertEqual(records[0].attendance_date, today)
 
 	def get_attendance_records(self, attendance_request: str) -> list[dict]:
-		return frappe.db.get_all(
+		return nts.db.get_all(
 			"Attendance",
 			{
 				"attendance_request": attendance_request,
@@ -175,7 +175,7 @@ class TestAttendanceRequest(FrappeTestCase):
 		for day in [yesterday, today]:
 			mark_attendance(self.employee.name, day, "Present")
 		# attendance request with the same status for the same days
-		attendance_request = frappe.get_doc(
+		attendance_request = nts.get_doc(
 			{
 				"doctype": "Attendance Request",
 				"employee": self.employee.name,
@@ -185,7 +185,7 @@ class TestAttendanceRequest(FrappeTestCase):
 				"company": "_Test Company",
 			}
 		)
-		self.assertRaises(frappe.ValidationError, attendance_request.save)
+		self.assertRaises(nts.ValidationError, attendance_request.save)
 
 		# adding an extra day to the attendance request
 		attendance_request.to_date = add_days(today, 1)
@@ -197,14 +197,14 @@ class TestAttendanceRequest(FrappeTestCase):
 
 
 def get_employee():
-	return frappe.get_doc("Employee", "_T-Employee-00001")
+	return nts.get_doc("Employee", "_T-Employee-00001")
 
 
 def create_attendance_request(**args: dict) -> dict:
-	args = frappe._dict(args)
+	args = nts._dict(args)
 	today = getdate()
 
-	attendance_request = frappe.get_doc(
+	attendance_request = nts.get_doc(
 		{
 			"doctype": "Attendance Request",
 			"employee": args.employee or get_employee().name,

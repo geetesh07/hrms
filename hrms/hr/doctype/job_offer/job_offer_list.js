@@ -1,7 +1,7 @@
-// Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2020, nts Technologies Pvt. Ltd. and Contributors
 // MIT License. See license.txt
 
-frappe.listview_settings["Job Offer"] = {
+nts.listview_settings["Job Offer"] = {
 	add_fields: ["company", "designation", "job_applicant", "status"],
 	get_indicator: function (doc) {
 		if (doc.status == "Accepted") {

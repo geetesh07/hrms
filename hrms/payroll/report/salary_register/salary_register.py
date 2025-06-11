@@ -1,16 +1,16 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe import _
-from frappe.utils import flt
+import nts
+from nts import _
+from nts.utils import flt
 
-import erpnext
+import prodman
 
-salary_slip = frappe.qb.DocType("Salary Slip")
-salary_detail = frappe.qb.DocType("Salary Detail")
-salary_component = frappe.qb.DocType("Salary Component")
+salary_slip = nts.qb.DocType("Salary Slip")
+salary_detail = nts.qb.DocType("Salary Detail")
+salary_component = nts.qb.DocType("Salary Component")
 
 
 def execute(filters=None):
@@ -20,7 +20,7 @@ def execute(filters=None):
 	currency = None
 	if filters.get("currency"):
 		currency = filters.get("currency")
-	company_currency = erpnext.get_company_currency(filters.get("company"))
+	company_currency = prodman.get_company_currency(filters.get("company"))
 
 	salary_slips = get_salary_slips(filters, company_currency)
 	if not salary_slips:
@@ -57,10 +57,10 @@ def execute(filters=None):
 		update_column_width(ss, columns)
 
 		for e in earning_types:
-			row.update({frappe.scrub(e): ss_earning_map.get(ss.name, {}).get(e)})
+			row.update({nts.scrub(e): ss_earning_map.get(ss.name, {}).get(e)})
 
 		for d in ded_types:
-			row.update({frappe.scrub(d): ss_ded_map.get(ss.name, {}).get(d)})
+			row.update({nts.scrub(d): ss_ded_map.get(ss.name, {}).get(d)})
 
 		if currency == company_currency:
 			row.update(
@@ -194,7 +194,7 @@ def get_columns(earning_types, ded_types):
 		columns.append(
 			{
 				"label": earning,
-				"fieldname": frappe.scrub(earning),
+				"fieldname": nts.scrub(earning),
 				"fieldtype": "Currency",
 				"options": "currency",
 				"width": 120,
@@ -215,7 +215,7 @@ def get_columns(earning_types, ded_types):
 		columns.append(
 			{
 				"label": deduction,
-				"fieldname": frappe.scrub(deduction),
+				"fieldname": nts.scrub(deduction),
 				"fieldtype": "Currency",
 				"options": "currency",
 				"width": 120,
@@ -259,7 +259,7 @@ def get_columns(earning_types, ded_types):
 
 def get_salary_components(salary_slips):
 	return (
-		frappe.qb.from_(salary_detail)
+		nts.qb.from_(salary_detail)
 		.where((salary_detail.amount != 0) & (salary_detail.parent.isin([d.name for d in salary_slips])))
 		.select(salary_detail.salary_component)
 		.distinct()
@@ -267,13 +267,13 @@ def get_salary_components(salary_slips):
 
 
 def get_salary_component_type(salary_component):
-	return frappe.db.get_value("Salary Component", salary_component, "type", cache=True)
+	return nts.db.get_value("Salary Component", salary_component, "type", cache=True)
 
 
 def get_salary_slips(filters, company_currency):
 	doc_status = {"Draft": 0, "Submitted": 1, "Cancelled": 2}
 
-	query = frappe.qb.from_(salary_slip).select(salary_slip.star)
+	query = nts.qb.from_(salary_slip).select(salary_slip.star)
 
 	if filters.get("docstatus"):
 		query = query.where(salary_slip.docstatus == doc_status[filters.get("docstatus")])
@@ -308,18 +308,18 @@ def get_salary_slips(filters, company_currency):
 
 
 def get_employee_doj_map():
-	employee = frappe.qb.DocType("Employee")
+	employee = nts.qb.DocType("Employee")
 
-	result = (frappe.qb.from_(employee).select(employee.name, employee.date_of_joining)).run()
+	result = (nts.qb.from_(employee).select(employee.name, employee.date_of_joining)).run()
 
-	return frappe._dict(result)
+	return nts._dict(result)
 
 
 def get_salary_slip_details(salary_slips, currency, company_currency, component_type):
 	salary_slips = [ss.name for ss in salary_slips]
 
 	result = (
-		frappe.qb.from_(salary_slip)
+		nts.qb.from_(salary_slip)
 		.join(salary_detail)
 		.on(salary_slip.name == salary_detail.parent)
 		.where((salary_detail.parent.isin(salary_slips)) & (salary_detail.parentfield == component_type))
@@ -334,7 +334,7 @@ def get_salary_slip_details(salary_slips, currency, company_currency, component_
 	ss_map = {}
 
 	for d in result:
-		ss_map.setdefault(d.parent, frappe._dict()).setdefault(d.salary_component, 0.0)
+		ss_map.setdefault(d.parent, nts._dict()).setdefault(d.salary_component, 0.0)
 		if currency == company_currency:
 			ss_map[d.parent][d.salary_component] += flt(d.amount) * flt(
 				d.exchange_rate if d.exchange_rate else 1

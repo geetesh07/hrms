@@ -1,11 +1,11 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.payroll.doctype.bulk_salary_structure_assignment.bulk_salary_structure_assignment import (
 	BulkSalaryStructureAssignment,
@@ -14,7 +14,7 @@ from hrms.payroll.doctype.salary_structure.test_salary_structure import make_sal
 from hrms.tests.test_utils import create_company, create_department, create_employee_grade
 
 
-class TestBulkSalaryStructureAssignment(FrappeTestCase):
+class TestBulkSalaryStructureAssignment(ntsTestCase):
 	def setUp(self):
 		create_company()
 		create_department("Accounts")
@@ -32,7 +32,7 @@ class TestBulkSalaryStructureAssignment(FrappeTestCase):
 		self.emp5 = make_employee("employee5@test.com", company="_Test Company", department="Accounts")
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 	def test_get_employees(self):
 		today = getdate()
@@ -81,7 +81,7 @@ class TestBulkSalaryStructureAssignment(FrappeTestCase):
 		]
 		bulk_assignment.bulk_assign_structure(employees)
 
-		ssa1 = frappe.get_value(
+		ssa1 = nts.get_value(
 			"Salary Structure Assignment",
 			{"employee": self.emp1},
 			["salary_structure", "from_date", "company", "base", "variable"],
@@ -93,7 +93,7 @@ class TestBulkSalaryStructureAssignment(FrappeTestCase):
 		self.assertEqual(ssa1.base, 50000)
 		self.assertEqual(ssa1.variable, 2000)
 
-		ssa2 = frappe.get_value(
+		ssa2 = nts.get_value(
 			"Salary Structure Assignment",
 			{"employee": self.emp2},
 			["base", "variable"],

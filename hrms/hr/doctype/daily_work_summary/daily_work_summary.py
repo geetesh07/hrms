@@ -1,25 +1,25 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
 from email_reply_parser import EmailReplyParser
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import global_date_format
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import global_date_format
 
 
 class DailyWorkSummary(Document):
 	def send_mails(self, dws_group, emails):
 		"""Send emails to get daily work summary to all users \
 			in selected daily work summary group"""
-		incoming_email_account = frappe.db.get_value(
+		incoming_email_account = nts.db.get_value(
 			"Email Account", dict(enable_incoming=1, default_incoming=1), "email_id"
 		)
 
 		self.db_set("email_sent_to", "\n".join(emails))
-		frappe.sendmail(
+		nts.sendmail(
 			recipients=emails,
 			message=dws_group.message,
 			subject=dws_group.subject,
@@ -32,7 +32,7 @@ class DailyWorkSummary(Document):
 		"""Send summary of all replies. Called at midnight"""
 		args = self.get_message_details()
 		emails = get_user_emails_from_group(self.daily_work_summary_group)
-		frappe.sendmail(
+		nts.sendmail(
 			recipients=emails,
 			template="daily_work_summary",
 			args=args,
@@ -45,9 +45,9 @@ class DailyWorkSummary(Document):
 
 	def get_message_details(self):
 		"""Return args for template"""
-		dws_group = frappe.get_doc("Daily Work Summary Group", self.daily_work_summary_group)
+		dws_group = nts.get_doc("Daily Work Summary Group", self.daily_work_summary_group)
 
-		replies = frappe.get_all(
+		replies = nts.get_all(
 			"Communication",
 			fields=["content", "text_content", "sender"],
 			filters=dict(
@@ -62,7 +62,7 @@ class DailyWorkSummary(Document):
 		did_not_reply = self.email_sent_to.split()
 
 		for d in replies:
-			user = frappe.db.get_values(
+			user = nts.db.get_values(
 				"User", {"email": d.sender}, ["full_name", "user_image"], as_dict=True
 			)
 
@@ -73,11 +73,11 @@ class DailyWorkSummary(Document):
 			# make thumbnail image
 			try:
 				if original_image:
-					file_name = frappe.get_list("File", {"file_url": original_image})
+					file_name = nts.get_list("File", {"file_url": original_image})
 
 					if file_name:
 						file_name = file_name[0].name
-						file_doc = frappe.get_doc("File", file_name)
+						file_doc = nts.get_doc("File", file_name)
 						thumbnail_image = file_doc.make_thumbnail(
 							set_as_thumbnail=False, width=100, height=100, crop=True
 						)
@@ -88,10 +88,10 @@ class DailyWorkSummary(Document):
 			if d.sender in did_not_reply:
 				did_not_reply.remove(d.sender)
 			if d.text_content:
-				d.content = frappe.utils.md_to_html(EmailReplyParser.parse_reply(d.text_content))
+				d.content = nts.utils.md_to_html(EmailReplyParser.parse_reply(d.text_content))
 
 		did_not_reply = [
-			(frappe.db.get_value("User", {"email": email}, "full_name") or email) for email in did_not_reply
+			(nts.db.get_value("User", {"email": email}, "full_name") or email) for email in did_not_reply
 		]
 
 		return dict(
@@ -109,7 +109,7 @@ def get_user_emails_from_group(group):
 	:param group: Daily Work Summary Group `name`"""
 	group_doc = group
 	if isinstance(group_doc, str):
-		group_doc = frappe.get_doc("Daily Work Summary Group", group)
+		group_doc = nts.get_doc("Daily Work Summary Group", group)
 
 	emails = get_users_email(group_doc)
 
@@ -117,4 +117,4 @@ def get_user_emails_from_group(group):
 
 
 def get_users_email(doc):
-	return [d.email for d in doc.users if frappe.db.get_value("User", d.user, "enabled")]
+	return [d.email for d in doc.users if nts.db.get_value("User", d.user, "enabled")]

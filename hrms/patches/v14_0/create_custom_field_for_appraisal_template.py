@@ -1,4 +1,4 @@
-from frappe.custom.doctype.custom_field.custom_field import create_custom_field
+from nts.custom.doctype.custom_field.custom_field import create_custom_field
 
 
 def execute():

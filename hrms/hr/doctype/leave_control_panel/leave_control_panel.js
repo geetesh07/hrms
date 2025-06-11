@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.ui.form.on("Leave Control Panel", {
+nts.ui.form.on("Leave Control Panel", {
 	setup: function (frm) {
 		frm.trigger("set_query");
 		frm.trigger("set_leave_details");
@@ -98,7 +98,7 @@ frappe.ui.form.on("Leave Control Panel", {
 		frm.call("get_latest_leave_period").then((r) => {
 			frm.set_value({
 				dates_based_on: "Leave Period",
-				from_date: frappe.datetime.get_today(),
+				from_date: nts.datetime.get_today(),
 				to_date: null,
 				leave_period: r.message,
 				carry_forward: 1,
@@ -106,7 +106,7 @@ frappe.ui.form.on("Leave Control Panel", {
 				leave_type: null,
 				no_of_days: 0,
 				leave_policy: null,
-				company: frappe.defaults.get_default("company"),
+				company: nts.defaults.get_default("company"),
 			});
 		});
 	},
@@ -188,7 +188,7 @@ frappe.ui.form.on("Leave Control Panel", {
 
 		hrms.validate_mandatory_fields(frm, selected_employees);
 
-		frappe.confirm(
+		nts.confirm(
 			__("Allocate leaves to {0} employee(s)?", [selected_employees.length]),
 			() => frm.events.bulk_allocate_leave(frm, selected_employees),
 		);

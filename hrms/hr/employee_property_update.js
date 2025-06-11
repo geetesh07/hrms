@@ -1,4 +1,4 @@
-frappe.ui.form.on(cur_frm.doctype, {
+nts.ui.form.on(cur_frm.doctype, {
 	setup: function (frm) {
 		frm.set_query("employee", function () {
 			return {
@@ -42,7 +42,7 @@ frappe.ui.form.on(cur_frm.doctype, {
 	setup_employee_property_button: function (frm, table) {
 		frm.fields_dict[table].grid.add_custom_button(__("Add Employee Property"), () => {
 			if (!frm.doc.employee) {
-				frappe.msgprint(__("Please select Employee first."));
+				nts.msgprint(__("Please select Employee first."));
 				return;
 			}
 
@@ -76,9 +76,9 @@ frappe.ui.form.on(cur_frm.doctype, {
 				"Table",
 			];
 
-			frappe.model.with_doctype("Employee", () => {
+			nts.model.with_doctype("Employee", () => {
 				const field_label_map = {};
-				frappe.get_meta("Employee").fields.forEach((d) => {
+				nts.get_meta("Employee").fields.forEach((d) => {
 					field_label_map[d.fieldname] =
 						__(d.label, null, d.parent) + ` (${d.fieldname})`;
 					if (
@@ -101,7 +101,7 @@ frappe.ui.form.on(cur_frm.doctype, {
 });
 
 var show_dialog = function (frm, table, field_labels) {
-	var d = new frappe.ui.Dialog({
+	var d = new nts.ui.Dialog({
 		title: "Update Property",
 		fields: [
 			{
@@ -129,7 +129,7 @@ var show_dialog = function (frm, table, field_labels) {
 		if (!property) {
 			return;
 		}
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.utils.get_employee_field_property",
 			args: { employee: frm.doc.employee, fieldname: property },
 			callback: function (r) {
@@ -151,7 +151,7 @@ var show_dialog = function (frm, table, field_labels) {
 
 var render_dynamic_field = function (d, fieldtype, options, fieldname) {
 	d.data.new = null;
-	var dynamic_field = frappe.ui.form.make_control({
+	var dynamic_field = nts.ui.form.make_control({
 		df: {
 			fieldtype: fieldtype,
 			fieldname: fieldname,
@@ -169,11 +169,11 @@ var add_to_details = function (frm, d, table) {
 	let data = d.data;
 	if (data.fieldname) {
 		if (validate_duplicate(frm, table, data.fieldname)) {
-			frappe.show_alert({ message: __("Property already added"), indicator: "orange" });
+			nts.show_alert({ message: __("Property already added"), indicator: "orange" });
 			return false;
 		}
 		if (data.current == data.new) {
-			frappe.show_alert({ message: __("Nothing to change"), indicator: "orange" });
+			nts.show_alert({ message: __("Nothing to change"), indicator: "orange" });
 			d.get_primary_btn().attr("disabled", false);
 			return false;
 		}
@@ -190,10 +190,10 @@ var add_to_details = function (frm, d, table) {
 		d.fields_dict.new_value.$wrapper.html("");
 		d.set_value("property", "");
 		d.set_value("current", "");
-		frappe.show_alert({ message: __("Added to details"), indicator: "green" });
+		nts.show_alert({ message: __("Added to details"), indicator: "green" });
 		d.data = {};
 	} else {
-		frappe.show_alert({ message: __("Value missing"), indicator: "red" });
+		nts.show_alert({ message: __("Value missing"), indicator: "red" });
 	}
 };
 

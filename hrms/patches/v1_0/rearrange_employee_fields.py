@@ -1,5 +1,5 @@
-import frappe
-from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+import nts
+from nts.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def execute():
@@ -106,7 +106,7 @@ def execute():
 		],
 	}
 
-	if frappe.db.exists("Company", {"country": "India"}):
+	if nts.db.exists("Company", {"country": "India"}):
 		custom_fields["Employee"].extend(
 			[
 				{

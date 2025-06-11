@@ -1,11 +1,11 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _, bold
-from frappe.model.document import Document
-from frappe.utils import comma_and, date_diff, formatdate, get_link_to_form, getdate
+import nts
+from nts import _, bold
+from nts.model.document import Document
+from nts.utils import comma_and, date_diff, formatdate, get_link_to_form, getdate
 
 from hrms.hr.utils import validate_active_employee
 
@@ -33,11 +33,11 @@ class AdditionalSalary(Document):
 		self.validate_tax_component_overwrite()
 
 		if self.amount < 0:
-			frappe.throw(_("Amount should not be less than zero"))
+			nts.throw(_("Amount should not be less than zero"))
 
 	def validate_salary_structure(self):
-		if not frappe.db.exists("Salary Structure Assignment", {"employee": self.employee}):
-			frappe.throw(
+		if not nts.db.exists("Salary Structure Assignment", {"employee": self.employee}):
+			nts.throw(
 				_("There is no Salary Structure assigned to {0}. First assign a Salary Stucture.").format(
 					self.employee
 				)
@@ -45,10 +45,10 @@ class AdditionalSalary(Document):
 
 	def validate_recurring_additional_salary_overlap(self):
 		if self.is_recurring:
-			AdditionalSalary = frappe.qb.DocType("Additional Salary")
+			AdditionalSalary = nts.qb.DocType("Additional Salary")
 
 			additional_salaries = (
-				frappe.qb.from_(AdditionalSalary)
+				nts.qb.from_(AdditionalSalary)
 				.select(AdditionalSalary.name)
 				.where(
 					(AdditionalSalary.employee == self.employee)
@@ -63,7 +63,7 @@ class AdditionalSalary(Document):
 			).run(pluck=True)
 
 			if additional_salaries and len(additional_salaries):
-				frappe.throw(
+				nts.throw(
 					_(
 						"Additional Salary: {0} already exist for Salary Component: {1} for period {2} and {3}"
 					).format(
@@ -75,7 +75,7 @@ class AdditionalSalary(Document):
 				)
 
 	def validate_dates(self):
-		date_of_joining, relieving_date = frappe.db.get_value(
+		date_of_joining, relieving_date = nts.db.get_value(
 			"Employee", self.employee, ["date_of_joining", "relieving_date"]
 		)
 
@@ -83,19 +83,19 @@ class AdditionalSalary(Document):
 
 		if date_of_joining:
 			if self.payroll_date and getdate(self.payroll_date) < getdate(date_of_joining):
-				frappe.throw(_("Payroll date can not be less than employee's joining date."))
+				nts.throw(_("Payroll date can not be less than employee's joining date."))
 			elif self.from_date and getdate(self.from_date) < getdate(date_of_joining):
-				frappe.throw(_("From date can not be less than employee's joining date."))
+				nts.throw(_("From date can not be less than employee's joining date."))
 
 		if relieving_date:
 			if self.to_date and getdate(self.to_date) > getdate(relieving_date):
-				frappe.throw(_("To date can not be greater than employee's relieving date."))
+				nts.throw(_("To date can not be greater than employee's relieving date."))
 			if self.payroll_date and getdate(self.payroll_date) > getdate(relieving_date):
-				frappe.throw(_("Payroll date can not be greater than employee's relieving date."))
+				nts.throw(_("Payroll date can not be greater than employee's relieving date."))
 
 	def validate_employee_referral(self):
 		if self.ref_doctype == "Employee Referral":
-			referral_details = frappe.db.get_value(
+			referral_details = nts.db.get_value(
 				"Employee Referral",
 				self.ref_docname,
 				["is_applicable_for_referral_bonus", "status"],
@@ -103,28 +103,28 @@ class AdditionalSalary(Document):
 			)
 
 			if not referral_details.is_applicable_for_referral_bonus:
-				frappe.throw(
+				nts.throw(
 					_("Employee Referral {0} is not applicable for referral bonus.").format(self.ref_docname)
 				)
 
 			if self.type == "Deduction":
-				frappe.throw(_("Earning Salary Component is required for Employee Referral Bonus."))
+				nts.throw(_("Earning Salary Component is required for Employee Referral Bonus."))
 
 			if referral_details.status != "Accepted":
-				frappe.throw(
+				nts.throw(
 					_(
 						"Additional Salary for referral bonus can only be created against Employee Referral with status {0}"
-					).format(frappe.bold(_("Accepted")))
+					).format(nts.bold(_("Accepted")))
 				)
 
 	def validate_duplicate_additional_salary(self):
 		if not self.overwrite_salary_structure_amount:
 			return
 
-		AdditionalSalary = frappe.qb.DocType("Additional Salary")
+		AdditionalSalary = nts.qb.DocType("Additional Salary")
 		existing_additional_salary = (
 			(
-				frappe.qb.from_(AdditionalSalary)
+				nts.qb.from_(AdditionalSalary)
 				.select(AdditionalSalary.name)
 				.where(
 					(AdditionalSalary.name != self.name)
@@ -149,54 +149,54 @@ class AdditionalSalary(Document):
 		if existing_additional_salary:
 			msg = _(
 				"Additional Salary for this salary component with {0} enabled already exists for this date"
-			).format(frappe.bold(_("Overwrite Salary Structure Amount")))
+			).format(nts.bold(_("Overwrite Salary Structure Amount")))
 			msg += "<br><br>"
 			msg += _("Reference: {0}").format(
 				get_link_to_form("Additional Salary", existing_additional_salary)
 			)
-			frappe.throw(msg, title=_("Duplicate Overwritten Salary"))
+			nts.throw(msg, title=_("Duplicate Overwritten Salary"))
 
 	def validate_tax_component_overwrite(self):
-		if not frappe.db.get_value(
+		if not nts.db.get_value(
 			"Salary Component", self.salary_component, "variable_based_on_taxable_salary"
 		):
 			return
 
 		if self.overwrite_salary_structure_amount:
-			frappe.msgprint(
+			nts.msgprint(
 				_(
 					"This will overwrite the tax component {0} in the salary slip and tax won't be calculated based on the Income Tax Slabs"
-				).format(frappe.bold(self.salary_component)),
+				).format(nts.bold(self.salary_component)),
 				title=_("Warning"),
 				indicator="orange",
 			)
 		else:
 			msg = _("{0} has {1} enabled").format(
 				get_link_to_form("Salary Component", self.salary_component),
-				frappe.bold(_("Variable Based On Taxable Salary")),
+				nts.bold(_("Variable Based On Taxable Salary")),
 			)
 			msg += "<br><br>" + _(
 				"To overwrite the salary component amount for a tax component, please enable {0}"
-			).format(frappe.bold(_("Overwrite Salary Structure Amount")))
-			frappe.throw(msg, title=_("Invalid Additional Salary"))
+			).format(nts.bold(_("Overwrite Salary Structure Amount")))
+			nts.throw(msg, title=_("Invalid Additional Salary"))
 
 	def update_return_amount_in_employee_advance(self):
 		if self.ref_doctype == "Employee Advance" and self.ref_docname:
-			return_amount = frappe.db.get_value("Employee Advance", self.ref_docname, "return_amount")
+			return_amount = nts.db.get_value("Employee Advance", self.ref_docname, "return_amount")
 
 			if self.docstatus == 2:
 				return_amount -= self.amount
 			else:
 				return_amount += self.amount
 
-			frappe.db.set_value("Employee Advance", self.ref_docname, "return_amount", return_amount)
-			advance = frappe.get_doc("Employee Advance", self.ref_docname)
+			nts.db.set_value("Employee Advance", self.ref_docname, "return_amount", return_amount)
+			advance = nts.get_doc("Employee Advance", self.ref_docname)
 			advance.set_status(update=True)
 
 	def update_employee_referral(self, cancel=False):
 		if self.ref_doctype == "Employee Referral":
 			status = "Unpaid" if cancel else "Paid"
-			frappe.db.set_value("Employee Referral", self.ref_docname, "referral_payment_status", status)
+			nts.db.set_value("Employee Referral", self.ref_docname, "referral_payment_status", status)
 
 	def get_amount(self, sal_start_date, sal_end_date):
 		start_date = getdate(sal_start_date)
@@ -216,16 +216,16 @@ class AdditionalSalary(Document):
 
 
 def get_additional_salaries(employee, start_date, end_date, component_type):
-	from frappe.query_builder import Criterion
+	from nts.query_builder import Criterion
 
 	comp_type = "Earning" if component_type == "earnings" else "Deduction"
 
-	additional_sal = frappe.qb.DocType("Additional Salary")
+	additional_sal = nts.qb.DocType("Additional Salary")
 	component_field = additional_sal.salary_component.as_("component")
 	overwrite_field = additional_sal.overwrite_salary_structure_amount.as_("overwrite")
 
 	additional_salary_list = (
-		frappe.qb.from_(additional_sal)
+		nts.qb.from_(additional_sal)
 		.select(
 			additional_sal.name,
 			component_field,
@@ -269,10 +269,10 @@ def get_additional_salaries(employee, start_date, end_date, component_type):
 	for d in additional_salary_list:
 		if d.overwrite:
 			if d.component in components_to_overwrite:
-				frappe.throw(
+				nts.throw(
 					_(
 						"Multiple Additional Salaries with overwrite property exist for Salary Component {0} between {1} and {2}."
-					).format(frappe.bold(d.component), start_date, end_date),
+					).format(nts.bold(d.component), start_date, end_date),
 					title=_("Error"),
 				)
 

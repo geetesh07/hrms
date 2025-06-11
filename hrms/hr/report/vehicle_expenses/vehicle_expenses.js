@@ -1,6 +1,6 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
-frappe.query_reports["Vehicle Expenses"] = {
+nts.query_reports["Vehicle Expenses"] = {
 	filters: [
 		{
 			fieldname: "filter_based_on",
@@ -10,7 +10,7 @@ frappe.query_reports["Vehicle Expenses"] = {
 			default: ["Fiscal Year"],
 			reqd: 1,
 			on_change: () => {
-				let filter_based_on = frappe.query_report.get_filter_value("filter_based_on");
+				let filter_based_on = nts.query_report.get_filter_value("filter_based_on");
 
 				if (filter_based_on == "Fiscal Year") {
 					set_reqd_filter("fiscal_year", true);
@@ -29,7 +29,7 @@ frappe.query_reports["Vehicle Expenses"] = {
 			label: __("Fiscal Year"),
 			fieldtype: "Link",
 			options: "Fiscal Year",
-			default: frappe.defaults.get_user_default("fiscal_year"),
+			default: nts.defaults.get_user_default("fiscal_year"),
 			depends_on: "eval: doc.filter_based_on == 'Fiscal Year'",
 		},
 		{
@@ -37,14 +37,14 @@ frappe.query_reports["Vehicle Expenses"] = {
 			label: __("From Date"),
 			fieldtype: "Date",
 			depends_on: "eval: doc.filter_based_on == 'Date Range'",
-			default: frappe.datetime.add_months(frappe.datetime.nowdate(), -12),
+			default: nts.datetime.add_months(nts.datetime.nowdate(), -12),
 		},
 		{
 			fieldname: "to_date",
 			label: __("To Date"),
 			fieldtype: "Date",
 			depends_on: "eval: doc.filter_based_on == 'Date Range'",
-			default: frappe.datetime.nowdate(),
+			default: nts.datetime.nowdate(),
 		},
 		{
 			fieldname: "vehicle",
@@ -62,7 +62,7 @@ frappe.query_reports["Vehicle Expenses"] = {
 };
 
 function set_reqd_filter(fieldname, is_reqd) {
-	let filter = frappe.query_report.get_filter(fieldname);
+	let filter = nts.query_report.get_filter(fieldname);
 	filter.df.reqd = is_reqd;
 	filter.refresh();
 }

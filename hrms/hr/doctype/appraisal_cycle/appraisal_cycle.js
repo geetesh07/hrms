@@ -1,7 +1,7 @@
-// Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2022, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Appraisal Cycle", {
+nts.ui.form.on("Appraisal Cycle", {
 	refresh(frm) {
 		frm.set_query("department", () => {
 			return {
@@ -20,11 +20,11 @@ frappe.ui.form.on("Appraisal Cycle", {
 		if (frm.doc.__islocal) return;
 
 		frm.add_custom_button(__("View Goals"), () => {
-			frappe.route_options = {
+			nts.route_options = {
 				company: frm.doc.company,
 				appraisal_cycle: frm.doc.name,
 			};
-			frappe.set_route("Tree", "Goal");
+			nts.set_route("Tree", "Goal");
 		});
 
 		let appraisals_created = frm.doc.__onload?.appraisals_created;
@@ -92,7 +92,7 @@ frappe.ui.form.on("Appraisal Cycle", {
 
 		await Promise.all(
 			["Employee", "Appraisal Cycle", "Appraisal"].map((doctype) =>
-				frappe.model.with_doctype(doctype, () => {
+				nts.model.with_doctype(doctype, () => {
 					autocompletions.push(...hrms.get_doctype_fields_for_autocompletion(doctype));
 				}),
 			),
@@ -102,7 +102,7 @@ frappe.ui.form.on("Appraisal Cycle", {
 	},
 
 	get_employees(frm) {
-		frappe.call({
+		nts.call({
 			method: "set_employees",
 			doc: frm.doc,
 			freeze: true,
@@ -133,7 +133,7 @@ frappe.ui.form.on("Appraisal Cycle", {
 		msg += "<br>";
 		msg += __("Are you sure you want to proceed?");
 
-		frappe.confirm(msg, () => {
+		nts.confirm(msg, () => {
 			frm.call({
 				method: "complete_cycle",
 				doc: frm.doc,
@@ -149,7 +149,7 @@ frappe.ui.form.on("Appraisal Cycle", {
 	show_appraisal_summary(frm) {
 		if (frm.doc.__islocal) return;
 
-		frappe
+		nts
 			.call("hrms.hr.doctype.appraisal_cycle.appraisal_cycle.get_appraisal_cycle_summary", {
 				cycle_name: frm.doc.name,
 			})

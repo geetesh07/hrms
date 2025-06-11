@@ -1,21 +1,21 @@
-// Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Leave Ledger"] = {
+nts.query_reports["Leave Ledger"] = {
 	filters: [
 		{
 			fieldname: "from_date",
 			label: __("From Date"),
 			fieldtype: "Date",
 			reqd: 1,
-			default: frappe.defaults.get_default("year_start_date"),
+			default: nts.defaults.get_default("year_start_date"),
 		},
 		{
 			fieldname: "to_date",
 			label: __("To Date"),
 			fieldtype: "Date",
 			reqd: 1,
-			default: frappe.defaults.get_default("year_end_date"),
+			default: nts.defaults.get_default("year_end_date"),
 		},
 		{
 			fieldname: "leave_type",
@@ -47,7 +47,7 @@ frappe.query_reports["Leave Ledger"] = {
 			fieldname: "company",
 			fieldtype: "Link",
 			options: "Company",
-			default: frappe.defaults.get_user_default("Company"),
+			default: nts.defaults.get_user_default("Company"),
 		},
 		{
 			fieldname: "department",
@@ -77,25 +77,25 @@ frappe.query_reports["Leave Ledger"] = {
 	},
 	onload: () => {
 		if (
-			frappe.query_report.get_filter_value("from_date") &&
-			frappe.query_report.get_filter_value("to_date")
+			nts.query_report.get_filter_value("from_date") &&
+			nts.query_report.get_filter_value("to_date")
 		)
 			return;
 
-		const today = frappe.datetime.now_date();
+		const today = nts.datetime.now_date();
 
-		frappe.call({
+		nts.call({
 			type: "GET",
 			method: "hrms.hr.utils.get_leave_period",
 			args: {
 				from_date: today,
 				to_date: today,
-				company: frappe.defaults.get_user_default("Company"),
+				company: nts.defaults.get_user_default("Company"),
 			},
 			freeze: true,
 			callback: (data) => {
-				frappe.query_report.set_filter_value("from_date", data.message[0].from_date);
-				frappe.query_report.set_filter_value("to_date", data.message[0].to_date);
+				nts.query_report.set_filter_value("from_date", data.message[0].from_date);
+				nts.query_report.set_filter_value("to_date", data.message[0].to_date);
 			},
 		});
 	},

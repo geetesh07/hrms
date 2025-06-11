@@ -1,13 +1,13 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
+import nts
+from nts.tests.utils import ntsTestCase
 
 from hrms.payroll.doctype.salary_structure.test_salary_structure import make_salary_structure
 
 
-class TestSalaryComponent(FrappeTestCase):
+class TestSalaryComponent(ntsTestCase):
 	def test_update_salary_structures(self):
 		salary_component = create_salary_component("Special Allowance")
 		salary_component.condition = "H < 10000"
@@ -58,10 +58,10 @@ class TestSalaryComponent(FrappeTestCase):
 
 
 def create_salary_component(component_name, **args):
-	if frappe.db.exists("Salary Component", component_name):
-		return frappe.get_doc("Salary Component", component_name)
+	if nts.db.exists("Salary Component", component_name):
+		return nts.get_doc("Salary Component", component_name)
 
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Salary Component",
 			"salary_component": component_name,

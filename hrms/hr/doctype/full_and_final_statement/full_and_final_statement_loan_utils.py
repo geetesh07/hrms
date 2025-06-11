@@ -1,10 +1,10 @@
-# Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2023, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 from typing import TYPE_CHECKING
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 from hrms.payroll.doctype.salary_slip.salary_slip_loan_utils import if_lending_app_installed
 
@@ -31,15 +31,15 @@ def process_loan_accrual(doc: "FullandFinalStatement"):
 		loan_receivables.append(receivable.reference_document)
 
 	for loan in loan_receivables:
-		loan_doc = frappe.get_doc("Loan", loan)
-		loan_repayment_schedule = frappe.get_doc("Loan Repayment Schedule", {"loan": loan, "docstatus": 1})
+		loan_doc = nts.get_doc("Loan", loan)
+		loan_repayment_schedule = nts.get_doc("Loan Repayment Schedule", {"loan": loan, "docstatus": 1})
 		if loan_repayment_schedule.repayment_schedule:
 			amounts = []
 			for repayment_schedule in loan_repayment_schedule.repayment_schedule:
 				amounts = calculate_amounts(loan, doc.transaction_date, "Normal Repayment")
 				pending_principal_amount = get_pending_principal_amount(loan_doc)
 				if not repayment_schedule.is_accrued:
-					args = frappe._dict(
+					args = nts._dict(
 						{
 							"loan": loan,
 							"applicant_type": loan_doc.applicant_type,
@@ -58,7 +58,7 @@ def process_loan_accrual(doc: "FullandFinalStatement"):
 						}
 					)
 					make_loan_interest_accrual_entry(args)
-					frappe.db.set_value("Repayment Schedule", repayment_schedule.name, "is_accrued", 1)
+					nts.db.set_value("Repayment Schedule", repayment_schedule.name, "is_accrued", 1)
 
 			repayment_entry = create_repayment_entry(
 				loan,
@@ -86,16 +86,16 @@ def cancel_loan_repayment(doc: "FullandFinalStatement"):
 		loan_receivables.append(receivable.reference_document)
 
 	for loan in loan_receivables:
-		posting_date = frappe.utils.getdate(doc.transaction_date)
-		loan_repayment = frappe.get_doc(
+		posting_date = nts.utils.getdate(doc.transaction_date)
+		loan_repayment = nts.get_doc(
 			"Loan Repayment", {"against_loan": loan, "docstatus": 1, "posting_date": posting_date}
 		)
 
 		if loan_repayment:
 			loan_repayment.cancel()
 
-		loan_interest_accruals = frappe.get_all(
+		loan_interest_accruals = nts.get_all(
 			"Loan Interest Accrual", filters={"loan": loan, "docstatus": 1, "posting_date": posting_date}
 		)
 		for accrual in loan_interest_accruals:
-			frappe.get_doc("Loan Interest Accrual", accrual.name).cancel()
+			nts.get_doc("Loan Interest Accrual", accrual.name).cancel()

@@ -1,8 +1,8 @@
-import frappe
-from frappe.query_builder.functions import Count
+import nts
+from nts.query_builder.functions import Count
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_children(parent=None, company=None, exclude_node=None):
 	filters = [["status", "=", "Active"]]
 	if company and company != "All Companies":
@@ -16,7 +16,7 @@ def get_children(parent=None, company=None, exclude_node=None):
 	if exclude_node:
 		filters.append(["name", "!=", exclude_node])
 
-	employees = frappe.get_all(
+	employees = nts.get_all(
 		"Employee",
 		fields=[
 			"employee_name as name",
@@ -39,9 +39,9 @@ def get_children(parent=None, company=None, exclude_node=None):
 
 
 def get_connections(employee: str, lft: int, rgt: int) -> int:
-	Employee = frappe.qb.DocType("Employee")
+	Employee = nts.qb.DocType("Employee")
 	query = (
-		frappe.qb.from_(Employee)
+		nts.qb.from_(Employee)
 		.select(Count(Employee.name))
 		.where((Employee.lft > lft) & (Employee.rgt < rgt) & (Employee.status == "Active"))
 	).run()

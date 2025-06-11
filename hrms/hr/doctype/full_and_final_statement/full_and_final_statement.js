@@ -1,7 +1,7 @@
-// Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2021, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Full and Final Statement", {
+nts.ui.form.on("Full and Final Statement", {
 	refresh: function (frm) {
 		frm.events.set_queries(frm, "payables");
 		frm.events.set_queries(frm, "receivables");
@@ -28,22 +28,22 @@ frappe.ui.form.on("Full and Final Statement", {
 		let filters = {};
 
 		frm.set_query("reference_document", type, function (doc, cdt, cdn) {
-			let fnf_doc = frappe.get_doc(cdt, cdn);
+			let fnf_doc = nts.get_doc(cdt, cdn);
 
-			frappe.model.with_doctype(fnf_doc.reference_document_type, function () {
-				if (frappe.model.is_tree(fnf_doc.reference_document_type)) {
+			nts.model.with_doctype(fnf_doc.reference_document_type, function () {
+				if (nts.model.is_tree(fnf_doc.reference_document_type)) {
 					filters["is_group"] = 0;
 				}
 
-				if (frappe.model.is_submittable(fnf_doc.reference_document_type)) {
+				if (nts.model.is_submittable(fnf_doc.reference_document_type)) {
 					filters["docstatus"] = ["!=", 2];
 				}
 
-				if (frappe.meta.has_field(fnf_doc.reference_document_type, "company")) {
+				if (nts.meta.has_field(fnf_doc.reference_document_type, "company")) {
 					filters["company"] = frm.doc.company;
 				}
 
-				if (frappe.meta.has_field(fnf_doc.reference_document_type, "employee")) {
+				if (nts.meta.has_field(fnf_doc.reference_document_type, "employee")) {
 					filters["employee"] = frm.doc.employee;
 				}
 
@@ -69,7 +69,7 @@ frappe.ui.form.on("Full and Final Statement", {
 
 	get_outstanding_statements: function (frm) {
 		if (frm.doc.employee) {
-			frappe.call({
+			nts.call({
 				method: "get_outstanding_statements",
 				doc: frm.doc,
 				callback: function () {
@@ -119,22 +119,22 @@ frappe.ui.form.on("Full and Final Statement", {
 	},
 
 	create_journal_entry: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "create_journal_entry",
 			doc: frm.doc,
 			callback: function (r) {
-				var doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				var doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},
 });
 
-frappe.ui.form.on("Full and Final Outstanding Statement", {
+nts.ui.form.on("Full and Final Outstanding Statement", {
 	reference_document: function (frm, cdt, cdn) {
 		const child = locals[cdt][cdn];
 		if (child.reference_document_type && child.reference_document) {
-			frappe.call({
+			nts.call({
 				method: "hrms.hr.doctype.full_and_final_statement.full_and_final_statement.get_account_and_amount",
 				args: {
 					ref_doctype: child.reference_document_type,
@@ -143,8 +143,8 @@ frappe.ui.form.on("Full and Final Outstanding Statement", {
 				},
 				callback: function (r) {
 					if (r.message) {
-						frappe.model.set_value(cdt, cdn, "account", r.message[0]);
-						frappe.model.set_value(cdt, cdn, "amount", r.message[1]);
+						nts.model.set_value(cdt, cdn, "account", r.message[0]);
+						nts.model.set_value(cdt, cdn, "amount", r.message[1]);
 					}
 				},
 			});
@@ -163,7 +163,7 @@ frappe.ui.form.on("Full and Final Outstanding Statement", {
 	},
 });
 
-frappe.ui.form.on("Full and Final Asset", {
+nts.ui.form.on("Full and Final Asset", {
 	cost: function (frm, _cdt, _cdn) {
 		frm.trigger("calculate_total_receivable_amt");
 	},

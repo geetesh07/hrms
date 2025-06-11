@@ -1,11 +1,11 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import getdate
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import getdate
 
 from hrms.hr.utils import update_employee_work_history
 
@@ -13,15 +13,15 @@ from hrms.hr.utils import update_employee_work_history
 class EmployeeTransfer(Document):
 	def before_submit(self):
 		if getdate(self.transfer_date) > getdate():
-			frappe.throw(
+			nts.throw(
 				_("Employee Transfer cannot be submitted before Transfer Date"),
-				frappe.DocstatusTransitionError,
+				nts.DocstatusTransitionError,
 			)
 
 	def on_submit(self):
-		employee = frappe.get_doc("Employee", self.employee)
+		employee = nts.get_doc("Employee", self.employee)
 		if self.create_new_employee_id:
-			new_employee = frappe.copy_doc(employee)
+			new_employee = nts.copy_doc(employee)
 			new_employee.name = None
 			new_employee.employee_number = None
 			new_employee = update_employee_work_history(
@@ -48,10 +48,10 @@ class EmployeeTransfer(Document):
 			employee.save()
 
 	def on_cancel(self):
-		employee = frappe.get_doc("Employee", self.employee)
+		employee = nts.get_doc("Employee", self.employee)
 		if self.create_new_employee_id:
 			if self.new_employee_id:
-				frappe.throw(
+				nts.throw(
 					_("Please delete the Employee {0} to cancel this document").format(
 						f"<a href='/app/Form/Employee/{self.new_employee_id}'>{self.new_employee_id}</a>"
 					)

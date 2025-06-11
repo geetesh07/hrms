@@ -1,10 +1,10 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.utils import flt, getdate
+import nts
+from nts import _
+from nts.utils import flt, getdate
 
 
 def execute(filters=None):
@@ -15,7 +15,7 @@ class EmployeeHoursReport:
 	"""Employee Hours Utilization Report Based On Timesheet"""
 
 	def __init__(self, filters=None):
-		self.filters = frappe._dict(filters or {})
+		self.filters = nts._dict(filters or {})
 
 		self.from_date = getdate(self.filters.from_date)
 		self.to_date = getdate(self.filters.to_date)
@@ -27,17 +27,17 @@ class EmployeeHoursReport:
 		self.day_span = (self.to_date - self.from_date).days
 
 		if self.day_span <= 0:
-			frappe.throw(_("From Date must come before To Date"))
+			nts.throw(_("From Date must come before To Date"))
 
 	def validate_standard_working_hours(self):
-		self.standard_working_hours = frappe.db.get_single_value("HR Settings", "standard_working_hours")
+		self.standard_working_hours = nts.db.get_single_value("HR Settings", "standard_working_hours")
 		if not self.standard_working_hours:
 			msg = _("The metrics for this report are calculated based on {0}. Please set {0} in {1}.").format(
-				frappe.bold(_("Standard Working Hours")),
-				frappe.utils.get_link_to_form("HR Settings", "HR Settings"),
+				nts.bold(_("Standard Working Hours")),
+				nts.utils.get_link_to_form("HR Settings", "HR Settings"),
 			)
 
-			frappe.throw(msg)
+			nts.throw(msg)
 
 	def run(self):
 		self.generate_columns()
@@ -109,7 +109,7 @@ class EmployeeHoursReport:
 		self.data = []
 
 		for emp, data in self.stats_by_employee.items():
-			row = frappe._dict()
+			row = nts._dict()
 			row["employee"] = emp
 			row.update(data)
 			self.data.append(row)
@@ -118,7 +118,7 @@ class EmployeeHoursReport:
 		self.data.sort(key=lambda x: x["per_util"], reverse=True)
 
 	def filter_stats_by_department(self):
-		filtered_data = frappe._dict()
+		filtered_data = nts._dict()
 		for emp, data in self.stats_by_employee.items():
 			if data["department"] == self.filters.department:
 				filtered_data[emp] = data
@@ -138,8 +138,8 @@ class EmployeeHoursReport:
 				else:
 					additional_filters += f" AND tt.{field} = {self.filters.get(field)!r}"
 
-		# nosemgrep: frappe-semgrep-rules.rules.frappe-using-db-sql
-		self.filtered_time_logs = frappe.db.sql(
+		# nosemgrep: nts-semgrep-rules.rules.nts-using-db-sql
+		self.filtered_time_logs = nts.db.sql(
 			f"""
 			SELECT tt.employee AS employee, ttd.hours AS hours, ttd.is_billable AS is_billable, ttd.project AS project
 			FROM `tabTimesheet Detail` AS ttd
@@ -153,10 +153,10 @@ class EmployeeHoursReport:
 		)
 
 	def generate_stats_by_employee(self):
-		self.stats_by_employee = frappe._dict()
+		self.stats_by_employee = nts._dict()
 
 		for emp, hours, is_billable, __ in self.filtered_time_logs:
-			self.stats_by_employee.setdefault(emp, frappe._dict()).setdefault("billed_hours", 0.0)
+			self.stats_by_employee.setdefault(emp, nts._dict()).setdefault("billed_hours", 0.0)
 
 			self.stats_by_employee[emp].setdefault("non_billed_hours", 0.0)
 
@@ -167,8 +167,8 @@ class EmployeeHoursReport:
 
 	def set_employee_department_and_name(self):
 		for emp in self.stats_by_employee:
-			emp_name = frappe.db.get_value("Employee", emp, "employee_name")
-			emp_dept = frappe.db.get_value("Employee", emp, "department")
+			emp_name = nts.db.get_value("Employee", emp, "employee_name")
+			emp_dept = nts.db.get_value("Employee", emp, "department")
 
 			self.stats_by_employee[emp]["department"] = emp_dept
 			self.stats_by_employee[emp]["employee_name"] = emp_name

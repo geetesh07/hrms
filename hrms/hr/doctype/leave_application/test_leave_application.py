@@ -1,10 +1,10 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
-from frappe.permissions import clear_user_permissions_for_doctype
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import (
+import nts
+from nts.permissions import clear_user_permissions_for_doctype
+from nts.tests.utils import ntsTestCase
+from nts.utils import (
 	add_days,
 	add_months,
 	get_first_day,
@@ -15,8 +15,8 @@ from frappe.utils import (
 	nowdate,
 )
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 
 from hrms.hr.doctype.attendance.attendance import mark_attendance
 from hrms.hr.doctype.leave_allocation.test_leave_allocation import create_leave_allocation
@@ -77,7 +77,7 @@ _test_records = [
 ]
 
 
-class TestLeaveApplication(FrappeTestCase):
+class TestLeaveApplication(ntsTestCase):
 	def setUp(self):
 		for dt in [
 			"Leave Application",
@@ -87,13 +87,13 @@ class TestLeaveApplication(FrappeTestCase):
 			"Leave Period",
 			"Leave Policy Assignment",
 		]:
-			frappe.db.delete(dt)
+			nts.db.delete(dt)
 
-		frappe.set_user("Administrator")
+		nts.set_user("Administrator")
 		set_leave_approver()
 
-		frappe.db.delete("Attendance", {"employee": "_T-Employee-00001"})
-		frappe.db.set_value("Employee", "_T-Employee-00001", "holiday_list", "")
+		nts.db.delete("Attendance", {"employee": "_T-Employee-00001"})
+		nts.db.set_value("Employee", "_T-Employee-00001", "holiday_list", "")
 
 		from_date = get_year_start(getdate())
 		to_date = get_year_ending(getdate())
@@ -103,26 +103,26 @@ class TestLeaveApplication(FrappeTestCase):
 			"Holiday List w/o Weekly Offs", from_date=from_date, to_date=to_date, add_weekly_offs=False
 		)
 
-		if not frappe.db.exists("Leave Type", "_Test Leave Type"):
-			frappe.get_doc(
+		if not nts.db.exists("Leave Type", "_Test Leave Type"):
+			nts.get_doc(
 				dict(leave_type_name="_Test Leave Type", doctype="Leave Type", include_holiday=True)
 			).insert()
 
 	def tearDown(self):
-		frappe.db.rollback()
-		frappe.set_user("Administrator")
+		nts.db.rollback()
+		nts.set_user("Administrator")
 
 	def _clear_roles(self):
-		frappe.db.sql(
+		nts.db.sql(
 			"""delete from `tabHas Role` where parent in
 			('test@example.com', 'test1@example.com', 'test2@example.com')"""
 		)
 
 	def _clear_applications(self):
-		frappe.db.sql("""delete from `tabLeave Application`""")
+		nts.db.sql("""delete from `tabLeave Application`""")
 
 	def get_application(self, doc):
-		application = frappe.copy_doc(doc)
+		application = nts.copy_doc(doc)
 		application.from_date = "2013-01-01"
 		application.to_date = "2013-01-05"
 		return application
@@ -130,8 +130,8 @@ class TestLeaveApplication(FrappeTestCase):
 	@set_holiday_list("Salary Slip Test Holiday List", "_Test Company")
 	def test_validate_application_across_allocations(self):
 		# Test validation for application dates when negative balance is disabled
-		frappe.delete_doc_if_exists("Leave Type", "Test Leave Validation", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Leave Validation", force=1)
+		leave_type = nts.get_doc(
 			dict(leave_type_name="Test Leave Validation", doctype="Leave Type", allow_negative=False)
 		).insert()
 
@@ -139,7 +139,7 @@ class TestLeaveApplication(FrappeTestCase):
 		date = getdate()
 		first_sunday = get_first_sunday(self.holiday_list, for_date=get_year_start(date))
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -152,13 +152,13 @@ class TestLeaveApplication(FrappeTestCase):
 			)
 		)
 		# Application period cannot be outside leave allocation period
-		self.assertRaises(frappe.ValidationError, leave_application.insert)
+		self.assertRaises(nts.ValidationError, leave_application.insert)
 
 		make_allocation_record(
 			leave_type=leave_type.name, from_date=get_year_start(date), to_date=get_year_ending(date)
 		)
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -177,8 +177,8 @@ class TestLeaveApplication(FrappeTestCase):
 	@set_holiday_list("Salary Slip Test Holiday List", "_Test Company")
 	def test_insufficient_leave_balance_validation(self):
 		# CASE 1: Validation when allow negative is disabled
-		frappe.delete_doc_if_exists("Leave Type", "Test Leave Validation", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Leave Validation", force=1)
+		leave_type = nts.get_doc(
 			dict(leave_type_name="Test Leave Validation", doctype="Leave Type", allow_negative=False)
 		).insert()
 
@@ -193,7 +193,7 @@ class TestLeaveApplication(FrappeTestCase):
 			to_date=get_year_ending(date),
 			leaves=2,
 		)
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -208,7 +208,7 @@ class TestLeaveApplication(FrappeTestCase):
 		self.assertRaises(InsufficientLeaveBalanceError, leave_application.insert)
 
 		# CASE 2: Allows creating application with a warning message when allow negative is enabled
-		frappe.db.set_value("Leave Type", "Test Leave Validation", "allow_negative", True)
+		nts.db.set_value("Leave Type", "Test Leave Validation", "allow_negative", True)
 		make_leave_application(
 			employee.name, add_days(first_sunday, 1), add_days(first_sunday, 3), leave_type.name
 		)
@@ -217,8 +217,8 @@ class TestLeaveApplication(FrappeTestCase):
 	def test_separate_leave_ledger_entry_for_boundary_applications(self):
 		# When application falls in 2 different allocations and Allow Negative is enabled
 		# creates separate leave ledger entries
-		frappe.delete_doc_if_exists("Leave Type", "Test Leave Validation", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Leave Validation", force=1)
+		leave_type = nts.get_doc(
 			dict(
 				leave_type_name="Test Leave Validation",
 				doctype="Leave Type",
@@ -247,7 +247,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		# 2 separate leave ledger entries
-		ledgers = frappe.db.get_all(
+		ledgers = nts.db.get_all(
 			"Leave Ledger Entry",
 			{"transaction_type": "Leave Application", "transaction_name": application.name},
 			["leaves", "from_date", "to_date"],
@@ -267,7 +267,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		# 2 separate leave ledger entries
-		ledgers = frappe.db.get_all(
+		ledgers = nts.db.get_all(
 			"Leave Ledger Entry",
 			{"transaction_type": "Leave Application", "transaction_name": application.name},
 			["leaves", "from_date", "to_date"],
@@ -291,7 +291,7 @@ class TestLeaveApplication(FrappeTestCase):
 		application.insert()
 		application.submit()
 
-		attendance = frappe.get_all(
+		attendance = nts.get_all(
 			"Attendance",
 			["name", "status", "attendance_date"],
 			dict(attendance_date=("between", ["2018-01-01", "2018-01-03"]), docstatus=("!=", 2)),
@@ -320,7 +320,7 @@ class TestLeaveApplication(FrappeTestCase):
 		application.half_day_date = "2023-01-02"
 		application.submit()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance",
 			{"attendance_date": "2023-01-02"},
 			["status", "leave_type", "leave_application"],
@@ -334,8 +334,8 @@ class TestLeaveApplication(FrappeTestCase):
 	@set_holiday_list("Salary Slip Test Holiday List", "_Test Company")
 	def test_attendance_for_include_holidays(self):
 		# Case 1: leave type with 'Include holidays within leaves as leaves' enabled
-		frappe.delete_doc_if_exists("Leave Type", "Test Include Holidays", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Include Holidays", force=1)
+		leave_type = nts.get_doc(
 			dict(leave_type_name="Test Include Holidays", doctype="Leave Type", include_holiday=True)
 		).insert()
 
@@ -352,15 +352,15 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 		leave_application.reload()
 		self.assertEqual(leave_application.total_leave_days, 4)
-		self.assertEqual(frappe.db.count("Attendance", {"leave_application": leave_application.name}), 4)
+		self.assertEqual(nts.db.count("Attendance", {"leave_application": leave_application.name}), 4)
 
 		leave_application.cancel()
 
 	@set_holiday_list("Salary Slip Test Holiday List", "_Test Company")
 	def test_attendance_update_for_exclude_holidays(self):
 		# Case 2: leave type with 'Include holidays within leaves as leaves' disabled
-		frappe.delete_doc_if_exists("Leave Type", "Test Do Not Include Holidays", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Do Not Include Holidays", force=1)
+		leave_type = nts.get_doc(
 			{
 				"leave_type_name": "Test Do Not Include Holidays",
 				"doctype": "Leave Type",
@@ -378,13 +378,13 @@ class TestLeaveApplication(FrappeTestCase):
 
 		# already marked attendance on a holiday should be deleted in this case
 		config = {"doctype": "Attendance", "employee": employee.name, "status": "Present"}
-		attendance_on_holiday = frappe.get_doc(config)
+		attendance_on_holiday = nts.get_doc(config)
 		attendance_on_holiday.attendance_date = first_sunday
 		attendance_on_holiday.flags.ignore_validate = True
 		attendance_on_holiday.save()
 
 		# already marked attendance on a non-holiday should be updated
-		attendance = frappe.get_doc(config)
+		attendance = nts.get_doc(config)
 		attendance.attendance_date = add_days(first_sunday, 3)
 		attendance.flags.ignore_validate = True
 		attendance.save()
@@ -396,23 +396,23 @@ class TestLeaveApplication(FrappeTestCase):
 
 		# holiday should be excluded while marking attendance
 		self.assertEqual(leave_application.total_leave_days, 3)
-		self.assertEqual(frappe.db.count("Attendance", {"leave_application": leave_application.name}), 3)
+		self.assertEqual(nts.db.count("Attendance", {"leave_application": leave_application.name}), 3)
 
 		# attendance on holiday deleted
-		self.assertFalse(frappe.db.exists("Attendance", attendance_on_holiday.name))
+		self.assertFalse(nts.db.exists("Attendance", attendance_on_holiday.name))
 
 		# attendance on non-holiday updated
-		self.assertEqual(frappe.db.get_value("Attendance", attendance.name, "status"), "On Leave")
+		self.assertEqual(nts.db.get_value("Attendance", attendance.name, "status"), "On Leave")
 
 	def test_block_list(self):
 		self._clear_roles()
 
-		from frappe.utils.user import add_role
+		from nts.utils.user import add_role
 
 		add_role("test@example.com", "HR User")
 		clear_user_permissions_for_doctype("Employee")
 
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Department", "_Test Department - _TC", "leave_block_list", "_Test Leave Block List"
 		)
 
@@ -424,10 +424,10 @@ class TestLeaveApplication(FrappeTestCase):
 		application.status = "Approved"
 		self.assertRaises(LeaveDayBlockedError, application.submit)
 
-		frappe.set_user("test@example.com")
+		nts.set_user("test@example.com")
 
 		# clear other applications
-		frappe.db.sql("delete from `tabLeave Application`")
+		nts.db.sql("delete from `tabLeave Application`")
 
 		application = self.get_application(_test_records[0])
 		self.assertTrue(application.insert())
@@ -436,10 +436,10 @@ class TestLeaveApplication(FrappeTestCase):
 		self._clear_roles()
 		self._clear_applications()
 
-		from frappe.utils.user import add_role
+		from nts.utils.user import add_role
 
 		add_role("test@example.com", "Employee")
-		frappe.set_user("test@example.com")
+		nts.set_user("test@example.com")
 
 		make_allocation_record()
 
@@ -453,10 +453,10 @@ class TestLeaveApplication(FrappeTestCase):
 		self._clear_roles()
 		self._clear_applications()
 
-		from frappe.utils.user import add_role
+		from nts.utils.user import add_role
 
 		add_role("test@example.com", "Employee")
-		frappe.set_user("test@example.com")
+		nts.set_user("test@example.com")
 
 		make_allocation_record()
 
@@ -487,11 +487,11 @@ class TestLeaveApplication(FrappeTestCase):
 		self._clear_roles()
 		self._clear_applications()
 
-		from frappe.utils.user import add_role
+		from nts.utils.user import add_role
 
 		add_role("test@example.com", "Employee")
 
-		frappe.set_user("test@example.com")
+		nts.set_user("test@example.com")
 
 		make_allocation_record()
 
@@ -510,11 +510,11 @@ class TestLeaveApplication(FrappeTestCase):
 		self._clear_roles()
 		self._clear_applications()
 
-		from frappe.utils.user import add_role
+		from nts.utils.user import add_role
 
 		add_role("test@example.com", "Employee")
 
-		frappe.set_user("test@example.com")
+		nts.set_user("test@example.com")
 
 		make_allocation_record()
 
@@ -551,8 +551,8 @@ class TestLeaveApplication(FrappeTestCase):
 		first_sunday = get_first_sunday(self.holiday_list)
 		optional_leave_date = add_days(first_sunday, 1)
 
-		if not frappe.db.exists("Holiday List", holiday_list):
-			frappe.get_doc(
+		if not nts.db.exists("Holiday List", holiday_list):
+			nts.get_doc(
 				dict(
 					doctype="Holiday List",
 					holiday_list_name=holiday_list,
@@ -562,10 +562,10 @@ class TestLeaveApplication(FrappeTestCase):
 				)
 			).insert()
 
-		frappe.db.set_value("Leave Period", leave_period.name, "optional_holiday_list", holiday_list)
+		nts.db.set_value("Leave Period", leave_period.name, "optional_holiday_list", holiday_list)
 		leave_type = "Test Optional Type"
-		if not frappe.db.exists("Leave Type", leave_type):
-			frappe.get_doc(
+		if not nts.db.exists("Leave Type", leave_type):
+			nts.get_doc(
 				dict(leave_type_name=leave_type, doctype="Leave Type", is_optional_leave=1)
 			).insert()
 
@@ -573,7 +573,7 @@ class TestLeaveApplication(FrappeTestCase):
 
 		date = add_days(first_sunday, 2)
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -600,8 +600,8 @@ class TestLeaveApplication(FrappeTestCase):
 	def test_leaves_allowed(self):
 		employee = get_employee()
 		leave_period = get_leave_period()
-		frappe.delete_doc_if_exists("Leave Type", "Test Leave Type", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Leave Type", force=1)
+		leave_type = nts.get_doc(
 			dict(leave_type_name="Test Leave Type", doctype="Leave Type", max_leaves_allowed=5)
 		).insert()
 
@@ -609,7 +609,7 @@ class TestLeaveApplication(FrappeTestCase):
 
 		allocate_leaves(employee, leave_period, leave_type.name, 5)
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -624,7 +624,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 		leave_application.submit()
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -637,20 +637,20 @@ class TestLeaveApplication(FrappeTestCase):
 				status="Approved",
 			)
 		)
-		self.assertRaises(frappe.ValidationError, leave_application.insert)
+		self.assertRaises(nts.ValidationError, leave_application.insert)
 
 	def test_applicable_after(self):
 		employee = get_employee()
 		leave_period = get_leave_period()
-		frappe.delete_doc_if_exists("Leave Type", "Test Leave Type", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Leave Type", force=1)
+		leave_type = nts.get_doc(
 			dict(leave_type_name="Test Leave Type", doctype="Leave Type", applicable_after=15)
 		).insert()
 		date = add_days(nowdate(), -7)
-		frappe.db.set_value("Employee", employee.name, "date_of_joining", date)
+		nts.db.set_value("Employee", employee.name, "date_of_joining", date)
 		allocate_leaves(employee, leave_period, leave_type.name, 10)
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -664,16 +664,16 @@ class TestLeaveApplication(FrappeTestCase):
 			)
 		)
 
-		self.assertRaises(frappe.ValidationError, leave_application.insert)
+		self.assertRaises(nts.ValidationError, leave_application.insert)
 
-		frappe.delete_doc_if_exists("Leave Type", "Test Leave Type 1", force=1)
-		leave_type_1 = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Leave Type 1", force=1)
+		leave_type_1 = nts.get_doc(
 			dict(leave_type_name="Test Leave Type 1", doctype="Leave Type")
 		).insert()
 
 		allocate_leaves(employee, leave_period, leave_type_1.name, 10)
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -688,13 +688,13 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		self.assertTrue(leave_application.insert())
-		frappe.db.set_value("Employee", employee.name, "date_of_joining", "2010-01-01")
+		nts.db.set_value("Employee", employee.name, "date_of_joining", "2010-01-01")
 
 	def test_max_continuous_leaves(self):
 		employee = get_employee()
 		leave_period = get_leave_period()
-		frappe.delete_doc_if_exists("Leave Type", "Test Leave Type", force=1)
-		leave_type = frappe.get_doc(
+		nts.delete_doc_if_exists("Leave Type", "Test Leave Type", force=1)
+		leave_type = nts.get_doc(
 			dict(
 				leave_type_name="Test Leave Type",
 				doctype="Leave Type",
@@ -707,7 +707,7 @@ class TestLeaveApplication(FrappeTestCase):
 
 		allocate_leaves(employee, leave_period, leave_type.name, 10)
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -721,12 +721,12 @@ class TestLeaveApplication(FrappeTestCase):
 			)
 		)
 
-		self.assertRaises(frappe.ValidationError, leave_application.insert)
+		self.assertRaises(nts.ValidationError, leave_application.insert)
 
 	@set_holiday_list("_Test Holiday List", "_Test Company")
 	def test_max_consecutive_leaves_across_leave_applications(self):
 		employee = get_employee()
-		leave_type = frappe.get_doc(
+		leave_type = nts.get_doc(
 			dict(
 				leave_type_name="Test Consecutive Leave Type",
 				doctype="Leave Type",
@@ -738,7 +738,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		# before
-		frappe.get_doc(
+		nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -751,7 +751,7 @@ class TestLeaveApplication(FrappeTestCase):
 		).insert()
 
 		# after
-		frappe.get_doc(
+		nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -766,7 +766,7 @@ class TestLeaveApplication(FrappeTestCase):
 		# current
 		from_date = getdate("2013-02-04")
 		to_date = getdate("2013-02-05")
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -779,7 +779,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		# 11 consecutive leaves
-		self.assertRaises(frappe.ValidationError, leave_application.insert)
+		self.assertRaises(nts.ValidationError, leave_application.insert)
 
 	def test_leave_balance_near_allocaton_expiry(self):
 		employee = get_employee()
@@ -802,10 +802,10 @@ class TestLeaveApplication(FrappeTestCase):
 		employee = get_employee()
 
 		leave_type = "Sick Leave"
-		if not frappe.db.exists("Leave Type", leave_type):
-			frappe.get_doc(dict(leave_type_name=leave_type, doctype="Leave Type")).insert()
+		if not nts.db.exists("Leave Type", leave_type):
+			nts.get_doc(dict(leave_type_name=leave_type, doctype="Leave Type")).insert()
 
-		allocation = frappe.get_doc(
+		allocation = nts.get_doc(
 			dict(
 				doctype="Leave Allocation",
 				employee=employee.name,
@@ -817,7 +817,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 		allocation.insert(ignore_permissions=True)
 		allocation.submit()
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -844,7 +844,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 		leave_allocation.submit()
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -858,7 +858,7 @@ class TestLeaveApplication(FrappeTestCase):
 			)
 		)
 		leave_application.submit()
-		leave_ledger_entry = frappe.get_all(
+		leave_ledger_entry = nts.get_all(
 			"Leave Ledger Entry", fields="*", filters=dict(transaction_name=leave_application.name)
 		)
 
@@ -868,7 +868,7 @@ class TestLeaveApplication(FrappeTestCase):
 
 		# check if leave ledger entry is deleted on cancellation
 		leave_application.cancel()
-		self.assertFalse(frappe.db.exists("Leave Ledger Entry", {"transaction_name": leave_application.name}))
+		self.assertFalse(nts.db.exists("Leave Ledger Entry", {"transaction_name": leave_application.name}))
 
 	def test_ledger_entry_creation_on_intermediate_allocation_expiry(self):
 		employee = get_employee()
@@ -881,7 +881,7 @@ class TestLeaveApplication(FrappeTestCase):
 
 		create_carry_forwarded_allocation(employee, leave_type)
 
-		leave_application = frappe.get_doc(
+		leave_application = nts.get_doc(
 			dict(
 				doctype="Leave Application",
 				employee=employee.name,
@@ -898,7 +898,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 		leave_application.submit()
 
-		leave_ledger_entry = frappe.get_all(
+		leave_ledger_entry = nts.get_all(
 			"Leave Ledger Entry", "*", filters=dict(transaction_name=leave_application.name)
 		)
 
@@ -935,7 +935,7 @@ class TestLeaveApplication(FrappeTestCase):
 		employee.reload()
 		employee.leave_approver = user
 		employee.save()
-		self.assertTrue("Leave Approver" in frappe.get_roles(user))
+		self.assertTrue("Leave Approver" in nts.get_roles(user))
 
 		make_allocation_record(employee.name)
 
@@ -944,31 +944,31 @@ class TestLeaveApplication(FrappeTestCase):
 		application.to_date = "2018-01-03"
 		application.leave_approver = user
 		application.insert()
-		self.assertTrue(application.name in frappe.share.get_shared("Leave Application", user))
+		self.assertTrue(application.name in nts.share.get_shared("Leave Application", user))
 
 		# check shared doc revoked
 		application.reload()
 		application.leave_approver = "test@example.com"
 		application.save()
-		self.assertTrue(application.name not in frappe.share.get_shared("Leave Application", user))
+		self.assertTrue(application.name not in nts.share.get_shared("Leave Application", user))
 
 		application.reload()
 		application.leave_approver = user
 		application.save()
 
-		frappe.set_user(user)
+		nts.set_user(user)
 		application.reload()
 		application.status = "Approved"
 		application.submit()
 
 		# unset leave approver
-		frappe.set_user("Administrator")
+		nts.set_user("Administrator")
 		employee.reload()
 		employee.leave_approver = ""
 		employee.save()
 
 	def test_self_leave_approval_allowed(self):
-		frappe.db.set_single_value("HR Settings", "prevent_self_leave_approval", 0)
+		nts.db.set_single_value("HR Settings", "prevent_self_leave_approval", 0)
 
 		leave_approver = "test_leave_approver@example.com"
 		make_employee(leave_approver, "_Test Company")
@@ -979,12 +979,12 @@ class TestLeaveApplication(FrappeTestCase):
 		employee.leave_approver = leave_approver
 		employee.save()
 
-		from frappe.utils.user import add_role
+		from nts.utils.user import add_role
 
 		add_role(employee.user_id, "Leave Approver")
 
 		make_allocation_record(employee.name)
-		application = frappe.get_doc(
+		application = nts.get_doc(
 			doctype="Leave Application",
 			employee=employee.name,
 			leave_type="_Test Leave Type",
@@ -998,15 +998,15 @@ class TestLeaveApplication(FrappeTestCase):
 		application.insert()
 		application.status = "Approved"
 
-		frappe.set_user(employee.user_id)
+		nts.set_user(employee.user_id)
 		application.submit()
 
 		self.assertEqual(1, application.docstatus)
 
-		frappe.set_user("Administrator")
+		nts.set_user("Administrator")
 
 	def test_self_leave_approval_not_allowed(self):
-		frappe.db.set_single_value("HR Settings", "prevent_self_leave_approval", 1)
+		nts.db.set_single_value("HR Settings", "prevent_self_leave_approval", 1)
 
 		leave_approver = "test_leave_approver@example.com"
 		make_employee(leave_approver, "_Test Company")
@@ -1017,12 +1017,12 @@ class TestLeaveApplication(FrappeTestCase):
 			employee.user_id = "test_employee@example.com"
 		employee.save()
 
-		from frappe.utils.user import add_role
+		from nts.utils.user import add_role
 
 		add_role(employee.user_id, "Leave Approver")
 
 		make_allocation_record(employee.name)
-		application = application = frappe.get_doc(
+		application = application = nts.get_doc(
 			doctype="Leave Application",
 			employee=employee.name,
 			leave_type="_Test Leave Type",
@@ -1036,11 +1036,11 @@ class TestLeaveApplication(FrappeTestCase):
 		application.insert()
 		application.status = "Approved"
 
-		frappe.set_user(employee.user_id)
-		self.assertRaises(frappe.ValidationError, application.submit)
+		nts.set_user(employee.user_id)
+		self.assertRaises(nts.ValidationError, application.submit)
 
 		add_role(leave_approver, "Leave Approver")
-		frappe.set_user(leave_approver)
+		nts.set_user(leave_approver)
 		application.reload()
 		application.submit()
 		self.assertEqual(1, application.docstatus)
@@ -1095,7 +1095,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		leave_alloc = create_carry_forwarded_allocation(employee, leave_type)
-		cf_expiry = frappe.db.get_value(
+		cf_expiry = nts.db.get_value(
 			"Leave Ledger Entry", {"transaction_name": leave_alloc.name, "is_carry_forward": 1}, "to_date"
 		)
 
@@ -1128,7 +1128,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		leave_alloc = create_carry_forwarded_allocation(employee, leave_type)
-		cf_expiry = frappe.db.get_value(
+		cf_expiry = nts.db.get_value(
 			"Leave Ledger Entry", {"transaction_name": leave_alloc.name, "is_carry_forward": 1}, "to_date"
 		)
 
@@ -1162,7 +1162,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		leave_alloc = create_carry_forwarded_allocation(employee, leave_type)
-		cf_expiry = frappe.db.get_value(
+		cf_expiry = nts.db.get_value(
 			"Leave Ledger Entry", {"transaction_name": leave_alloc.name, "is_carry_forward": 1}, "to_date"
 		)
 
@@ -1204,7 +1204,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		leave_alloc = create_carry_forwarded_allocation(employee, leave_type)
-		cf_expiry = frappe.db.get_value(
+		cf_expiry = nts.db.get_value(
 			"Leave Ledger Entry", {"transaction_name": leave_alloc.name, "is_carry_forward": 1}, "to_date"
 		)
 
@@ -1238,7 +1238,7 @@ class TestLeaveApplication(FrappeTestCase):
 		)
 
 		leave_alloc = create_carry_forwarded_allocation(employee, leave_type)
-		cf_expiry = frappe.db.get_value(
+		cf_expiry = nts.db.get_value(
 			"Leave Ledger Entry", {"transaction_name": leave_alloc.name, "is_carry_forward": 1}, "to_date"
 		)
 
@@ -1274,7 +1274,7 @@ class TestLeaveApplication(FrappeTestCase):
 		create_carry_forwarded_allocation(employee, leave_type, date="2019-01-01")
 		# new allocation with cf leaves
 		leave_alloc = create_carry_forwarded_allocation(employee, leave_type)
-		cf_expiry = frappe.db.get_value(
+		cf_expiry = nts.db.get_value(
 			"Leave Ledger Entry", {"transaction_name": leave_alloc.name, "is_carry_forward": 1}, "to_date"
 		)
 
@@ -1305,7 +1305,7 @@ class TestLeaveApplication(FrappeTestCase):
 			half_day=1,
 			half_day_date=nowdate(),
 		)
-		attendance = frappe.get_value(
+		attendance = nts.get_value(
 			"Attendance",
 			attendance_name,
 			["status", "half_day_status", "leave_type", "leave_application"],
@@ -1337,7 +1337,7 @@ class TestLeaveApplication(FrappeTestCase):
 			half_day=1,
 			half_day_date=nowdate(),
 		)
-		attendance = frappe.get_value(
+		attendance = nts.get_value(
 			"Attendance",
 			attendance_name,
 			["status", "half_day_status", "leave_type", "leave_application", "modify_half_day_status"],
@@ -1367,7 +1367,7 @@ class TestLeaveApplication(FrappeTestCase):
 			half_day=1,
 			half_day_date=nowdate(),
 		)
-		half_day_status_after_first_application = frappe.get_value(
+		half_day_status_after_first_application = nts.get_value(
 			"Attendance",
 			filters={"attendance_date": nowdate(), "leave_application": first_leave_application.name},
 			fieldname="half_day_status",
@@ -1383,7 +1383,7 @@ class TestLeaveApplication(FrappeTestCase):
 			half_day=1,
 			half_day_date=nowdate(),
 		)
-		half_day_status_after_second_application = frappe.get_value(
+		half_day_status_after_second_application = nts.get_value(
 			"Attendance",
 			filters={"attendance_date": nowdate(), "leave_application": second_leave_application.name},
 			fieldname="half_day_status",
@@ -1423,7 +1423,7 @@ def create_carry_forwarded_allocation(employee, leave_type, date=None):
 def make_allocation_record(
 	employee=None, leave_type=None, from_date=None, to_date=None, carry_forward=False, leaves=None
 ):
-	allocation = frappe.get_doc(
+	allocation = nts.get_doc(
 		{
 			"doctype": "Leave Allocation",
 			"employee": employee or "_T-Employee-00001",
@@ -1442,22 +1442,22 @@ def make_allocation_record(
 
 
 def get_employee():
-	return frappe.get_doc("Employee", "_T-Employee-00001")
+	return nts.get_doc("Employee", "_T-Employee-00001")
 
 
 def set_leave_approver():
 	employee = get_employee()
-	dept_doc = frappe.get_doc("Department", employee.department)
+	dept_doc = nts.get_doc("Department", employee.department)
 	dept_doc.append("leave_approvers", {"approver": "test@example.com"})
 	dept_doc.save(ignore_permissions=True)
 
 
 def get_leave_period():
-	leave_period_name = frappe.db.get_value("Leave Period", {"company": "_Test Company"})
+	leave_period_name = nts.db.get_value("Leave Period", {"company": "_Test Company"})
 	if leave_period_name:
-		return frappe.get_doc("Leave Period", leave_period_name)
+		return nts.get_doc("Leave Period", leave_period_name)
 	else:
-		return frappe.get_doc(
+		return nts.get_doc(
 			dict(
 				name="Test Leave Period",
 				doctype="Leave Period",
@@ -1470,7 +1470,7 @@ def get_leave_period():
 
 
 def allocate_leaves(employee, leave_period, leave_type, new_leaves_allocated, eligible_leaves=0):
-	allocate_leave = frappe.get_doc(
+	allocate_leave = nts.get_doc(
 		{
 			"doctype": "Leave Allocation",
 			"__islocal": 1,

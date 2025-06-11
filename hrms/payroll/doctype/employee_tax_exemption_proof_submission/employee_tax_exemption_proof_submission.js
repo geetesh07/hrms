@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Employee Tax Exemption Proof Submission", {
+nts.ui.form.on("Employee Tax Exemption Proof Submission", {
 	setup: function (frm) {
 		frm.set_query("employee", function () {
 			return {
@@ -19,7 +19,7 @@ frappe.ui.form.on("Employee Tax Exemption Proof Submission", {
 					},
 				};
 			} else {
-				frappe.msgprint(__("Please select Employee"));
+				nts.msgprint(__("Please select Employee"));
 			}
 		});
 
@@ -45,7 +45,7 @@ frappe.ui.form.on("Employee Tax Exemption Proof Submission", {
 			if (frm.doc.payroll_period) filters["payroll_period"] = frm.doc.payroll_period;
 
 			frm.add_custom_button(__("Get Details From Declaration"), function () {
-				erpnext.utils.map_current_doc({
+				prodman.utils.map_current_doc({
 					method: "hrms.payroll.doctype.employee_tax_exemption_declaration.employee_tax_exemption_declaration.make_proof_submission",
 					source_doctype: "Employee Tax Exemption Declaration",
 					target: frm,
@@ -70,7 +70,7 @@ frappe.ui.form.on("Employee Tax Exemption Proof Submission", {
 	},
 
 	get_employee_currency: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment.get_employee_currency",
 			args: {
 				employee: frm.doc.employee,

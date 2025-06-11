@@ -6,7 +6,7 @@
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "Employee Advance",
- "dynamic_filters_json": "[[\"Employee Advance\",\"company\",\"=\",\"frappe.defaults.get_user_default(\\\"Company\\\")\"]]",
+ "dynamic_filters_json": "[[\"Employee Advance\",\"company\",\"=\",\"nts.defaults.get_user_default(\\\"Company\\\")\"]]",
  "filters_json": "[[\"Employee Advance\",\"docstatus\",\"=\",\"1\",false]]",
  "group_by_based_on": "status",
  "group_by_type": "Count",

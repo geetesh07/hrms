@@ -1,11 +1,11 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.model.mapper import get_mapped_doc
-from frappe.utils import format_duration, get_link_to_form, time_diff_in_seconds
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.model.mapper import get_mapped_doc
+from nts.utils import format_duration, get_link_to_form, time_diff_in_seconds
 
 
 class JobRequisition(Document):
@@ -14,7 +14,7 @@ class JobRequisition(Document):
 		self.set_time_to_fill()
 
 	def validate_duplicates(self):
-		duplicate = frappe.db.exists(
+		duplicate = nts.db.exists(
 			"Job Requisition",
 			{
 				"designation": self.designation,
@@ -26,10 +26,10 @@ class JobRequisition(Document):
 		)
 
 		if duplicate:
-			frappe.throw(
+			nts.throw(
 				_("A Job Requisition for {0} requested by {1} already exists: {2}").format(
-					frappe.bold(self.designation),
-					frappe.bold(self.requested_by),
+					nts.bold(self.designation),
+					nts.bold(self.requested_by),
 					get_link_to_form("Job Requisition", duplicate),
 				),
 				title=_("Duplicate Job Requisition"),
@@ -39,25 +39,25 @@ class JobRequisition(Document):
 		if self.status == "Filled" and self.completed_on:
 			self.time_to_fill = time_diff_in_seconds(self.completed_on, self.posting_date)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def associate_job_opening(self, job_opening):
-		frappe.db.set_value(
+		nts.db.set_value(
 			"Job Opening", job_opening, {"job_requisition": self.name, "vacancies": self.no_of_positions}
 		)
-		frappe.msgprint(
+		nts.msgprint(
 			_("Job Requisition {0} has been associated with Job Opening {1}").format(
-				frappe.bold(self.name), get_link_to_form("Job Opening", job_opening)
+				nts.bold(self.name), get_link_to_form("Job Opening", job_opening)
 			),
 			title=_("Job Opening Associated"),
 		)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def make_job_opening(source_name, target_doc=None):
 	def set_missing_values(source, target):
 		target.job_title = source.designation
 		target.status = "Open"
-		target.currency = frappe.db.get_value("Company", source.company, "default_currency")
+		target.currency = nts.db.get_value("Company", source.company, "default_currency")
 		target.lower_range = source.expected_compensation
 		target.description = source.description
 
@@ -80,7 +80,7 @@ def make_job_opening(source_name, target_doc=None):
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_avg_time_to_fill(company=None, department=None, designation=None):
 	filters = {"status": "Filled"}
 	if company:
@@ -90,7 +90,7 @@ def get_avg_time_to_fill(company=None, department=None, designation=None):
 	if designation:
 		filters["designation"] = designation
 
-	avg_time_to_fill = frappe.db.get_all(
+	avg_time_to_fill = nts.db.get_all(
 		"Job Requisition",
 		filters=filters,
 		fields=["avg(time_to_fill) as average_time"],

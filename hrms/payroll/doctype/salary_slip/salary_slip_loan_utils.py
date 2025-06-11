@@ -1,10 +1,10 @@
-# Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2023, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 from typing import TYPE_CHECKING, Any
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 if TYPE_CHECKING:
 	from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
@@ -14,7 +14,7 @@ def if_lending_app_installed(function):
 	"""Decorator to check if lending app is installed"""
 
 	def wrapper(*args, **kwargs):
-		if "lending" in frappe.get_installed_apps():
+		if "lending" in nts.get_installed_apps():
 			return function(*args, **kwargs)
 		return
 
@@ -54,14 +54,14 @@ def set_loan_repayment(doc: "SalarySlip"):
 		amounts = calculate_amounts(payment.loan, doc.end_date, "Normal Repayment")
 		total_amount = amounts["interest_amount"] + amounts["payable_principal_amount"]
 		if payment.total_payment > total_amount:
-			frappe.throw(
+			nts.throw(
 				_(
 					"""Row {0}: Paid amount {1} is greater than pending accrued amount {2} against loan {3}"""
 				).format(
 					payment.idx,
-					frappe.bold(payment.total_payment),
-					frappe.bold(total_amount),
-					frappe.bold(payment.loan),
+					nts.bold(payment.total_payment),
+					nts.bold(total_amount),
+					nts.bold(payment.loan),
 				)
 			)
 
@@ -71,7 +71,7 @@ def set_loan_repayment(doc: "SalarySlip"):
 
 
 def _get_loan_details(doc: "SalarySlip") -> dict[str, Any]:
-	loan_details = frappe.get_all(
+	loan_details = nts.get_all(
 		"Loan",
 		fields=["name", "interest_income_account", "loan_account", "loan_product", "is_term_loan"],
 		filters={
@@ -113,12 +113,12 @@ def process_loan_interest_accrual_and_demand(doc: "SalarySlip"):
 
 
 def process_loan_demand(posting_date, loan_product, loan):
-	loan_disbursement = frappe.db.get_value(
+	loan_disbursement = nts.db.get_value(
 		"Loan Disbursement",
 		{"against_loan": loan, "docstatus": 1},
 		"name",
 	)
-	process_loan_demand = frappe.new_doc("Process Loan Demand")
+	process_loan_demand = nts.new_doc("Process Loan Demand")
 	process_loan_demand.posting_date = posting_date
 	process_loan_demand.loan_product = loan_product
 	process_loan_demand.loan = loan
@@ -131,7 +131,7 @@ def make_loan_repayment_entry(doc: "SalarySlip"):
 	from lending.loan_management.doctype.loan_repayment.loan_repayment import create_repayment_entry
 
 	payroll_payable_account = get_payroll_payable_account(doc.company, doc.payroll_entry)
-	process_payroll_accounting_entry_based_on_employee = frappe.db.get_single_value(
+	process_payroll_accounting_entry_based_on_employee = nts.db.get_single_value(
 		"Payroll Settings", "process_payroll_accounting_entry_based_on_employee"
 	)
 
@@ -159,7 +159,7 @@ def make_loan_repayment_entry(doc: "SalarySlip"):
 		repayment_entry.save()
 		repayment_entry.submit()
 
-		frappe.db.set_value("Salary Slip Loan", loan.name, "loan_repayment_entry", repayment_entry.name)
+		nts.db.set_value("Salary Slip Loan", loan.name, "loan_repayment_entry", repayment_entry.name)
 
 
 @if_lending_app_installed
@@ -169,23 +169,23 @@ def cancel_loan_repayment_entry(doc: "SalarySlip"):
 
 	for loan in doc.get("loans", []):
 		if loan.loan_repayment_entry:
-			repayment_entry = frappe.get_doc("Loan Repayment", loan.loan_repayment_entry)
+			repayment_entry = nts.get_doc("Loan Repayment", loan.loan_repayment_entry)
 			repayment_entry.cancel()
 
 
 def get_payroll_payable_account(company, payroll_entry):
 	if payroll_entry:
-		payroll_payable_account = frappe.db.get_value(
+		payroll_payable_account = nts.db.get_value(
 			"Payroll Entry", payroll_entry, "payroll_payable_account"
 		)
 	else:
-		payroll_payable_account = frappe.db.get_value("Company", company, "default_payroll_payable_account")
+		payroll_payable_account = nts.db.get_value("Company", company, "default_payroll_payable_account")
 
 	return payroll_payable_account
 
 
 def is_lending_version_15():
-	lending_version = frappe.db.get_value(
+	lending_version = nts.db.get_value(
 		"Installed Application",
 		{"parent": "Installed Applications", "app_name": "lending"},
 		"git_branch",

@@ -1,6 +1,6 @@
-import frappe
-from frappe import _
-from frappe.utils import flt
+import nts
+from nts import _
+from nts.utils import flt
 
 
 class AppraisalMixin:
@@ -13,9 +13,9 @@ class AppraisalMixin:
 		total_weightage = sum(flt(d.per_weightage) for d in self.get(table_name))
 
 		if flt(total_weightage, 2) != 100.0:
-			frappe.throw(
+			nts.throw(
 				_("Total weightage for all {0} must add up to 100. Currently, it is {1}%").format(
-					frappe.bold(_(table_label)), total_weightage
+					nts.bold(_(table_label)), total_weightage
 				),
 				title=_("Incorrect Weightage Allocation"),
 			)

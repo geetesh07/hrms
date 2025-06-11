@@ -1,12 +1,12 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe.model.document import Document
-from frappe.utils import cint, flt, get_link_to_form
+import nts
+from nts.model.document import Document
+from nts.utils import cint, flt, get_link_to_form
 
-from erpnext import get_default_company
+from prodman import get_default_company
 
 from hrms.hr.utils import validate_bulk_tool_fields
 
@@ -27,7 +27,7 @@ class LeaveControlPanel(Document):
 			mandatory_fields.extend(["leave_type", "no_of_days"])
 		validate_bulk_tool_fields(self, mandatory_fields, employees, "from_date", "to_date")
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def allocate_leave(self, employees: list):
 		self.validate_fields(employees)
 		if self.allocate_based_on_leave_policy:
@@ -42,11 +42,11 @@ class LeaveControlPanel(Document):
 
 		for employee in employees:
 			try:
-				frappe.db.savepoint(savepoint)
-				allocation = frappe.new_doc("Leave Allocation")
+				nts.db.savepoint(savepoint)
+				allocation = nts.new_doc("Leave Allocation")
 				allocation.employee = employee
 				allocation.leave_type = self.leave_type
-				allocation.from_date = from_date or frappe.db.get_value(
+				allocation.from_date = from_date or nts.db.get_value(
 					"Employee", employee, "date_of_joining"
 				)
 				allocation.to_date = to_date
@@ -58,12 +58,12 @@ class LeaveControlPanel(Document):
 					{"doc": get_link_to_form("Leave Allocation", allocation.name), "employee": employee}
 				)
 			except Exception:
-				frappe.db.rollback(save_point=savepoint)
+				nts.db.rollback(save_point=savepoint)
 				allocation.log_error(f"Leave Allocation failed for employee {employee}")
 				failure.append(employee)
 
-		frappe.clear_messages()
-		frappe.publish_realtime(
+		nts.clear_messages()
+		nts.publish_realtime(
 			"completed_bulk_leave_allocation",
 			message={"success": success, "failure": failure},
 			doctype="Bulk Salary Structure Assignment",
@@ -79,12 +79,12 @@ class LeaveControlPanel(Document):
 
 		for employee in employees:
 			try:
-				frappe.db.savepoint(savepoint)
-				assignment = frappe.new_doc("Leave Policy Assignment")
+				nts.db.savepoint(savepoint)
+				assignment = nts.new_doc("Leave Policy Assignment")
 				assignment.employee = employee
 				assignment.assignment_based_on = assignment_based_on
 				assignment.leave_policy = self.leave_policy
-				assignment.effective_from = from_date or frappe.db.get_value(
+				assignment.effective_from = from_date or nts.db.get_value(
 					"Employee", employee, "date_of_joining"
 				)
 				assignment.effective_to = to_date
@@ -99,12 +99,12 @@ class LeaveControlPanel(Document):
 					}
 				)
 			except Exception:
-				frappe.db.rollback(save_point=savepoint)
+				nts.db.rollback(save_point=savepoint)
 				assignment.log_error(f"Leave Policy Assignment failed for employee {employee}")
 				failure.append(employee)
 
-		frappe.clear_messages()
-		frappe.publish_realtime(
+		nts.clear_messages()
+		nts.publish_realtime(
 			"completed_bulk_leave_policy_assignment",
 			message={"success": success, "failure": failure},
 			doctype="Bulk Salary Structure Assignment",
@@ -115,16 +115,16 @@ class LeaveControlPanel(Document):
 		if self.dates_based_on == "Joining Date":
 			return None, self.to_date
 		elif self.dates_based_on == "Leave Period" and self.leave_period:
-			return frappe.db.get_value("Leave Period", self.leave_period, ["from_date", "to_date"])
+			return nts.db.get_value("Leave Period", self.leave_period, ["from_date", "to_date"])
 		else:
 			return self.from_date, self.to_date
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_employees(self, advanced_filters: list) -> list:
 		from_date, to_date = self.get_from_to_date()
 
 		if to_date and (from_date or self.dates_based_on == "Joining Date"):
-			if all_employees := frappe.get_list(
+			if all_employees := nts.get_list(
 				"Employee",
 				filters=self.get_filters() + advanced_filters,
 				fields=["name", "employee", "employee_name", "company", "department", "date_of_joining"],
@@ -134,11 +134,11 @@ class LeaveControlPanel(Document):
 		return []
 
 	def get_employees_without_allocations(self, all_employees: list, from_date: str, to_date: str) -> list:
-		Allocation = frappe.qb.DocType("Leave Allocation")
-		Employee = frappe.qb.DocType("Employee")
+		Allocation = nts.qb.DocType("Leave Allocation")
+		Employee = nts.qb.DocType("Employee")
 
 		query = (
-			frappe.qb.from_(Allocation)
+			nts.qb.from_(Allocation)
 			.join(Employee)
 			.on(Allocation.employee == Employee.name)
 			.select(Employee.name)
@@ -160,7 +160,7 @@ class LeaveControlPanel(Document):
 		)
 
 		if self.allocate_based_on_leave_policy and self.leave_policy:
-			leave_types = frappe.get_all(
+			leave_types = nts.get_all(
 				"Leave Policy Detail", {"parent": self.leave_policy}, pluck="leave_type"
 			)
 			query = query.where(Allocation.leave_type.isin(leave_types))
@@ -171,9 +171,9 @@ class LeaveControlPanel(Document):
 		employees_with_allocations = query.run(pluck=True)
 		return [d for d in all_employees if d.name not in employees_with_allocations]
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_latest_leave_period(self):
-		return frappe.db.get_value(
+		return nts.db.get_value(
 			"Leave Period",
 			{
 				"is_active": 1,

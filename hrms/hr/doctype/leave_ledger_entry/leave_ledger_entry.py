@@ -1,25 +1,25 @@
-# Copyright (c) 2019, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2019, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import DATE_FORMAT, flt, formatdate, get_link_to_form, getdate, today
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import DATE_FORMAT, flt, formatdate, get_link_to_form, getdate, today
 
 
-class InvalidLeaveLedgerEntry(frappe.ValidationError):
+class InvalidLeaveLedgerEntry(nts.ValidationError):
 	pass
 
 
 class LeaveLedgerEntry(Document):
 	def validate(self):
 		if getdate(self.from_date) > getdate(self.to_date):
-			frappe.throw(
+			nts.throw(
 				_(
 					"Leave Ledger Entry's To date needs to be after From date. Currently, From Date is {0} and To Date is {1}"
 				).format(
-					frappe.bold(formatdate(self.from_date)),
-					frappe.bold(formatdate(self.to_date)),
+					nts.bold(formatdate(self.from_date)),
+					nts.bold(formatdate(self.to_date)),
 				),
 				exc=InvalidLeaveLedgerEntry,
 				title=_("Invalid Leave Ledger Entry"),
@@ -28,14 +28,14 @@ class LeaveLedgerEntry(Document):
 	def on_cancel(self):
 		# allow cancellation of expiry leaves
 		if self.is_expired:
-			frappe.db.set_value("Leave Allocation", self.transaction_name, "expired", 0)
+			nts.db.set_value("Leave Allocation", self.transaction_name, "expired", 0)
 		else:
-			frappe.throw(_("Only expired allocation can be cancelled"))
+			nts.throw(_("Only expired allocation can be cancelled"))
 
 
 def validate_leave_allocation_against_leave_application(ledger):
 	"""Checks that leave allocation has no leave application against it"""
-	leave_application_records = frappe.db.sql_list(
+	leave_application_records = nts.db.sql_list(
 		"""
 		SELECT transaction_name
 		FROM `tabLeave Ledger Entry`
@@ -50,7 +50,7 @@ def validate_leave_allocation_against_leave_application(ledger):
 	)
 
 	if leave_application_records:
-		frappe.throw(
+		nts.throw(
 			_("Leave allocation {0} is linked with the Leave Application {1}").format(
 				ledger.transaction_name,
 				", ".join(
@@ -62,7 +62,7 @@ def validate_leave_allocation_against_leave_application(ledger):
 
 
 def create_leave_ledger_entry(ref_doc, args, submit=True):
-	ledger = frappe._dict(
+	ledger = nts._dict(
 		doctype="Leave Ledger Entry",
 		employee=ref_doc.employee,
 		employee_name=ref_doc.employee_name,
@@ -76,7 +76,7 @@ def create_leave_ledger_entry(ref_doc, args, submit=True):
 	ledger.update(args)
 
 	if submit:
-		doc = frappe.get_doc(ledger)
+		doc = nts.get_doc(ledger)
 		doc.flags.ignore_permissions = 1
 		doc.submit()
 	else:
@@ -89,7 +89,7 @@ def delete_ledger_entry(ledger):
 		validate_leave_allocation_against_leave_application(ledger)
 
 	expired_entry = get_previous_expiry_ledger_entry(ledger)
-	frappe.db.sql(
+	nts.db.sql(
 		"""DELETE
 		FROM `tabLeave Ledger Entry`
 		WHERE
@@ -101,7 +101,7 @@ def delete_ledger_entry(ledger):
 
 def get_previous_expiry_ledger_entry(ledger):
 	"""Returns the expiry ledger entry having same creation date as the ledger entry to be cancelled"""
-	creation_date = frappe.db.get_value(
+	creation_date = nts.db.get_value(
 		"Leave Ledger Entry",
 		filters={
 			"transaction_name": ledger.transaction_name,
@@ -113,7 +113,7 @@ def get_previous_expiry_ledger_entry(ledger):
 
 	creation_date = creation_date.strftime(DATE_FORMAT) if creation_date else ""
 
-	return frappe.db.get_value(
+	return nts.db.get_value(
 		"Leave Ledger Entry",
 		filters={
 			"creation": ("like", creation_date + "%"),
@@ -136,14 +136,14 @@ def process_expired_allocation():
 	"""
 
 	# fetch leave type records that has carry forwarded leaves expiry
-	leave_type_records = frappe.db.get_values(
+	leave_type_records = nts.db.get_values(
 		"Leave Type", filters={"expire_carry_forwarded_leaves_after_days": (">", 0)}, fieldname=["name"]
 	)
 
 	leave_type = [record[0] for record in leave_type_records] or [""]
 
 	# fetch non expired leave ledger entry of transaction_type allocation
-	expire_allocation = frappe.db.sql(
+	expire_allocation = nts.db.sql(
 		"""
 		SELECT
 			leaves, to_date, from_date, employee, leave_type,
@@ -182,7 +182,7 @@ def create_expiry_ledger_entry(allocations):
 
 def get_remaining_leaves(allocation):
 	"""Returns remaining leaves from the given allocation"""
-	return frappe.db.get_value(
+	return nts.db.get_value(
 		"Leave Ledger Entry",
 		filters={
 			"employee": allocation.employee,
@@ -194,14 +194,14 @@ def get_remaining_leaves(allocation):
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def expire_allocation(allocation, expiry_date=None):
 	"""expires non-carry forwarded allocation"""
 	import json
 
 	if isinstance(allocation, str):
 		allocation = json.loads(allocation)
-		allocation = frappe.get_doc("Leave Allocation", allocation["name"])
+		allocation = nts.get_doc("Leave Allocation", allocation["name"])
 
 	leaves = get_remaining_leaves(allocation)
 	expiry_date = expiry_date if expiry_date else allocation.to_date
@@ -219,7 +219,7 @@ def expire_allocation(allocation, expiry_date=None):
 		)
 		create_leave_ledger_entry(allocation, args)
 
-	frappe.db.set_value("Leave Allocation", allocation.name, "expired", 1)
+	nts.db.set_value("Leave Allocation", allocation.name, "expired", 1)
 
 
 def expire_carried_forward_allocation(allocation):
@@ -237,7 +237,7 @@ def expire_carried_forward_allocation(allocation):
 
 	# allow expired leaves entry to be created
 	if leaves > 0:
-		args = frappe._dict(
+		args = nts._dict(
 			transaction_name=allocation.name,
 			transaction_type="Leave Allocation",
 			leaves=leaves * -1,
@@ -250,4 +250,4 @@ def expire_carried_forward_allocation(allocation):
 
 
 def on_doctype_update():
-	frappe.db.add_index("Leave Ledger Entry", ["transaction_type", "transaction_name"])
+	nts.db.add_index("Leave Ledger Entry", ["transaction_type", "transaction_name"])

@@ -1,23 +1,23 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
+import nts
+from nts.tests.utils import ntsTestCase
 
-import erpnext
+import prodman
 
 test_dependencies = ["Employee", "Leave Type", "Leave Policy"]
 
 
-class TestLeavePeriod(FrappeTestCase):
+class TestLeavePeriod(ntsTestCase):
 	pass
 
 
 def create_leave_period(from_date, to_date, company=None):
-	leave_period = frappe.db.get_value(
+	leave_period = nts.db.get_value(
 		"Leave Period",
 		dict(
-			company=company or erpnext.get_default_company(),
+			company=company or prodman.get_default_company(),
 			from_date=from_date,
 			to_date=to_date,
 			is_active=1,
@@ -25,12 +25,12 @@ def create_leave_period(from_date, to_date, company=None):
 		"name",
 	)
 	if leave_period:
-		return frappe.get_doc("Leave Period", leave_period)
+		return nts.get_doc("Leave Period", leave_period)
 
-	leave_period = frappe.get_doc(
+	leave_period = nts.get_doc(
 		{
 			"doctype": "Leave Period",
-			"company": company or erpnext.get_default_company(),
+			"company": company or prodman.get_default_company(),
 			"from_date": from_date,
 			"to_date": to_date,
 			"is_active": 1,

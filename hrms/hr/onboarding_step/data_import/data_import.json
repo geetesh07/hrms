@@ -2,7 +2,7 @@
  "action": "Watch Video",
  "action_label": "",
  "creation": "2021-05-19 05:29:16.809610",
- "description": "<h3>Data Import</h3>\n\nData import is the tool to migrate your existing data like Employee, Customer, Supplier, and a lot more to our ERPNext system.\nGo through the video for a detailed explanation of this tool.",
+ "description": "<h3>Data Import</h3>\n\nData import is the tool to migrate your existing data like Employee, Customer, Supplier, and a lot more to our prodman system.\nGo through the video for a detailed explanation of this tool.",
  "docstatus": 0,
  "doctype": "Onboarding Step",
  "idx": 0,

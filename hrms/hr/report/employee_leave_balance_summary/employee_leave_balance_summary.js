@@ -1,15 +1,15 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 /* eslint-disable */
 
-frappe.query_reports["Employee Leave Balance Summary"] = {
+nts.query_reports["Employee Leave Balance Summary"] = {
 	filters: [
 		{
 			fieldname: "date",
 			label: __("Date"),
 			fieldtype: "Date",
 			reqd: 1,
-			default: frappe.datetime.now_date(),
+			default: nts.datetime.now_date(),
 		},
 		{
 			fieldname: "company",
@@ -17,7 +17,7 @@ frappe.query_reports["Employee Leave Balance Summary"] = {
 			fieldtype: "Link",
 			options: "Company",
 			reqd: 1,
-			default: frappe.defaults.get_user_default("Company"),
+			default: nts.defaults.get_user_default("Company"),
 		},
 		{
 			fieldname: "employee",

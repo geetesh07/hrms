@@ -1,12 +1,12 @@
-# Copyright (c) 2019, Frappe and Contributors
+# Copyright (c) 2019, nts and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
+import nts
 
 
 def execute():
-	data = frappe.db.sql(
+	data = nts.db.sql(
 		"""SELECT *
         FROM `tabSingles`
         WHERE
@@ -27,4 +27,4 @@ def execute():
 	)
 
 	for d in data:
-		frappe.db.set_value("Payroll Settings", None, d.field, d.value)
+		nts.db.set_value("Payroll Settings", None, d.field, d.value)

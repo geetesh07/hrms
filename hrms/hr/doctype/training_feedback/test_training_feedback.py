@@ -1,8 +1,8 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
+import nts
+from nts.tests.utils import ntsTestCase
 
 from hrms.hr.doctype.training_event.test_training_event import (
 	create_training_event,
@@ -11,7 +11,7 @@ from hrms.hr.doctype.training_event.test_training_event import (
 from hrms.payroll.doctype.salary_structure.test_salary_structure import make_employee
 
 
-class TestTrainingFeedback(FrappeTestCase):
+class TestTrainingFeedback(ntsTestCase):
 	def setUp(self):
 		create_training_program("Basic Training")
 		self.employee = make_employee("robert_loan@trainig.com")
@@ -28,16 +28,16 @@ class TestTrainingFeedback(FrappeTestCase):
 
 		# should not allow creating feedback since employee2 was not part of the event
 		feedback = create_training_feedback(training_event.name, self.employee2)
-		self.assertRaises(frappe.ValidationError, feedback.save)
+		self.assertRaises(nts.ValidationError, feedback.save)
 
 		# cannot record feedback for absent employee
-		employee = frappe.db.get_value(
+		employee = nts.db.get_value(
 			"Training Event Employee", {"parent": training_event.name, "employee": self.employee}, "name"
 		)
 
-		frappe.db.set_value("Training Event Employee", employee, "attendance", "Absent")
+		nts.db.set_value("Training Event Employee", employee, "attendance", "Absent")
 		feedback = create_training_feedback(training_event.name, self.employee)
-		self.assertRaises(frappe.ValidationError, feedback.save)
+		self.assertRaises(nts.ValidationError, feedback.save)
 
 	def test_training_feedback_status(self):
 		training_event = create_training_event(self.attendees)
@@ -50,18 +50,18 @@ class TestTrainingFeedback(FrappeTestCase):
 		feedback = create_training_feedback(training_event.name, self.employee)
 		feedback.submit()
 
-		status = frappe.db.get_value(
+		status = nts.db.get_value(
 			"Training Event Employee", {"parent": training_event.name, "employee": self.employee}, "status"
 		)
 
 		self.assertEqual(status, "Feedback Submitted")
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 
 def create_training_feedback(event, employee):
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "Training Feedback",
 			"training_event": event,

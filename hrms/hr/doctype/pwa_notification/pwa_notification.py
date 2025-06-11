@@ -1,7 +1,7 @@
-# Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2023, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
-import frappe
-from frappe.model.document import Document
+import nts
+from nts.model.document import Document
 
 import hrms
 
@@ -15,7 +15,7 @@ class PWANotification(Document):
 
 	def send_push_notification(self):
 		try:
-			from frappe.push_notification import PushNotification
+			from nts.push_notification import PushNotification
 
 			push_notification = PushNotification("hrms")
 			if push_notification.is_enabled():
@@ -24,7 +24,7 @@ class PWANotification(Document):
 					self.reference_document_type,
 					self.message,
 					link=self.get_notification_link(),
-					icon=f"{frappe.utils.get_url()}/assets/hrms/manifest/favicon-196.png",
+					icon=f"{nts.utils.get_url()}/assets/hrms/manifest/favicon-196.png",
 				)
 		except ImportError:
 			# push notifications are not supported in the current framework version
@@ -33,7 +33,7 @@ class PWANotification(Document):
 			self.log_error(f"Error sending push notification: {self.name}")
 
 	def get_notification_link(self):
-		base_url = f"{frappe.utils.get_url()}/hrms"
+		base_url = f"{nts.utils.get_url()}/hrms"
 
 		if self.reference_document_type == "Leave Application":
 			return f"{base_url}/leave-applications/{self.reference_document_name}"

@@ -1,17 +1,17 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
 from calendar import monthrange
 from itertools import groupby
 
-import frappe
-from frappe import _
-from frappe.query_builder.functions import Count, Extract, Sum
-from frappe.utils import cint, cstr, getdate
-from frappe.utils.nestedset import get_descendants_of
+import nts
+from nts import _
+from nts.query_builder.functions import Count, Extract, Sum
+from nts.utils import cint, cstr, getdate
+from nts.utils.nestedset import get_descendants_of
 
-Filters = frappe._dict
+Filters = nts._dict
 
 status_map = {
 	"Present": "P",
@@ -27,13 +27,13 @@ day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 def execute(filters: Filters | None = None) -> tuple:
-	filters = frappe._dict(filters or {})
+	filters = nts._dict(filters or {})
 
 	if not (filters.month and filters.year):
-		frappe.throw(_("Please select month and year."))
+		nts.throw(_("Please select month and year."))
 
 	if not filters.company:
-		frappe.throw(_("Please select company."))
+		nts.throw(_("Please select company."))
 
 	if filters.company:
 		filters.companies = [filters.company]
@@ -42,14 +42,14 @@ def execute(filters: Filters | None = None) -> tuple:
 
 	attendance_map = get_attendance_map(filters)
 	if not attendance_map:
-		frappe.msgprint(_("No attendance records found."), alert=True, indicator="orange")
+		nts.msgprint(_("No attendance records found."), alert=True, indicator="orange")
 		return [], [], None, None
 
 	columns = get_columns(filters)
 	data = get_data(filters, attendance_map)
 
 	if not data:
-		frappe.msgprint(_("No attendance records found for this criteria."), alert=True, indicator="orange")
+		nts.msgprint(_("No attendance records found for this criteria."), alert=True, indicator="orange")
 		return columns, [], None, None
 
 	message = get_message() if not filters.summarized_view else ""
@@ -88,7 +88,7 @@ def get_columns(filters: Filters) -> list[dict]:
 		columns.append(
 			{
 				"label": _(filters.group_by),
-				"fieldname": frappe.scrub(filters.group_by),
+				"fieldname": nts.scrub(filters.group_by),
 				"fieldtype": "Link",
 				"options": options,
 				"width": 120,
@@ -158,10 +158,10 @@ def get_columns(filters: Filters) -> list[dict]:
 
 
 def get_columns_for_leave_types() -> list[dict]:
-	leave_types = frappe.db.get_all("Leave Type", pluck="name")
+	leave_types = nts.db.get_all("Leave Type", pluck="name")
 	types = []
 	for entry in leave_types:
-		types.append({"label": entry, "fieldname": frappe.scrub(entry), "fieldtype": "Float", "width": 120})
+		types.append({"label": entry, "fieldname": nts.scrub(entry), "fieldtype": "Float", "width": 120})
 
 	return types
 
@@ -193,7 +193,7 @@ def get_data(filters: Filters, attendance_map: dict) -> list[dict]:
 	data = []
 
 	if filters.group_by:
-		group_by_column = frappe.scrub(filters.group_by)
+		group_by_column = nts.scrub(filters.group_by)
 
 		for value in group_by_param_values:
 			if not value:
@@ -256,9 +256,9 @@ def get_attendance_map(filters: Filters) -> dict:
 
 
 def get_attendance_records(filters: Filters) -> list[dict]:
-	Attendance = frappe.qb.DocType("Attendance")
+	Attendance = nts.qb.DocType("Attendance")
 	query = (
-		frappe.qb.from_(Attendance)
+		nts.qb.from_(Attendance)
 		.select(
 			Attendance.employee,
 			Extract("day", Attendance.attendance_date).as_("day_of_month"),
@@ -285,9 +285,9 @@ def get_employee_related_details(filters: Filters) -> tuple[dict, list]:
 	1. nested dict for employee details
 	2. list of values for the group by filter
 	"""
-	Employee = frappe.qb.DocType("Employee")
+	Employee = nts.qb.DocType("Employee")
 	query = (
-		frappe.qb.from_(Employee)
+		nts.qb.from_(Employee)
 		.select(
 			Employee.name,
 			Employee.employee_name,
@@ -318,7 +318,7 @@ def get_employee_related_details(filters: Filters) -> tuple[dict, list]:
 		group_key = lambda d: "" if d[group_by] is None else d[group_by]  # noqa
 		for parameter, employees in groupby(sorted(employee_details, key=group_key), key=group_key):
 			group_by_param_values.append(parameter)
-			emp_map.setdefault(parameter, frappe._dict())
+			emp_map.setdefault(parameter, nts._dict())
 
 			for emp in employees:
 				emp_map[parameter][emp.name] = emp
@@ -345,19 +345,19 @@ def get_holiday_map(filters: Filters) -> dict[str, list[dict]]:
 	}
 	"""
 	# add default holiday list too
-	holiday_lists = frappe.db.get_all("Holiday List", pluck="name")
-	default_holiday_list = frappe.get_cached_value("Company", filters.company, "default_holiday_list")
+	holiday_lists = nts.db.get_all("Holiday List", pluck="name")
+	default_holiday_list = nts.get_cached_value("Company", filters.company, "default_holiday_list")
 	holiday_lists.append(default_holiday_list)
 
-	holiday_map = frappe._dict()
-	Holiday = frappe.qb.DocType("Holiday")
+	holiday_map = nts._dict()
+	Holiday = nts.qb.DocType("Holiday")
 
 	for d in holiday_lists:
 		if not d:
 			continue
 
 		holidays = (
-			frappe.qb.from_(Holiday)
+			nts.qb.from_(Holiday)
 			.select(Extract("day", Holiday.holiday_date).as_("day_of_month"), Holiday.weekly_off)
 			.where(
 				(Holiday.parent == d)
@@ -373,7 +373,7 @@ def get_holiday_map(filters: Filters) -> dict[str, list[dict]]:
 
 def get_rows(employee_details: dict, filters: Filters, holiday_map: dict, attendance_map: dict) -> list[dict]:
 	records = []
-	default_holiday_list = frappe.get_cached_value("Company", filters.company, "default_holiday_list")
+	default_holiday_list = nts.get_cached_value("Company", filters.company, "default_holiday_list")
 
 	for employee, details in employee_details.items():
 		emp_holiday_list = details.holiday_list or default_holiday_list
@@ -447,26 +447,26 @@ def get_attendance_status_for_summarized_view(employee: str, filters: Filters, h
 
 
 def get_attendance_summary_and_days(employee: str, filters: Filters) -> tuple[dict, list]:
-	Attendance = frappe.qb.DocType("Attendance")
+	Attendance = nts.qb.DocType("Attendance")
 
 	present_case = (
-		frappe.qb.terms.Case()
+		nts.qb.terms.Case()
 		.when(((Attendance.status == "Present") | (Attendance.status == "Work From Home")), 1)
 		.else_(0)
 	)
 	sum_present = Sum(present_case).as_("total_present")
 
-	absent_case = frappe.qb.terms.Case().when(Attendance.status == "Absent", 1).else_(0)
+	absent_case = nts.qb.terms.Case().when(Attendance.status == "Absent", 1).else_(0)
 	sum_absent = Sum(absent_case).as_("total_absent")
 
-	leave_case = frappe.qb.terms.Case().when(Attendance.status == "On Leave", 1).else_(0)
+	leave_case = nts.qb.terms.Case().when(Attendance.status == "On Leave", 1).else_(0)
 	sum_leave = Sum(leave_case).as_("total_leaves")
 
-	half_day_case = frappe.qb.terms.Case().when(Attendance.status == "Half Day", 0.5).else_(0)
+	half_day_case = nts.qb.terms.Case().when(Attendance.status == "Half Day", 0.5).else_(0)
 	sum_half_day = Sum(half_day_case).as_("total_half_days")
 
 	summary = (
-		frappe.qb.from_(Attendance)
+		nts.qb.from_(Attendance)
 		.select(
 			sum_present,
 			sum_absent,
@@ -483,7 +483,7 @@ def get_attendance_summary_and_days(employee: str, filters: Filters) -> tuple[di
 	).run(as_dict=True)
 
 	days = (
-		frappe.qb.from_(Attendance)
+		nts.qb.from_(Attendance)
 		.select(Extract("day", Attendance.attendance_date).as_("day_of_month"))
 		.distinct()
 		.where(
@@ -543,12 +543,12 @@ def get_leave_summary(employee: str, filters: Filters) -> dict[str, float]:
 	"""Returns a dict of leave type and corresponding leaves taken by employee like:
 	{'leave_without_pay': 1.0, 'sick_leave': 2.0}
 	"""
-	Attendance = frappe.qb.DocType("Attendance")
-	day_case = frappe.qb.terms.Case().when(Attendance.status == "Half Day", 0.5).else_(1)
+	Attendance = nts.qb.DocType("Attendance")
+	day_case = nts.qb.terms.Case().when(Attendance.status == "Half Day", 0.5).else_(1)
 	sum_leave_days = Sum(day_case).as_("leave_days")
 
 	leave_details = (
-		frappe.qb.from_(Attendance)
+		nts.qb.from_(Attendance)
 		.select(Attendance.leave_type, sum_leave_days)
 		.where(
 			(Attendance.employee == employee)
@@ -563,7 +563,7 @@ def get_leave_summary(employee: str, filters: Filters) -> dict[str, float]:
 
 	leaves = {}
 	for d in leave_details:
-		leave_type = frappe.scrub(d.leave_type)
+		leave_type = nts.scrub(d.leave_type)
 		leaves[leave_type] = d.leave_days
 
 	return leaves
@@ -573,16 +573,16 @@ def get_entry_exits_summary(employee: str, filters: Filters) -> dict[str, float]
 	"""Returns total late entries and total early exits for employee like:
 	{'total_late_entries': 5, 'total_early_exits': 2}
 	"""
-	Attendance = frappe.qb.DocType("Attendance")
+	Attendance = nts.qb.DocType("Attendance")
 
-	late_entry_case = frappe.qb.terms.Case().when(Attendance.late_entry == "1", "1")
+	late_entry_case = nts.qb.terms.Case().when(Attendance.late_entry == "1", "1")
 	count_late_entries = Count(late_entry_case).as_("total_late_entries")
 
-	early_exit_case = frappe.qb.terms.Case().when(Attendance.early_exit == "1", "1")
+	early_exit_case = nts.qb.terms.Case().when(Attendance.early_exit == "1", "1")
 	count_early_exits = Count(early_exit_case).as_("total_early_exits")
 
 	entry_exits = (
-		frappe.qb.from_(Attendance)
+		nts.qb.from_(Attendance)
 		.select(count_late_entries, count_early_exits)
 		.where(
 			(Attendance.docstatus == 1)
@@ -596,18 +596,18 @@ def get_entry_exits_summary(employee: str, filters: Filters) -> dict[str, float]
 	return entry_exits[0]
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_attendance_years() -> str:
 	"""Returns all the years for which attendance records exist"""
-	Attendance = frappe.qb.DocType("Attendance")
+	Attendance = nts.qb.DocType("Attendance")
 	year_list = (
-		frappe.qb.from_(Attendance).select(Extract("year", Attendance.attendance_date).as_("year")).distinct()
+		nts.qb.from_(Attendance).select(Extract("year", Attendance.attendance_date).as_("year")).distinct()
 	).run(as_dict=True)
 
 	if year_list:
 		year_list.sort(key=lambda d: d.year, reverse=True)
 	else:
-		year_list = [frappe._dict({"year": getdate().year})]
+		year_list = [nts._dict({"year": getdate().year})]
 
 	return "\n".join(cstr(entry.year) for entry in year_list)
 

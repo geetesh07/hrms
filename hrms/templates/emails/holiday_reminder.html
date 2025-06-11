@@ -7,7 +7,7 @@
     {% if holidays | len > 0 %}
     <ol>
         {% for holiday in holidays %}
-            <li>{{ frappe.format(holiday.holiday_date, 'Date') }} - {{ holiday.description }}</li>
+            <li>{{ nts.format(holiday.holiday_date, 'Date') }} - {{ holiday.description }}</li>
         {% endfor %}
     </ol>
     {% else %}

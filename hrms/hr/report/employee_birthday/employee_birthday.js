@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.query_reports["Employee Birthday"] = {
+nts.query_reports["Employee Birthday"] = {
 	filters: [
 		{
 			fieldname: "month",
@@ -21,14 +21,14 @@ frappe.query_reports["Employee Birthday"] = {
 				"Oct",
 				"Nov",
 				"Dec",
-			][frappe.datetime.str_to_obj(frappe.datetime.get_today()).getMonth()],
+			][nts.datetime.str_to_obj(nts.datetime.get_today()).getMonth()],
 		},
 		{
 			fieldname: "company",
 			label: __("Company"),
 			fieldtype: "Link",
 			options: "Company",
-			default: frappe.defaults.get_user_default("Company"),
+			default: nts.defaults.get_user_default("Company"),
 		},
 	],
 };

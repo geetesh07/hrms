@@ -1,5 +1,5 @@
-import frappe
-from frappe.model.utils.rename_field import rename_field
+import nts
+from nts.model.utils.rename_field import rename_field
 
 
 def execute():
@@ -10,19 +10,19 @@ def execute():
 		if e.args[0] != 1054:
 			raise
 
-	if not frappe.db.has_column("Leave Encashment", "encashable_days"):
+	if not nts.db.has_column("Leave Encashment", "encashable_days"):
 		return
 
 	# set new field values
-	LeaveEncashment = frappe.qb.DocType("Leave Encashment")
+	LeaveEncashment = nts.qb.DocType("Leave Encashment")
 	(
-		frappe.qb.update(LeaveEncashment)
+		nts.qb.update(LeaveEncashment)
 		.set(LeaveEncashment.encashment_days, LeaveEncashment.encashable_days)
 		.where(LeaveEncashment.encashment_days.isnull())
 	).run()
 
 	(
-		frappe.qb.update(LeaveEncashment)
+		nts.qb.update(LeaveEncashment)
 		.set(LeaveEncashment.actual_encashable_days, LeaveEncashment.encashable_days)
 		.where(LeaveEncashment.actual_encashable_days.isnull())
 	).run()

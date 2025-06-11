@@ -1,10 +1,10 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 from datetime import datetime, timedelta
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import (
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import (
 	add_days,
 	get_time,
 	get_year_ending,
@@ -13,8 +13,8 @@ from frappe.utils import (
 	now_datetime,
 )
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 
 from hrms.hr.doctype.leave_application.test_leave_application import get_first_sunday
 from hrms.hr.doctype.shift_type.shift_type import update_last_sync_of_checkin
@@ -22,12 +22,12 @@ from hrms.payroll.doctype.salary_slip.test_salary_slip import make_holiday_list
 from hrms.tests.test_utils import add_date_to_holiday_list
 
 
-class TestShiftType(FrappeTestCase):
+class TestShiftType(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Shift Type")
-		frappe.db.delete("Shift Assignment")
-		frappe.db.delete("Employee Checkin")
-		frappe.db.delete("Attendance")
+		nts.db.delete("Shift Type")
+		nts.db.delete("Shift Assignment")
+		nts.db.delete("Employee Checkin")
+		nts.db.delete("Attendance")
 
 		from_date = get_year_start(getdate())
 		to_date = get_year_ending(getdate())
@@ -44,14 +44,14 @@ class TestShiftType(FrappeTestCase):
 		make_shift_assignment(shift_type.name, employee, date)
 
 		# case 1: last sync updates from none to shift end after the shift end time
-		frappe.flags.current_datetime = datetime.combine(getdate(), get_time("14:00:00"))
+		nts.flags.current_datetime = datetime.combine(getdate(), get_time("14:00:00"))
 		update_last_sync_of_checkin()
 		shift_type.reload()
 		# last sync should be updated to 13:00:00
 		self.assertEqual(shift_type.last_sync_of_checkin, datetime.combine(getdate(), get_time("13:01:00")))
 
 		# case 2: last sync doesn't update in the middle of the shift
-		frappe.flags.current_datetime = add_days(datetime.combine(getdate(), get_time("12:00:00")), 1)
+		nts.flags.current_datetime = add_days(datetime.combine(getdate(), get_time("12:00:00")), 1)
 		update_last_sync_of_checkin()
 		shift_type.reload()
 		self.assertEqual(shift_type.last_sync_of_checkin, datetime.combine(getdate(), get_time("13:01:00")))
@@ -72,14 +72,14 @@ class TestShiftType(FrappeTestCase):
 		make_shift_assignment(shift_type.name, employee, date)
 
 		# case 1: last sync updates from none to shift end after the shift end time
-		frappe.flags.current_datetime = datetime.combine(getdate(), get_time("02:00:00"))
+		nts.flags.current_datetime = datetime.combine(getdate(), get_time("02:00:00"))
 		update_last_sync_of_checkin()
 		shift_type.reload()
 		# last sync should be updated to 01:01:00
 		self.assertEqual(shift_type.last_sync_of_checkin, datetime.combine(getdate(), get_time("01:01:00")))
 
 		# case 2: last sync doesn't update in the middle of the shift
-		frappe.flags.current_datetime = datetime.combine(getdate(), get_time("19:00:00"))
+		nts.flags.current_datetime = datetime.combine(getdate(), get_time("19:00:00"))
 		update_last_sync_of_checkin()
 		shift_type.reload()
 		self.assertEqual(shift_type.last_sync_of_checkin, datetime.combine(getdate(), get_time("01:01:00")))
@@ -97,14 +97,14 @@ class TestShiftType(FrappeTestCase):
 		make_shift_assignment(shift_type.name, employee, date)
 
 		# case 1: last sync updates from none to shift end after the shift end time
-		frappe.flags.current_datetime = datetime.combine(getdate(), get_time("08:00:00"))
+		nts.flags.current_datetime = datetime.combine(getdate(), get_time("08:00:00"))
 		update_last_sync_of_checkin()
 		shift_type.reload()
 		# last sync should be updated to 07:01:00
 		self.assertEqual(shift_type.last_sync_of_checkin, datetime.combine(getdate(), get_time("07:01:00")))
 
 		# case 2: last sync doesn't update in the middle of the shift
-		frappe.flags.current_datetime = add_days(datetime.combine(getdate(), get_time("01:00:00")), 1)
+		nts.flags.current_datetime = add_days(datetime.combine(getdate(), get_time("01:00:00")), 1)
 		update_last_sync_of_checkin()
 		shift_type.reload()
 		self.assertEqual(shift_type.last_sync_of_checkin, datetime.combine(getdate(), get_time("07:01:00")))
@@ -128,7 +128,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"employee": employee, "shift": shift_type.name}, "status"
 		)
 		self.assertEqual(attendance, "Present")
@@ -157,7 +157,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"employee": employee, "shift": shift_type.name}, "status"
 		)
 		self.assertEqual(attendance, "Present")
@@ -183,7 +183,7 @@ class TestShiftType(FrappeTestCase):
 
 		# even though actual start time starts on the prev date,
 		# attendance date should be the current date (start date of the shift)
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance",
 			{"shift": shift_type.name},
 			["attendance_date", "status"],
@@ -218,7 +218,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance",
 			{"shift": shift_type.name, "employee": employee},
 			["status", "name", "late_entry", "early_exit"],
@@ -246,7 +246,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"shift": shift_type.name}, ["status", "working_hours"], as_dict=True
 		)
 		self.assertEqual(attendance.status, "Half Day")
@@ -270,7 +270,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"shift": shift_type.name}, ["status", "working_hours"], as_dict=True
 		)
 		self.assertEqual(attendance.status, "Absent")
@@ -299,7 +299,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"shift": shift_type.name}, ["status", "working_hours"], as_dict=True
 		)
 		self.assertEqual(attendance.status, "Half Day")
@@ -328,7 +328,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value("Attendance", {"shift": shift_type.name}, "status")
+		attendance = nts.db.get_value("Attendance", {"shift": shift_type.name}, "status")
 		self.assertEqual(attendance, "Absent")
 
 	@set_holiday_list("Salary Slip Test Holiday List", "_Test Company")
@@ -355,7 +355,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"employee": employee, "attendance_date": date}, "status"
 		)
 		self.assertEqual(attendance, "Present")
@@ -384,7 +384,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"employee": employee, "attendance_date": date}, "status"
 		)
 		self.assertIsNone(attendance)
@@ -410,7 +410,7 @@ class TestShiftType(FrappeTestCase):
 
 		# absentees are auto-marked one day after shift actual end to wait for any manual attendance records
 		# so all days should be marked as absent except today
-		absent_records = frappe.get_all(
+		absent_records = nts.get_all(
 			"Attendance",
 			{
 				"attendance_date": ["between", [date1, yesterday]],
@@ -419,7 +419,7 @@ class TestShiftType(FrappeTestCase):
 			},
 		)
 		self.assertEqual(len(absent_records), 5)
-		todays_attendance = frappe.db.get_value(
+		todays_attendance = nts.db.get_value(
 			"Attendance", {"attendance_date": today, "employee": employee}
 		)
 		self.assertIsNone(todays_attendance)
@@ -448,7 +448,7 @@ class TestShiftType(FrappeTestCase):
 		make_shift_assignment(shift_type.name, employee, date3)
 
 		shift_type.process_auto_attendance()
-		absent_records = frappe.get_all(
+		absent_records = nts.get_all(
 			"Attendance",
 			fields=["name", "employee", "attendance_date", "status", "shift"],
 			filters={
@@ -461,7 +461,7 @@ class TestShiftType(FrappeTestCase):
 		self.assertEqual(len(absent_records), 5)
 		# absent for first assignment
 		self.assertEqual(
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Attendance",
 				{"attendance_date": date1, "shift": shift_type.name, "employee": employee},
 				"status",
@@ -470,14 +470,14 @@ class TestShiftType(FrappeTestCase):
 		)
 		# no attendance for day after first assignment
 		self.assertIsNone(
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Attendance",
 				{"attendance_date": add_days(date1, 1), "shift": shift_type.name, "employee": employee},
 			)
 		)
 		# absent for second assignment
 		self.assertEqual(
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Attendance",
 				{"attendance_date": date2, "shift": shift_type.name, "employee": employee},
 				"status",
@@ -486,14 +486,14 @@ class TestShiftType(FrappeTestCase):
 		)
 		# no attendance for day after second assignment
 		self.assertIsNone(
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Attendance",
 				{"attendance_date": add_days(date2, 1), "shift": shift_type.name, "employee": employee},
 			)
 		)
 		# absent for third assignment
 		self.assertEqual(
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Attendance",
 				{"attendance_date": date3, "shift": shift_type.name, "employee": employee},
 				"status",
@@ -501,7 +501,7 @@ class TestShiftType(FrappeTestCase):
 			"Absent",
 		)
 		self.assertEqual(
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Attendance",
 				{"attendance_date": add_days(date3, 1), "shift": shift_type.name, "employee": employee},
 				"status",
@@ -530,7 +530,7 @@ class TestShiftType(FrappeTestCase):
 		shift_2.save()
 		shift_2.process_auto_attendance()
 
-		self.assertIsNone(frappe.db.get_value("Attendance", {"attendance_date": today, "employee": employee}))
+		self.assertIsNone(nts.db.get_value("Attendance", {"attendance_date": today, "employee": employee}))
 
 	def test_do_not_mark_absent_before_shift_actual_end_time_for_midnight_shift(self):
 		"""
@@ -560,7 +560,7 @@ class TestShiftType(FrappeTestCase):
 		# last sync of checkin is 00:30:00 and the checkin logs are not applicable for attendance yet
 		# so it should not mark the employee as absent either
 		shift_type.process_auto_attendance()
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"attendance_date": prev_date, "employee": employee}, "status"
 		)
 		self.assertIsNone(attendance)
@@ -570,7 +570,7 @@ class TestShiftType(FrappeTestCase):
 		shift_type.save()
 		shift_type.process_auto_attendance()
 		# employee marked present considering checkins
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"attendance_date": prev_date, "employee": employee}, "status"
 		)
 		self.assertEqual(attendance, "Present")
@@ -584,7 +584,7 @@ class TestShiftType(FrappeTestCase):
 
 		# should not mark any attendance if no shift assignment is created
 		shift_type.process_auto_attendance()
-		attendance = frappe.db.get_value("Attendance", {"employee": employee}, "status")
+		attendance = nts.db.get_value("Attendance", {"employee": employee}, "status")
 		self.assertIsNone(attendance)
 
 		first_sunday = get_first_sunday(self.holiday_list, for_date=getdate())
@@ -592,7 +592,7 @@ class TestShiftType(FrappeTestCase):
 
 		shift_type.process_auto_attendance()
 
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance",
 			{"attendance_date": first_sunday, "employee": employee},
 		)
@@ -626,13 +626,13 @@ class TestShiftType(FrappeTestCase):
 		make_checkin(employee, timestamp)
 
 		default_shift.process_auto_attendance()
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"employee": employee, "shift": default_shift.name}, "status"
 		)
 		self.assertIsNone(attendance)
 
 		assigned_shift.process_auto_attendance()
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"employee": employee, "shift": assigned_shift.name}, "status"
 		)
 		self.assertEqual(attendance, "Present")
@@ -646,10 +646,10 @@ class TestShiftType(FrappeTestCase):
 		make_shift_assignment(shift.name, employee, date)
 
 		# mark employee as Inactive
-		frappe.db.set_value("Employee", employee, "status", "Inactive")
+		nts.db.set_value("Employee", employee, "status", "Inactive")
 
 		shift.process_auto_attendance()
-		attendance = frappe.db.get_value("Attendance", {"employee": employee}, "status")
+		attendance = nts.db.get_value("Attendance", {"employee": employee}, "status")
 		self.assertIsNone(attendance)
 
 	def test_get_start_and_end_dates(self):
@@ -672,17 +672,17 @@ class TestShiftType(FrappeTestCase):
 		shift_type.process_auto_attendance()
 
 		# should not mark absent before shift assignment/process attendance after date
-		attendance = frappe.db.get_value("Attendance", {"attendance_date": doj, "employee": employee}, "name")
+		attendance = nts.db.get_value("Attendance", {"attendance_date": doj, "employee": employee}, "name")
 		self.assertIsNone(attendance)
 
 		# mark absent on Relieving Date
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"attendance_date": relieving_date, "employee": employee}, "status"
 		)
 		self.assertEqual(attendance, "Absent")
 
 		# should not mark absent after Relieving Date
-		attendance = frappe.db.get_value(
+		attendance = nts.db.get_value(
 			"Attendance", {"attendance_date": add_days(relieving_date, 1), "employee": employee}, "name"
 		)
 		self.assertIsNone(attendance)
@@ -764,7 +764,7 @@ class TestShiftType(FrappeTestCase):
 		mark_attendance(employee, add_days(getdate(), -1), "Present", shift=shift_1.name)
 		shift_1.process_auto_attendance()
 		self.assertEqual(
-			frappe.db.get_value(
+			nts.db.get_value(
 				"Attendance",
 				{"employee": employee, "attendance_date": getdate(), "shift": shift_1.name},
 				"status",
@@ -786,7 +786,7 @@ class TestShiftType(FrappeTestCase):
 		check_in.fetch_shift()
 		# Case 1: raise valdiation error if shift time is being changed and checkin logs exists
 		shift.start_time = get_time("10:15:00")
-		self.assertRaises(frappe.ValidationError, shift.save)
+		self.assertRaises(nts.ValidationError, shift.save)
 
 		# don't raise validation error if something else is being changed
 		# even if checkin logs exists, it's probably fine
@@ -794,7 +794,7 @@ class TestShiftType(FrappeTestCase):
 		shift.begin_check_in_before_shift_start_time = 120
 		shift.save()
 		self.assertEqual(
-			frappe.get_value("Shift Type", shift.name, "begin_check_in_before_shift_start_time"), 120
+			nts.get_value("Shift Type", shift.name, "begin_check_in_before_shift_start_time"), 120
 		)
 		out_time = datetime.combine(getdate(), get_time("18:00:00"))
 		check_out = make_checkin(employee, out_time)
@@ -805,12 +805,12 @@ class TestShiftType(FrappeTestCase):
 		shift.start_time = get_time("10:15:00")
 		shift.save()
 		self.assertEqual(
-			get_time(frappe.get_value("Shift Type", shift.name, "start_time")), get_time("10:15:00")
+			get_time(nts.get_value("Shift Type", shift.name, "start_time")), get_time("10:15:00")
 		)
 
 	def test_circular_shift_times(self):
 		# single day shift
-		shift_type = frappe.get_doc(
+		shift_type = nts.get_doc(
 			{
 				"doctype": "Shift Type",
 				"__newname": "Test Shift Validation",
@@ -826,10 +826,10 @@ class TestShiftType(FrappeTestCase):
 			}
 		)
 
-		self.assertRaises(frappe.ValidationError, shift_type.save)
+		self.assertRaises(nts.ValidationError, shift_type.save)
 
 		# two day shift
-		shift_type = frappe.get_doc(
+		shift_type = nts.get_doc(
 			{
 				"doctype": "Shift Type",
 				"__newname": "Test Shift Validation",
@@ -844,14 +844,14 @@ class TestShiftType(FrappeTestCase):
 				"last_sync_of_checkin": now_datetime() + timedelta(days=1),
 			}
 		)
-		self.assertRaises(frappe.ValidationError, shift_type.save)
+		self.assertRaises(nts.ValidationError, shift_type.save)
 
 
 def setup_shift_type(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 	date = getdate()
-	if not frappe.db.exists("Shift Type", args.shift_type):
-		shift_type = frappe.get_doc(
+	if not nts.db.exists("Shift Type", args.shift_type):
+		shift_type = nts.get_doc(
 			{
 				"doctype": "Shift Type",
 				"__newname": args.shift_type or "_Test Shift",
@@ -868,11 +868,11 @@ def setup_shift_type(**args):
 			}
 		)
 	else:
-		shift_type = frappe.get_doc("Shift Type", args.shift_type)
+		shift_type = nts.get_doc("Shift Type", args.shift_type)
 
 	holiday_list = "Employee Checkin Test Holiday List"
-	if not frappe.db.exists("Holiday List", "Employee Checkin Test Holiday List"):
-		holiday_list = frappe.get_doc(
+	if not nts.db.exists("Holiday List", "Employee Checkin Test Holiday List"):
+		holiday_list = nts.get_doc(
 			{
 				"doctype": "Holiday List",
 				"holiday_list_name": "Employee Checkin Test Holiday List",
@@ -892,7 +892,7 @@ def setup_shift_type(**args):
 def make_shift_assignment(
 	shift_type, employee, start_date, end_date=None, do_not_submit=False, shift_location=None
 ):
-	shift_assignment = frappe.get_doc(
+	shift_assignment = nts.get_doc(
 		{
 			"doctype": "Shift Assignment",
 			"shift_type": shift_type,

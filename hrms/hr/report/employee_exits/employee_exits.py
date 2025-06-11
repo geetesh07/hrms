@@ -1,12 +1,12 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # License: MIT. See LICENSE
 
 from pypika import functions as fn
 
-import frappe
-from frappe import _
-from frappe.query_builder import Order
-from frappe.utils import getdate
+import nts
+from nts import _
+from nts.query_builder import Order
+from nts.utils import getdate
 
 
 def execute(filters=None):
@@ -86,12 +86,12 @@ def get_columns():
 
 
 def get_data(filters):
-	employee = frappe.qb.DocType("Employee")
-	interview = frappe.qb.DocType("Exit Interview")
-	fnf = frappe.qb.DocType("Full and Final Statement")
+	employee = nts.qb.DocType("Employee")
+	interview = nts.qb.DocType("Exit Interview")
+	fnf = nts.qb.DocType("Full and Final Statement")
 
 	query = (
-		frappe.qb.from_(employee)
+		nts.qb.from_(employee)
 		.left_join(interview)
 		.on(interview.employee == employee.name)
 		.left_join(fnf)

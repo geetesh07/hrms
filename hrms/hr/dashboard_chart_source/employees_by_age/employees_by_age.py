@@ -1,16 +1,16 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
 from dateutil.relativedelta import relativedelta
 
-import frappe
-from frappe import _
-from frappe.utils import getdate
-from frappe.utils.dashboard import cache_source
+import nts
+from nts import _
+from nts.utils import getdate
+from nts.utils.dashboard import cache_source
 
 
-@frappe.whitelist()
+@nts.whitelist()
 @cache_source
 def get_data(
 	chart_name=None,
@@ -24,9 +24,9 @@ def get_data(
 	heatmap_year=None,
 ) -> dict[str, list]:
 	if filters:
-		filters = frappe.parse_json(filters)
+		filters = nts.parse_json(filters)
 
-	employees = frappe.db.get_list(
+	employees = nts.db.get_list(
 		"Employee",
 		filters={"company": filters.get("company"), "status": "Active"},
 		pluck="date_of_birth",

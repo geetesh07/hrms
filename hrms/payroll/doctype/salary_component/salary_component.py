@@ -1,12 +1,12 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 import copy
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.model.naming import append_number_if_name_exists
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.model.naming import append_number_if_name_exists
 
 from hrms.payroll.utils import sanitize_expression
 
@@ -33,8 +33,8 @@ class SalaryComponent(Document):
 			TAX_COMPONENTS_BY_COMPANY,
 		)
 
-		frappe.cache().delete_value(SALARY_COMPONENT_VALUES)
-		frappe.cache().delete_value(TAX_COMPONENTS_BY_COMPANY)
+		nts.cache().delete_value(SALARY_COMPONENT_VALUES)
+		nts.cache().delete_value(TAX_COMPONENTS_BY_COMPANY)
 		return super().clear_cache()
 
 	def validate_abbr(self):
@@ -52,18 +52,18 @@ class SalaryComponent(Document):
 
 	def validate_accounts(self):
 		if not (self.statistical_component or (self.accounts and all(d.account for d in self.accounts))):
-			frappe.msgprint(
+			nts.msgprint(
 				title=_("Warning"),
 				msg=_("Accounts not set for Salary Component {0}").format(self.name),
 				indicator="orange",
 			)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_structures_to_be_updated(self):
-		SalaryStructure = frappe.qb.DocType("Salary Structure")
-		SalaryDetail = frappe.qb.DocType("Salary Detail")
+		SalaryStructure = nts.qb.DocType("Salary Structure")
+		SalaryDetail = nts.qb.DocType("Salary Detail")
 		return (
-			frappe.qb.from_(SalaryStructure)
+			nts.qb.from_(SalaryStructure)
 			.inner_join(SalaryDetail)
 			.on(SalaryStructure.name == SalaryDetail.parent)
 			.select(SalaryStructure.name)
@@ -71,7 +71,7 @@ class SalaryComponent(Document):
 			.run(pluck=True)
 		)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def update_salary_structures(self, field, value, structures=None):
 		is_formula_related = field == "formula"
 
@@ -79,7 +79,7 @@ class SalaryComponent(Document):
 			structures = self.get_structures_to_be_updated()
 
 		for structure in structures:
-			salary_structure = frappe.get_doc("Salary Structure", structure)
+			salary_structure = nts.get_doc("Salary Structure", structure)
 			# this is only used for versioning and we do not want
 			# to make separate db calls by using load_doc_before_save
 			# which proves to be expensive while doing bulk replace

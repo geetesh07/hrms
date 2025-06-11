@@ -1,7 +1,7 @@
-// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2016, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Payment Entry", {
+nts.ui.form.on("Payment Entry", {
 	refresh: function (frm) {
 		frm.set_query("reference_doctype", "references", function () {
 			let doctypes = [];
@@ -69,12 +69,12 @@ frappe.ui.form.on("Payment Entry", {
 	},
 });
 
-frappe.ui.form.on("Payment Entry Reference", {
+nts.ui.form.on("Payment Entry Reference", {
 	reference_name: function (frm, cdt, cdn) {
 		let row = locals[cdt][cdn];
 
 		if (row.reference_name && row.reference_doctype) {
-			return frappe.call({
+			return nts.call({
 				method: "hrms.overrides.employee_payment_entry.get_payment_reference_details",
 				args: {
 					reference_doctype: row.reference_doctype,
@@ -89,7 +89,7 @@ frappe.ui.form.on("Payment Entry Reference", {
 				callback: function (r, rt) {
 					if (r.message) {
 						$.each(r.message, function (field, value) {
-							frappe.model.set_value(cdt, cdn, field, value);
+							nts.model.set_value(cdt, cdn, field, value);
 						});
 
 						let allocated_amount =
@@ -97,7 +97,7 @@ frappe.ui.form.on("Payment Entry Reference", {
 								? row.outstanding_amount
 								: frm.doc.unallocated_amount;
 
-						frappe.model.set_value(cdt, cdn, "allocated_amount", allocated_amount);
+						nts.model.set_value(cdt, cdn, "allocated_amount", allocated_amount);
 						frm.refresh_fields();
 					}
 				},

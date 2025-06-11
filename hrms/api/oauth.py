@@ -1,14 +1,14 @@
-import frappe
+import nts
 
 
-@frappe.whitelist(allow_guest=True)
+@nts.whitelist(allow_guest=True)
 def oauth_providers():
-	from frappe.utils.html_utils import get_icon_html
-	from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
-	from frappe.utils.password import get_decrypted_password
+	from nts.utils.html_utils import get_icon_html
+	from nts.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
+	from nts.utils.password import get_decrypted_password
 
 	out = []
-	providers = frappe.get_all(
+	providers = nts.get_all(
 		"Social Login Key",
 		filters={"enable_social_login": 1},
 		fields=["name", "client_id", "base_url", "provider_name", "icon"],

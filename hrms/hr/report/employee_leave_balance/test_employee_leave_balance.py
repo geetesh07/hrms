@@ -1,13 +1,13 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, add_months, flt, get_year_ending, get_year_start, getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, add_months, flt, get_year_ending, get_year_start, getdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
+from prodman.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 
 from hrms.hr.doctype.leave_application.test_leave_application import make_allocation_record
 from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import process_expired_allocation
@@ -19,10 +19,10 @@ from hrms.payroll.doctype.salary_slip.test_salary_slip import (
 )
 from hrms.tests.test_utils import get_first_sunday
 
-test_records = frappe.get_test_records("Leave Type")
+test_records = nts.get_test_records("Leave Type")
 
 
-class TestEmployeeLeaveBalance(FrappeTestCase):
+class TestEmployeeLeaveBalance(ntsTestCase):
 	def setUp(self):
 		for dt in [
 			"Leave Application",
@@ -31,9 +31,9 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 			"Leave Ledger Entry",
 			"Leave Type",
 		]:
-			frappe.db.delete(dt)
+			nts.db.delete(dt)
 
-		frappe.set_user("Administrator")
+		nts.set_user("Administrator")
 
 		self.employee_id = make_employee("test_emp_leave_balance@example.com", company="_Test Company")
 
@@ -47,11 +47,11 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 		)
 
 	def tearDown(self):
-		frappe.db.rollback()
+		nts.db.rollback()
 
 	@set_holiday_list("_Test Emp Balance Holiday List", "_Test Company")
 	def test_employee_leave_balance(self):
-		frappe.get_doc(test_records[0]).insert()
+		nts.get_doc(test_records[0]).insert()
 
 		# 5 leaves
 		allocation1 = make_allocation_record(
@@ -74,7 +74,7 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 		)
 		leave_application.reload()
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": allocation1.from_date,
 				"to_date": allocation2.to_date,
@@ -102,7 +102,7 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 
 	@set_holiday_list("_Test Emp Balance Holiday List", "_Test Company")
 	def test_opening_balance_on_alloc_boundary_dates(self):
-		frappe.get_doc(test_records[0]).insert()
+		nts.get_doc(test_records[0]).insert()
 
 		# 30 leaves allocated
 		allocation1 = make_allocation_record(
@@ -116,14 +116,14 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 		leave_application.reload()
 
 		# Case 1: opening balance for first alloc boundary
-		filters = frappe._dict(
+		filters = nts._dict(
 			{"from_date": self.year_start, "to_date": self.year_end, "employee": self.employee_id}
 		)
 		report = execute(filters)
 		self.assertEqual(report[1][0].opening_balance, 0)
 
 		# Case 2: opening balance after leave application date
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": add_days(leave_application.to_date, 1),
 				"to_date": self.year_end,
@@ -138,7 +138,7 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 
 		# Case 3: leave balance shows actual balance and not consumption balance as per remaining days near alloc end date
 		# eg: 3 days left for alloc to end, leave balance should still be 26 and not 3
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": add_days(self.year_end, -3),
 				"to_date": self.year_end,
@@ -178,7 +178,7 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 		)
 
 		# Case 1: carry forwarded leaves considered in opening balance for second alloc
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": add_days(self.mid_year, 1),
 				"to_date": self.year_end,
@@ -191,7 +191,7 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 		self.assertEqual(report[1][0].opening_balance, opening_balance)
 
 		# Case 2: opening balance one day after alloc boundary = carry forwarded leaves + new leaves alloc
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": add_days(self.mid_year, 2),
 				"to_date": self.year_end,
@@ -207,7 +207,7 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 
 	@set_holiday_list("_Test Emp Balance Holiday List", "_Test Company")
 	def test_employee_status_filter(self):
-		frappe.get_doc(test_records[0]).insert()
+		nts.get_doc(test_records[0]).insert()
 		inactive_emp = make_employee("test_emp_status@example.com", company="_Test Company")
 
 		allocation = make_allocation_record(
@@ -218,9 +218,9 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 		)
 
 		# set employee as inactive
-		frappe.db.set_value("Employee", inactive_emp, "status", "Inactive")
+		nts.db.set_value("Employee", inactive_emp, "status", "Inactive")
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": allocation.from_date,
 				"to_date": allocation.to_date,
@@ -231,7 +231,7 @@ class TestEmployeeLeaveBalance(FrappeTestCase):
 		report = execute(filters)
 		self.assertEqual(len(report[1]), 0)
 
-		filters = frappe._dict(
+		filters = nts._dict(
 			{
 				"from_date": allocation.from_date,
 				"to_date": allocation.to_date,

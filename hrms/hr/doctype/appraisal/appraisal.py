@@ -1,11 +1,11 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.query_builder.functions import Avg
-from frappe.utils import flt, get_link_to_form, now
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.query_builder.functions import Avg
+from nts.utils import flt, get_link_to_form, now
 
 from hrms.hr.doctype.appraisal_cycle.appraisal_cycle import validate_active_appraisal_cycle
 from hrms.hr.utils import validate_active_employee
@@ -29,9 +29,9 @@ class Appraisal(Document, AppraisalMixin):
 		self.calculate_final_score()
 
 	def validate_duplicate(self):
-		Appraisal = frappe.qb.DocType("Appraisal")
+		Appraisal = nts.qb.DocType("Appraisal")
 		duplicate = (
-			frappe.qb.from_(Appraisal)
+			nts.qb.from_(Appraisal)
 			.select(Appraisal.name)
 			.where(
 				(Appraisal.employee == self.employee)
@@ -54,11 +54,11 @@ class Appraisal(Document, AppraisalMixin):
 		duplicate = duplicate[0][0] if duplicate else 0
 
 		if duplicate:
-			frappe.throw(
+			nts.throw(
 				_(
 					"Appraisal {0} already exists for Employee {1} for this Appraisal Cycle or overlapping period"
-				).format(get_link_to_form("Appraisal", duplicate), frappe.bold(self.employee_name)),
-				exc=frappe.DuplicateEntryError,
+				).format(get_link_to_form("Appraisal", duplicate), nts.bold(self.employee_name)),
+				exc=nts.DuplicateEntryError,
 				title=_("Duplicate Entry"),
 			)
 
@@ -67,19 +67,19 @@ class Appraisal(Document, AppraisalMixin):
 			self.is_new()
 			and self.appraisal_cycle
 			and (
-				frappe.db.get_value("Appraisal Cycle", self.appraisal_cycle, "kra_evaluation_method")
+				nts.db.get_value("Appraisal Cycle", self.appraisal_cycle, "kra_evaluation_method")
 				== "Manual Rating"
 			)
 		):
 			self.rate_goals_manually = 1
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def set_appraisal_template(self):
 		"""Sets appraisal template from Appraisee table in Cycle"""
 		if not self.appraisal_cycle:
 			return
 
-		appraisal_template = frappe.db.get_value(
+		appraisal_template = nts.db.get_value(
 			"Appraisee",
 			{
 				"employee": self.employee,
@@ -92,7 +92,7 @@ class Appraisal(Document, AppraisalMixin):
 			self.appraisal_template = appraisal_template
 			self.set_kras_and_rating_criteria()
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def set_kras_and_rating_criteria(self):
 		if not self.appraisal_template:
 			return
@@ -101,7 +101,7 @@ class Appraisal(Document, AppraisalMixin):
 		self.set("self_ratings", [])
 		self.set("goals", [])
 
-		template = frappe.get_doc("Appraisal Template", self.appraisal_template)
+		template = nts.get_doc("Appraisal Template", self.appraisal_template)
 
 		for entry in template.goals:
 			table_name = "goals" if self.rate_goals_manually else "appraisal_kra"
@@ -132,7 +132,7 @@ class Appraisal(Document, AppraisalMixin):
 			table = _("Goals")
 			for entry in self.goals:
 				if flt(entry.score) > 5:
-					frappe.throw(_("Row {0}: Goal Score cannot be greater than 5").format(entry.idx))
+					nts.throw(_("Row {0}: Goal Score cannot be greater than 5").format(entry.idx))
 
 				entry.score_earned = flt(entry.score) * flt(entry.per_weightage) / 100
 				total += flt(entry.score_earned)
@@ -149,7 +149,7 @@ class Appraisal(Document, AppraisalMixin):
 			total = flt(goal_score_percentage) / 20
 
 		if total_weightage and flt(total_weightage, 2) != 100.0:
-			frappe.throw(
+			nts.throw(
 				_("Total weightage for all {0} must add up to 100. Currently, it is {1}%").format(
 					table, total_weightage
 				),
@@ -167,7 +167,7 @@ class Appraisal(Document, AppraisalMixin):
 		self.self_score = flt(total, self.precision("self_score"))
 
 	def calculate_avg_feedback_score(self, update=False):
-		avg_feedback_score = frappe.qb.avg(
+		avg_feedback_score = nts.qb.avg(
 			"Employee Performance Feedback",
 			"total_score",
 			{"employee": self.employee, "appraisal": self.name, "docstatus": 1},
@@ -181,13 +181,13 @@ class Appraisal(Document, AppraisalMixin):
 
 	def calculate_final_score(self):
 		final_score = 0
-		appraisal_cycle_doc = frappe.get_cached_doc("Appraisal Cycle", self.appraisal_cycle)
+		appraisal_cycle_doc = nts.get_cached_doc("Appraisal Cycle", self.appraisal_cycle)
 
 		formula = appraisal_cycle_doc.final_score_formula
 		based_on_formula = appraisal_cycle_doc.calculate_final_score_based_on_formula
 
 		if based_on_formula:
-			employee_doc = frappe.get_cached_doc("Employee", self.employee)
+			employee_doc = nts.get_cached_doc("Employee", self.employee)
 			data = {
 				"goal_score": flt(self.total_score),
 				"average_feedback_score": flt(self.avg_feedback_score),
@@ -198,22 +198,22 @@ class Appraisal(Document, AppraisalMixin):
 			data.update(self.as_dict())
 
 			sanitized_formula = sanitize_expression(formula)
-			final_score = frappe.safe_eval(sanitized_formula, data)
+			final_score = nts.safe_eval(sanitized_formula, data)
 		else:
 			final_score = (flt(self.total_score) + flt(self.avg_feedback_score) + flt(self.self_score)) / 3
 
 		self.final_score = flt(final_score, self.precision("final_score"))
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def add_feedback(self, feedback, feedback_ratings):
-		feedback = frappe.get_doc(
+		feedback = nts.get_doc(
 			{
 				"doctype": "Employee Performance Feedback",
 				"appraisal": self.name,
 				"employee": self.employee,
 				"added_on": now(),
 				"feedback": feedback,
-				"reviewer": frappe.db.get_value("Employee", {"user_id": frappe.session.user}),
+				"reviewer": nts.db.get_value("Employee", {"user_id": nts.session.user}),
 			}
 		)
 
@@ -234,9 +234,9 @@ class Appraisal(Document, AppraisalMixin):
 	def set_goal_score(self, update=False):
 		for kra in self.appraisal_kra:
 			# update progress for all goals as KRA linked could be removed or changed
-			Goal = frappe.qb.DocType("Goal")
+			Goal = nts.qb.DocType("Goal")
 			avg_goal_completion = (
-				frappe.qb.from_(Goal)
+				nts.qb.from_(Goal)
 				.select(Avg(Goal.progress).as_("avg_goal_completion"))
 				.where(
 					(Goal.kra == kra.kra)
@@ -263,10 +263,10 @@ class Appraisal(Document, AppraisalMixin):
 		return self
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_feedback_history(employee, appraisal):
-	data = frappe._dict()
-	data.feedback_history = frappe.get_list(
+	data = nts._dict()
+	data.feedback_history = nts.get_list(
 		"Employee Performance Feedback",
 		filters={"employee": employee, "appraisal": appraisal, "docstatus": 1},
 		fields=[
@@ -287,7 +287,7 @@ def get_feedback_history(employee, appraisal):
 	# get percentage of reviews per rating
 	reviews_per_rating = []
 
-	feedback_count = frappe.db.count(
+	feedback_count = nts.db.count(
 		"Employee Performance Feedback",
 		filters={
 			"appraisal": appraisal,
@@ -297,7 +297,7 @@ def get_feedback_history(employee, appraisal):
 	)
 
 	for i in range(1, 6):
-		count = frappe.db.count(
+		count = nts.db.count(
 			"Employee Performance Feedback",
 			filters={
 				"appraisal": appraisal,
@@ -311,15 +311,15 @@ def get_feedback_history(employee, appraisal):
 		reviews_per_rating.append(percent)
 
 	data.reviews_per_rating = reviews_per_rating
-	data.avg_feedback_score = frappe.db.get_value("Appraisal", appraisal, "avg_feedback_score")
+	data.avg_feedback_score = nts.db.get_value("Appraisal", appraisal, "avg_feedback_score")
 
 	return data
 
 
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
+@nts.whitelist()
+@nts.validate_and_sanitize_search_inputs
 def get_kras_for_employee(doctype, txt, searchfield, start, page_len, filters):
-	appraisal = frappe.db.get_value(
+	appraisal = nts.db.get_value(
 		"Appraisal",
 		{
 			"appraisal_cycle": filters.get("appraisal_cycle"),
@@ -328,7 +328,7 @@ def get_kras_for_employee(doctype, txt, searchfield, start, page_len, filters):
 		"name",
 	)
 
-	return frappe.get_all(
+	return nts.get_all(
 		"Appraisal KRA",
 		filters={"parent": appraisal, "kra": ("like", f"{txt}%")},
 		fields=["kra"],

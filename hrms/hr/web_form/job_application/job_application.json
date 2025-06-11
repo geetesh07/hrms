@@ -9,7 +9,7 @@
  "amount": 0.0,
  "amount_based_on_field": 0,
  "apply_document_permissions": 0,
- "client_script": "frappe.web_form.on('resume_link', (field, value) => {\n    if (!frappe.utils.is_url(value)) {\n        frappe.msgprint(__('Resume link not valid'));\n    }\n});\n",
+ "client_script": "nts.web_form.on('resume_link', (field, value) => {\n    if (!nts.utils.is_url(value)) {\n        nts.msgprint(__('Resume link not valid'));\n    }\n});\n",
  "creation": "2016-09-10 02:53:16.598314",
  "doc_type": "Job Applicant",
  "docstatus": 0,

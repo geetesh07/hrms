@@ -1,12 +1,12 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, add_months, nowdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, add_months, nowdate
 
-import erpnext
-from erpnext.setup.doctype.employee.test_employee import make_employee
+import prodman
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.payroll.doctype.salary_component.test_salary_component import create_salary_component
 from hrms.payroll.doctype.salary_slip.test_salary_slip import make_employee_salary_slip, setup_test
@@ -16,7 +16,7 @@ from hrms.payroll.doctype.salary_structure.test_salary_structure import (
 )
 
 
-class TestAdditionalSalary(FrappeTestCase):
+class TestAdditionalSalary(ntsTestCase):
 	def setUp(self):
 		setup_test()
 
@@ -24,7 +24,7 @@ class TestAdditionalSalary(FrappeTestCase):
 		amount = 0
 		salary_component = None
 		emp_id = make_employee("test_additional@salary.com")
-		frappe.db.set_value("Employee", emp_id, "relieving_date", add_days(nowdate(), 1800))
+		nts.db.set_value("Employee", emp_id, "relieving_date", add_days(nowdate(), 1800))
 		salary_structure = make_salary_structure(
 			"Test Salary Structure Additional Salary", "Monthly", employee=emp_id
 		)
@@ -53,7 +53,7 @@ class TestAdditionalSalary(FrappeTestCase):
 
 		# Test disabling recurring additional salary
 		posting_date = add_months(ss.posting_date, 1)
-		frappe.db.set_value("Additional Salary", add_sal.name, "disabled", 1)
+		nts.db.set_value("Additional Salary", add_sal.name, "disabled", 1)
 
 		ss = make_salary_slip(salary_structure.name, employee=emp_id, posting_date=posting_date)
 
@@ -66,7 +66,7 @@ class TestAdditionalSalary(FrappeTestCase):
 		date = nowdate()
 
 		emp_id = make_employee("test_additional@salary.com")
-		frappe.db.set_value("Employee", emp_id, "relieving_date", add_days(date, 1800))
+		nts.db.set_value("Employee", emp_id, "relieving_date", add_days(date, 1800))
 		salary_structure = make_salary_structure(
 			"Test Salary Structure Additional Salary", "Monthly", employee=emp_id
 		)
@@ -122,7 +122,7 @@ class TestAdditionalSalary(FrappeTestCase):
 	def test_overwrite_tax_component(self):
 		def _get_tds_component(doc) -> dict:
 			return next(
-				(d for d in salary_slip.get("deductions") if d.salary_component == "TDS"), frappe._dict()
+				(d for d in salary_slip.get("deductions") if d.salary_component == "TDS"), nts._dict()
 			)
 
 		emp_id = make_employee("test_additional@salary.com")
@@ -152,7 +152,7 @@ class TestAdditionalSalary(FrappeTestCase):
 		make_salary_structure("Test Salary Structure Additional Salary", "Monthly", employee=emp_id)
 		date = nowdate()
 		get_additional_salary(emp_id, overwrite_salary_structure=1)
-		additional_salary_doc = frappe.get_doc(
+		additional_salary_doc = nts.get_doc(
 			{
 				"doctype": "Additional Salary",
 				"employee": emp_id,
@@ -162,7 +162,7 @@ class TestAdditionalSalary(FrappeTestCase):
 				"overwrite_salary_structure_amount": 1,
 			}
 		)
-		with self.assertRaises(frappe.ValidationError):
+		with self.assertRaises(nts.ValidationError):
 			additional_salary_doc.save()
 
 
@@ -170,7 +170,7 @@ def get_additional_salary(
 	emp_id, recurring=True, payroll_date=None, salary_component=None, overwrite_salary_structure=0
 ):
 	create_salary_component("Recurring Salary Component")
-	add_sal = frappe.new_doc("Additional Salary")
+	add_sal = nts.new_doc("Additional Salary")
 	add_sal.employee = emp_id
 	add_sal.salary_component = salary_component or "Recurring Salary Component"
 
@@ -181,7 +181,7 @@ def get_additional_salary(
 	add_sal.overwrite_salary_structure_amount = overwrite_salary_structure
 
 	add_sal.amount = 5000
-	add_sal.currency = erpnext.get_default_currency()
+	add_sal.currency = prodman.get_default_currency()
 	add_sal.save()
 	add_sal.submit()
 

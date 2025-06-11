@@ -1,10 +1,10 @@
-# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-from frappe.tests.utils import FrappeTestCase
+from nts.tests.utils import ntsTestCase
 
-# import frappe
+# import nts
 
 
-class TestInterviewRound(FrappeTestCase):
+class TestInterviewRound(ntsTestCase):
 	pass

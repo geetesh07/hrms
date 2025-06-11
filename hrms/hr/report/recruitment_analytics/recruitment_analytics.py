@@ -1,15 +1,15 @@
-# Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2013, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
+import nts
+from nts import _
 
 
 def execute(filters=None):
 	if not filters:
 		filters = {}
-	filters = frappe._dict(filters)
+	filters = nts._dict(filters)
 
 	columns = get_columns()
 
@@ -117,8 +117,8 @@ def get_child_row(jo, jo_ja_map, ja_joff_map):
 
 
 def get_staffing_plan(filters):
-	# nosemgrep: frappe-semgrep-rules.rules.frappe-using-db-sql
-	staffing_plan = frappe.db.sql(
+	# nosemgrep: nts-semgrep-rules.rules.nts-using-db-sql
+	staffing_plan = nts.db.sql(
 		f"""
 	select
 		sp.name, sp.department, spd.designation, spd.vacancies, spd.current_count, spd.parent, sp.to_date
@@ -136,7 +136,7 @@ def get_staffing_plan(filters):
 
 
 def get_job_opening(sp_list):
-	job_openings = frappe.get_all(
+	job_openings = nts.get_all(
 		"Job Opening", filters=[["staffing_plan", "IN", sp_list]], fields=["name", "staffing_plan"]
 	)
 
@@ -158,7 +158,7 @@ def get_job_applicant(jo_list):
 	jo_ja_map = {}
 	ja_list = []
 
-	applicants = frappe.get_all(
+	applicants = nts.get_all(
 		"Job Applicant",
 		filters=[["job_title", "IN", jo_list]],
 		fields=["name", "job_title", "applicant_name", "status"],
@@ -178,7 +178,7 @@ def get_job_applicant(jo_list):
 def get_job_offer(ja_list):
 	ja_joff_map = {}
 
-	offers = frappe.get_all(
+	offers = nts.get_all(
 		"Job Offer",
 		filters=[["job_applicant", "IN", ja_list]],
 		fields=["name", "job_applicant", "status", "offer_date", "designation"],

@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
 // For license information, please see license.txt
@@ -6,7 +6,7 @@
 // for communication
 cur_frm.email_field = "email_id";
 
-frappe.ui.form.on("Job Applicant", {
+nts.ui.form.on("Job Applicant", {
 	refresh: function (frm) {
 		frm.set_query("job_title", function () {
 			return {
@@ -37,7 +37,7 @@ frappe.ui.form.on("Job Applicant", {
 				frm.add_custom_button(
 					__("Job Offer"),
 					function () {
-						frappe.set_route("Form", "Job Offer", frm.doc.__onload.job_offer);
+						nts.set_route("Form", "Job Offer", frm.doc.__onload.job_offer);
 					},
 					__("View"),
 				);
@@ -47,12 +47,12 @@ frappe.ui.form.on("Job Applicant", {
 				frm.add_custom_button(
 					__("Job Offer"),
 					function () {
-						frappe.route_options = {
+						nts.route_options = {
 							job_applicant: frm.doc.name,
 							applicant_name: frm.doc.applicant_name,
 							designation: frm.doc.job_opening || frm.doc.designation,
 						};
-						frappe.new_doc("Job Offer");
+						nts.new_doc("Job Offer");
 					},
 					__("Create"),
 				);
@@ -61,7 +61,7 @@ frappe.ui.form.on("Job Applicant", {
 	},
 
 	make_dashboard: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.job_applicant.job_applicant.get_interview_details",
 			args: {
 				job_applicant: frm.doc.name,
@@ -70,7 +70,7 @@ frappe.ui.form.on("Job Applicant", {
 				if (r.message) {
 					$("div").remove(".form-dashboard-section.custom");
 					frm.dashboard.add_section(
-						frappe.render_template("job_applicant_dashboard", {
+						nts.render_template("job_applicant_dashboard", {
 							data: r.message.interviews,
 							number_of_stars: r.message.stars,
 						}),
@@ -82,7 +82,7 @@ frappe.ui.form.on("Job Applicant", {
 	},
 
 	create_dialog: function (frm) {
-		let d = new frappe.ui.Dialog({
+		let d = new nts.ui.Dialog({
 			title: "Enter Interview Round",
 			fields: [
 				{
@@ -102,15 +102,15 @@ frappe.ui.form.on("Job Applicant", {
 	},
 
 	create_interview: function (frm, values) {
-		frappe.call({
+		nts.call({
 			method: "hrms.hr.doctype.job_applicant.job_applicant.create_interview",
 			args: {
 				doc: frm.doc,
 				interview_round: values.interview_round,
 			},
 			callback: function (r) {
-				var doclist = frappe.model.sync(r.message);
-				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+				var doclist = nts.model.sync(r.message);
+				nts.set_route("Form", doclist[0].doctype, doclist[0].name);
 			},
 		});
 	},

@@ -1,7 +1,7 @@
-frappe.listview_settings["Salary Slip"] = {
+nts.listview_settings["Salary Slip"] = {
 	onload: function (listview) {
 		if (
-			!has_common(frappe.user_roles, [
+			!has_common(nts.user_roles, [
 				"Administrator",
 				"System Manager",
 				"HR Manager",
@@ -12,11 +12,11 @@ frappe.listview_settings["Salary Slip"] = {
 
 		listview.page.add_menu_item(__("Email Salary Slips"), () => {
 			if (!listview.get_checked_items().length) {
-				frappe.msgprint(__("Please select the salary slips to email"));
+				nts.msgprint(__("Please select the salary slips to email"));
 				return;
 			}
 
-			frappe.confirm(__("Are you sure you want to email the selected salary slips?"), () => {
+			nts.confirm(__("Are you sure you want to email the selected salary slips?"), () => {
 				listview.call_for_selected_items(
 					"hrms.payroll.doctype.salary_slip.salary_slip.enqueue_email_salary_slips",
 				);

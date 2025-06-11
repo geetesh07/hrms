@@ -1,12 +1,12 @@
-# Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2020, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.custom.doctype.property_setter.property_setter import make_property_setter
-from frappe.model.document import Document
-from frappe.utils import cint
+import nts
+from nts import _
+from nts.custom.doctype.property_setter.property_setter import make_property_setter
+from nts.model.document import Document
+from nts.utils import cint
 
 
 class PayrollSettings(Document):
@@ -19,11 +19,11 @@ class PayrollSettings(Document):
 	def validate_password_policy(self):
 		if self.email_salary_slip_to_employee and self.encrypt_salary_slips_in_emails:
 			if not self.password_policy:
-				frappe.throw(_("Password policy for Salary Slips is not set"))
+				nts.throw(_("Password policy for Salary Slips is not set"))
 
 	def on_update(self):
 		self.toggle_rounded_total()
-		frappe.clear_cache()
+		nts.clear_cache()
 
 	def toggle_rounded_total(self):
 		self.disable_rounded_total = cint(self.disable_rounded_total)

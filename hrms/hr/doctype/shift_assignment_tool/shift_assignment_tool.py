@@ -1,20 +1,20 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 from datetime import timedelta
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.query_builder import Case, Interval
-from frappe.query_builder.terms import SubQuery
-from frappe.utils import get_link_to_form
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.query_builder import Case, Interval
+from nts.query_builder.terms import SubQuery
+from nts.utils import get_link_to_form
 
 from hrms.hr.utils import validate_bulk_tool_fields
 
 
 class ShiftAssignmentTool(Document):
-	@frappe.whitelist()
+	@nts.whitelist()
 	def get_employees(self, advanced_filters: list | None = None) -> list:
 		if not advanced_filters:
 			advanced_filters = []
@@ -35,8 +35,8 @@ class ShiftAssignmentTool(Document):
 		return self.get_employees_for_assigning_shift(filters)
 
 	def get_employees_for_assigning_shift(self, filters):
-		Employee = frappe.qb.DocType("Employee")
-		query = frappe.qb.get_query(
+		Employee = nts.qb.DocType("Employee")
+		query = nts.qb.get_query(
 			Employee,
 			fields=[
 				Employee.employee,
@@ -56,7 +56,7 @@ class ShiftAssignmentTool(Document):
 				(Employee.relieving_date >= self.end_date) | (Employee.relieving_date.isnull())
 			)
 
-		self.allow_multiple_shifts = frappe.db.get_single_value(
+		self.allow_multiple_shifts = nts.db.get_single_value(
 			"HR Settings", "allow_multiple_shift_assignments"
 		)
 		if self.action == "Assign Shift Schedule":
@@ -69,10 +69,10 @@ class ShiftAssignmentTool(Document):
 		return query.run(as_dict=True)
 
 	def get_shift_requests(self, filters):
-		Employee = frappe.qb.DocType("Employee")
-		ShiftRequest = frappe.qb.DocType("Shift Request")
+		Employee = nts.qb.DocType("Employee")
+		ShiftRequest = nts.qb.DocType("Shift Request")
 		query = (
-			frappe.qb.get_query(
+			nts.qb.get_query(
 				Employee,
 				fields=[Employee.employee, Employee.employee_name],
 				filters=filters,
@@ -105,9 +105,9 @@ class ShiftAssignmentTool(Document):
 		return data
 
 	def get_query_for_employees_with_shifts(self):
-		ShiftAssignment = frappe.qb.DocType("Shift Assignment")
+		ShiftAssignment = nts.qb.DocType("Shift Assignment")
 		query = (
-			frappe.qb.from_(ShiftAssignment)
+			nts.qb.from_(ShiftAssignment)
 			.select(ShiftAssignment.employee)
 			.distinct()
 			.where(
@@ -127,14 +127,14 @@ class ShiftAssignmentTool(Document):
 		return query
 
 	def get_query_for_employees_with_same_shift_schedule(self):
-		days = frappe.get_all("Assignment Rule Day", {"parent": self.shift_schedule}, pluck="day")
+		days = nts.get_all("Assignment Rule Day", {"parent": self.shift_schedule}, pluck="day")
 
-		ShiftScheduleAssignment = frappe.qb.DocType("Shift Schedule Assignment")
-		ShiftSchedule = frappe.qb.DocType("Shift Schedule")
-		Day = frappe.qb.DocType("Assignment Rule Day")
+		ShiftScheduleAssignment = nts.qb.DocType("Shift Schedule Assignment")
+		ShiftSchedule = nts.qb.DocType("Shift Schedule")
+		Day = nts.qb.DocType("Assignment Rule Day")
 
 		query = (
-			frappe.qb.from_(ShiftScheduleAssignment)
+			nts.qb.from_(ShiftScheduleAssignment)
 			.left_join(ShiftSchedule)
 			.on(ShiftSchedule.name == ShiftScheduleAssignment.shift_schedule)
 			.left_join(Day)
@@ -145,18 +145,18 @@ class ShiftAssignmentTool(Document):
 		)
 
 		if self.allow_multiple_shifts:
-			shift_type = frappe.db.get_value("Shift Schedule", self.shift_schedule, "shift_type")
+			shift_type = nts.db.get_value("Shift Schedule", self.shift_schedule, "shift_type")
 			query = self.get_query_checking_overlapping_shift_timings(query, ShiftSchedule, shift_type)
 
 		return query
 
 	def get_query_checking_overlapping_shift_timings(self, query, doctype, shift_type):
-		shift_start, shift_end = frappe.db.get_value("Shift Type", shift_type, ["start_time", "end_time"])
+		shift_start, shift_end = nts.db.get_value("Shift Type", shift_type, ["start_time", "end_time"])
 		# turn it into a 48 hour clock for easier conditioning while considering overnight shifts
 		if shift_end < shift_start:
 			shift_end += timedelta(hours=24)
 
-		ShiftType = frappe.qb.DocType("Shift Type")
+		ShiftType = nts.qb.DocType("Shift Type")
 		end_time_case = (
 			Case()
 			.when(ShiftType.end_time < ShiftType.start_time, ShiftType.end_time + Interval(hours=24))
@@ -169,7 +169,7 @@ class ShiftAssignmentTool(Document):
 			.where((end_time_case >= shift_start) & (ShiftType.start_time <= shift_end))
 		)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def bulk_assign(self, employees: list):
 		if self.action == "Assign Shift":
 			mandatory_fields = ["shift_type"]
@@ -180,7 +180,7 @@ class ShiftAssignmentTool(Document):
 			doctype = "Shift Schedule Assignments"
 
 		else:
-			frappe.throw(_("Invalid Action"))
+			nts.throw(_("Invalid Action"))
 
 		mandatory_fields.extend(["company", "start_date"])
 
@@ -189,8 +189,8 @@ class ShiftAssignmentTool(Document):
 		if self.action == "Assign Shift" and len(employees) <= 30:
 			return self._bulk_assign(employees)
 
-		frappe.enqueue(self._bulk_assign, timeout=3000, employees=employees)
-		frappe.msgprint(
+		nts.enqueue(self._bulk_assign, timeout=3000, employees=employees)
+		nts.msgprint(
 			_("Creation of {0} has been queued. It may take a few minutes.").format(doctype),
 			alert=True,
 			indicator="blue",
@@ -209,7 +209,7 @@ class ShiftAssignmentTool(Document):
 
 		for d in employees:
 			try:
-				frappe.db.savepoint(savepoint)
+				nts.db.savepoint(savepoint)
 				assignment = (
 					self.create_shift_schedule_assignment(d)
 					if self.action == "Assign Shift Schedule"
@@ -227,8 +227,8 @@ class ShiftAssignmentTool(Document):
 					assignment.create_shifts(self.start_date, self.end_date)
 
 			except Exception:
-				frappe.db.rollback(save_point=savepoint)
-				frappe.log_error(
+				nts.db.rollback(save_point=savepoint)
+				nts.log_error(
 					f"Bulk Assignment - {doctype} failed for employee {d}.",
 					reference_doctype=doctype,
 				)
@@ -237,20 +237,20 @@ class ShiftAssignmentTool(Document):
 				success.append({"doc": get_link_to_form(doctype, assignment.name), "employee": d})
 
 			count += 1
-			frappe.publish_progress(count * 100 / len(employees), title=_("Creating {0}...").format(doctype))
+			nts.publish_progress(count * 100 / len(employees), title=_("Creating {0}...").format(doctype))
 
-		frappe.clear_messages()
-		frappe.publish_realtime(
+		nts.clear_messages()
+		nts.publish_realtime(
 			event,
 			message={"success": success, "failure": failure},
 			doctype="Shift Assignment Tool",
 			after_commit=True,
 		)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def bulk_process_shift_requests(self, shift_requests: list, status: str):
 		if not shift_requests:
-			frappe.throw(
+			nts.throw(
 				_("Please select at least one Shift Request to perform this action."),
 				title=_("No Shift Requests Selected"),
 			)
@@ -258,10 +258,10 @@ class ShiftAssignmentTool(Document):
 		if len(shift_requests) <= 30:
 			return self._bulk_process_shift_requests(shift_requests, status)
 
-		frappe.enqueue(
+		nts.enqueue(
 			self._bulk_process_shift_requests, timeout=3000, shift_requests=shift_requests, status=status
 		)
-		frappe.msgprint(
+		nts.msgprint(
 			_("Processing of Shift Requests has been queued. It may take a few minutes."),
 			alert=True,
 			indicator="blue",
@@ -273,13 +273,13 @@ class ShiftAssignmentTool(Document):
 
 		for d in shift_requests:
 			try:
-				shift_request = frappe.get_doc("Shift Request", d["shift_request"])
+				shift_request = nts.get_doc("Shift Request", d["shift_request"])
 				shift_request.status = status
 				shift_request.save()
 				shift_request.submit()
 
 			except Exception:
-				frappe.log_error(
+				nts.log_error(
 					f"Bulk Processing - Processing failed for Shift Request {d['shift_request']}.",
 					reference_doctype="Shift Request",
 				)
@@ -290,10 +290,10 @@ class ShiftAssignmentTool(Document):
 				)
 
 			count += 1
-			frappe.publish_progress(count * 100 / len(shift_requests), title=_("Processing Requests..."))
+			nts.publish_progress(count * 100 / len(shift_requests), title=_("Processing Requests..."))
 
-		frappe.clear_messages()
-		frappe.publish_realtime(
+		nts.clear_messages()
+		nts.publish_realtime(
 			"completed_bulk_shift_request_processing",
 			message={"success": success, "failure": failure, "for_processing": True},
 			doctype="Shift Assignment Tool",
@@ -301,7 +301,7 @@ class ShiftAssignmentTool(Document):
 		)
 
 	def create_shift_schedule_assignment(self, employee: str) -> str:
-		assignment = frappe.new_doc("Shift Schedule Assignment")
+		assignment = nts.new_doc("Shift Schedule Assignment")
 		assignment.shift_schedule = self.shift_schedule
 		assignment.employee = employee
 		assignment.company = self.company
@@ -323,7 +323,7 @@ def create_shift_assignment(
 	shift_location: str | None = None,
 	shift_schedule_assignment: str | None = None,
 ) -> str:
-	assignment = frappe.new_doc("Shift Assignment")
+	assignment = nts.new_doc("Shift Assignment")
 	assignment.employee = employee
 	assignment.company = company
 	assignment.shift_type = shift_type

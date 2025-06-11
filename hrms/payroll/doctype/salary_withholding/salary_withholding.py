@@ -1,14 +1,14 @@
-# Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2024, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import add_days, add_to_date, cint, get_link_to_form, getdate
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import add_days, add_to_date, cint, get_link_to_form, getdate
 
 
 class SalaryWithholding(Document):
@@ -21,9 +21,9 @@ class SalaryWithholding(Document):
 		self.set_status()
 
 	def validate_duplicate_record(self):
-		Withholding = frappe.qb.DocType("Salary Withholding")
+		Withholding = nts.qb.DocType("Salary Withholding")
 		duplicate = (
-			frappe.qb.from_(Withholding)
+			nts.qb.from_(Withholding)
 			.select(Withholding.name)
 			.where(
 				(Withholding.employee == self.employee)
@@ -35,10 +35,10 @@ class SalaryWithholding(Document):
 		).run(pluck=True)
 
 		if duplicate:
-			frappe.throw(
+			nts.throw(
 				_("Salary Withholding {0} already exists for employee {1} for the selected period").format(
 					get_link_to_form("Salary Withholding", duplicate[0]),
-					frappe.bold(f"{self.employee}: {self.employee_name}"),
+					nts.bold(f"{self.employee}: {self.employee_name}"),
 				),
 				title=_("Duplicate Salary Withholding"),
 			)
@@ -59,7 +59,7 @@ class SalaryWithholding(Document):
 		else:
 			self.status = status
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def set_withholding_cycles_and_to_date(self):
 		self.to_date = self.get_to_date()
 
@@ -98,9 +98,9 @@ class SalaryWithholding(Document):
 		return frequency_dict.get(self.payroll_frequency)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_payroll_frequency(employee: str, posting_date: str | date) -> str | None:
-	salary_structure = frappe.db.get_value(
+	salary_structure = nts.db.get_value(
 		"Salary Structure Assignment",
 		{
 			"employee": employee,
@@ -112,20 +112,20 @@ def get_payroll_frequency(employee: str, posting_date: str | date) -> str | None
 	)
 
 	if not salary_structure:
-		frappe.throw(
+		nts.throw(
 			_("No Salary Structure Assignment found for employee {0} on or before {1}").format(
 				employee, posting_date
 			),
 			title=_("Error"),
 		)
 
-	return frappe.db.get_value("Salary Structure", salary_structure, "payroll_frequency")
+	return nts.db.get_value("Salary Structure", salary_structure, "payroll_frequency")
 
 
 def link_bank_entry_in_salary_withholdings(salary_slips: list[dict], bank_entry: str):
-	WithholdingCycle = frappe.qb.DocType("Salary Withholding Cycle")
+	WithholdingCycle = nts.qb.DocType("Salary Withholding Cycle")
 	(
-		frappe.qb.update(WithholdingCycle)
+		nts.qb.update(WithholdingCycle)
 		.set(WithholdingCycle.journal_entry, bank_entry)
 		.where(
 			WithholdingCycle.name.isin([salary_slip.salary_withholding_cycle for salary_slip in salary_slips])
@@ -135,10 +135,10 @@ def link_bank_entry_in_salary_withholdings(salary_slips: list[dict], bank_entry:
 
 def update_salary_withholding_payment_status(doc: "SalaryWithholding", method: str | None = None):
 	"""update withholding status on bank entry submission/cancellation. Called from hooks"""
-	Withholding = frappe.qb.DocType("Salary Withholding")
-	WithholdingCycle = frappe.qb.DocType("Salary Withholding Cycle")
+	Withholding = nts.qb.DocType("Salary Withholding")
+	WithholdingCycle = nts.qb.DocType("Salary Withholding Cycle")
 	withholdings = (
-		frappe.qb.from_(WithholdingCycle)
+		nts.qb.from_(WithholdingCycle)
 		.inner_join(Withholding)
 		.on(WithholdingCycle.parent == Withholding.name)
 		.select(
@@ -160,9 +160,9 @@ def update_salary_withholding_payment_status(doc: "SalaryWithholding", method: s
 def _update_payment_status_in_payroll(withholdings: list[dict], cancel: bool = False) -> None:
 	status = "Withheld" if cancel else "Submitted"
 
-	SalarySlip = frappe.qb.DocType("Salary Slip")
+	SalarySlip = nts.qb.DocType("Salary Slip")
 	(
-		frappe.qb.update(SalarySlip)
+		nts.qb.update(SalarySlip)
 		.set(SalarySlip.status, status)
 		.where(
 			SalarySlip.salary_withholding_cycle.isin(
@@ -173,9 +173,9 @@ def _update_payment_status_in_payroll(withholdings: list[dict], cancel: bool = F
 
 	employees = [withholding.employee for withholding in withholdings]
 	is_salary_withheld = 1 if cancel else 0
-	PayrollEmployee = frappe.qb.DocType("Payroll Employee Detail")
+	PayrollEmployee = nts.qb.DocType("Payroll Employee Detail")
 	(
-		frappe.qb.update(PayrollEmployee)
+		nts.qb.update(PayrollEmployee)
 		.set(PayrollEmployee.is_salary_withheld, is_salary_withheld)
 		.where(PayrollEmployee.employee.isin(employees))
 	).run()
@@ -185,7 +185,7 @@ def _update_salary_withholdings(withholdings: list[dict], cancel: bool = False) 
 	is_salary_released = 0 if cancel else 1
 
 	for withholding in withholdings:
-		withholding_doc = frappe.get_doc("Salary Withholding", withholding.salary_withholding)
+		withholding_doc = nts.get_doc("Salary Withholding", withholding.salary_withholding)
 		for cycle in withholding_doc.cycles:
 			if cycle.name == withholding.salary_withholding_cycle:
 				cycle.db_set("is_salary_released", is_salary_released)

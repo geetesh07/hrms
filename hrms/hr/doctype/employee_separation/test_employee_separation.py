@@ -1,21 +1,21 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import getdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import getdate
 
 test_dependencies = ["Employee Onboarding"]
 
 
-class TestEmployeeSeparation(FrappeTestCase):
+class TestEmployeeSeparation(ntsTestCase):
 	def test_employee_separation(self):
 		separation = create_employee_separation()
 
 		self.assertEqual(separation.docstatus, 1)
 		self.assertEqual(separation.boarding_status, "Pending")
 
-		project = frappe.get_doc("Project", separation.project)
+		project = nts.get_doc("Project", separation.project)
 		project.percent_complete_method = "Manual"
 		project.status = "Completed"
 		project.save()
@@ -27,16 +27,16 @@ class TestEmployeeSeparation(FrappeTestCase):
 		self.assertEqual(separation.project, "")
 
 	def tearDown(self):
-		for entry in frappe.get_all("Employee Separation"):
-			doc = frappe.get_doc("Employee Separation", entry.name)
+		for entry in nts.get_all("Employee Separation"):
+			doc = nts.get_doc("Employee Separation", entry.name)
 			if doc.docstatus == 1:
 				doc.cancel()
 			doc.delete()
 
 
 def create_employee_separation():
-	employee = frappe.db.get_value("Employee", {"status": "Active", "company": "_Test Company"})
-	separation = frappe.new_doc("Employee Separation")
+	employee = nts.db.get_value("Employee", {"status": "Active", "company": "_Test Company"})
+	separation = nts.new_doc("Employee Separation")
 	separation.employee = employee
 	separation.boarding_begins_on = getdate()
 	separation.company = "_Test Company"

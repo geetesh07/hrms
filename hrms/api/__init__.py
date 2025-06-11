@@ -1,11 +1,11 @@
-import frappe
-from frappe import _
-from frappe.model import get_permitted_fields
-from frappe.model.workflow import get_workflow_name
-from frappe.query_builder import Order
-from frappe.utils import add_days, date_diff, getdate, strip_html
+import nts
+from nts import _
+from nts.model import get_permitted_fields
+from nts.model.workflow import get_workflow_name
+from nts.query_builder import Order
+from nts.utils import add_days, date_diff, getdate, strip_html
 
-from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
+from prodman.setup.doctype.employee.employee import get_holiday_list_for_employee
 
 SUPPORTED_FIELD_TYPES = [
 	"Link",
@@ -27,21 +27,21 @@ SUPPORTED_FIELD_TYPES = [
 ]
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_current_user_info() -> dict:
-	current_user = frappe.session.user
-	user = frappe.db.get_value(
+	current_user = nts.session.user
+	user = nts.db.get_value(
 		"User", current_user, ["name", "first_name", "full_name", "user_image"], as_dict=True
 	)
-	user["roles"] = frappe.get_roles(current_user)
+	user["roles"] = nts.get_roles(current_user)
 
 	return user
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_current_employee_info() -> dict:
-	current_user = frappe.session.user
-	employee = frappe.db.get_value(
+	current_user = nts.session.user
+	employee = nts.db.get_value(
 		"Employee",
 		{"user_id": current_user, "status": "Active"},
 		[
@@ -59,9 +59,9 @@ def get_current_employee_info() -> dict:
 	return employee
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_all_employees() -> list[dict]:
-	return frappe.get_all(
+	return nts.get_all(
 		"Employee",
 		fields=[
 			"name",
@@ -79,46 +79,46 @@ def get_all_employees() -> list[dict]:
 
 
 # HR Settings
-@frappe.whitelist()
+@nts.whitelist()
 def get_hr_settings() -> dict:
-	settings = frappe.db.get_singles_dict("HR Settings", cast=True)
-	return frappe._dict(
+	settings = nts.db.get_singles_dict("HR Settings", cast=True)
+	return nts._dict(
 		allow_employee_checkin_from_mobile_app=settings.allow_employee_checkin_from_mobile_app,
 		allow_geolocation_tracking=settings.allow_geolocation_tracking,
 	)
 
 
 # Notifications
-@frappe.whitelist()
+@nts.whitelist()
 def get_unread_notifications_count() -> int:
-	return frappe.db.count(
+	return nts.db.count(
 		"PWA Notification",
-		{"to_user": frappe.session.user, "read": 0},
+		{"to_user": nts.session.user, "read": 0},
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def mark_all_notifications_as_read() -> None:
-	frappe.db.set_value(
+	nts.db.set_value(
 		"PWA Notification",
-		{"to_user": frappe.session.user, "read": 0},
+		{"to_user": nts.session.user, "read": 0},
 		"read",
 		1,
 		update_modified=False,
 	)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def are_push_notifications_enabled() -> bool:
 	try:
-		return frappe.db.get_single_value("Push Notification Settings", "enable_push_notification_relay")
-	except frappe.DoesNotExistError:
+		return nts.db.get_single_value("Push Notification Settings", "enable_push_notification_relay")
+	except nts.DoesNotExistError:
 		# push notifications are not supported in the current framework version
 		return False
 
 
 # Attendance
-@frappe.whitelist()
+@nts.whitelist()
 def get_attendance_calendar_events(employee: str, from_date: str, to_date: str) -> dict[str, str]:
 	holidays = get_holidays_for_calendar(employee, from_date, to_date)
 	attendance = get_attendance_for_calendar(employee, from_date, to_date)
@@ -137,7 +137,7 @@ def get_attendance_calendar_events(employee: str, from_date: str, to_date: str) 
 
 
 def get_attendance_for_calendar(employee: str, from_date: str, to_date: str) -> list[dict[str, str]]:
-	attendance = frappe.get_all(
+	attendance = nts.get_all(
 		"Attendance",
 		{"employee": employee, "attendance_date": ["between", [from_date, to_date]]},
 		["attendance_date", "status"],
@@ -147,7 +147,7 @@ def get_attendance_for_calendar(employee: str, from_date: str, to_date: str) -> 
 
 def get_holidays_for_calendar(employee: str, from_date: str, to_date: str) -> list[str]:
 	if holiday_list := get_holiday_list_for_employee(employee, raise_exception=False):
-		return frappe.get_all(
+		return nts.get_all(
 			"Holiday",
 			filters={"parent": holiday_list, "holiday_date": ["between", [from_date, to_date]]},
 			pluck="holiday_date",
@@ -156,7 +156,7 @@ def get_holidays_for_calendar(employee: str, from_date: str, to_date: str) -> li
 	return []
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_shift_requests(
 	employee: str,
 	approver_id: str | None = None,
@@ -180,7 +180,7 @@ def get_shift_requests(
 	if workflow_state_field := get_workflow_state_field("Shift Request"):
 		fields.append(workflow_state_field)
 
-	shift_requests = frappe.get_list(
+	shift_requests = nts.get_list(
 		"Shift Request",
 		fields=fields,
 		filters=filters,
@@ -195,7 +195,7 @@ def get_shift_requests(
 	return shift_requests
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_attendance_requests(
 	employee: str,
 	for_approval: bool = False,
@@ -218,7 +218,7 @@ def get_attendance_requests(
 	if workflow_state_field := get_workflow_state_field("Attendance Request"):
 		fields.append(workflow_state_field)
 
-	attendance_requests = frappe.get_list(
+	attendance_requests = nts.get_list(
 		"Attendance Request",
 		fields=fields,
 		filters=filters,
@@ -239,7 +239,7 @@ def get_filters(
 	approver_id: str | None = None,
 	for_approval: bool = False,
 ) -> dict:
-	filters = frappe._dict()
+	filters = nts._dict()
 	if for_approval:
 		filters.docstatus = 0
 		filters.employee = ("!=", employee)
@@ -263,9 +263,9 @@ def get_filters(
 	return filters
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_shift_request_approvers(employee: str) -> str | list[str]:
-	shift_request_approver, department = frappe.get_cached_value(
+	shift_request_approver, department = nts.get_cached_value(
 		"Employee",
 		employee,
 		["shift_request_approver", "department"],
@@ -275,13 +275,13 @@ def get_shift_request_approvers(employee: str) -> str | list[str]:
 	if department:
 		department_approvers = get_department_approvers(department, "shift_request_approver")
 		if not shift_request_approver:
-			shift_request_approver = frappe.db.get_value(
+			shift_request_approver = nts.db.get_value(
 				"Department Approver",
 				{"parent": department, "parentfield": "shift_request_approver", "idx": 1},
 				"approver",
 			)
 
-	shift_request_approver_name = frappe.db.get_value("User", shift_request_approver, "full_name", cache=True)
+	shift_request_approver_name = nts.db.get_value("User", shift_request_approver, "full_name", cache=True)
 
 	if shift_request_approver and shift_request_approver not in [
 		approver.name for approver in department_approvers
@@ -293,12 +293,12 @@ def get_shift_request_approvers(employee: str) -> str | list[str]:
 	return department_approvers
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_shifts(employee: str) -> list[dict[str, str]]:
-	ShiftAssignment = frappe.qb.DocType("Shift Assignment")
-	ShiftType = frappe.qb.DocType("Shift Type")
+	ShiftAssignment = nts.qb.DocType("Shift Assignment")
+	ShiftType = nts.qb.DocType("Shift Type")
 	return (
-		frappe.qb.from_(ShiftAssignment)
+		nts.qb.from_(ShiftAssignment)
 		.join(ShiftType)
 		.on(ShiftAssignment.shift_type == ShiftType.name)
 		.select(
@@ -319,7 +319,7 @@ def get_shifts(employee: str) -> list[dict[str, str]]:
 
 
 # Leaves and Holidays
-@frappe.whitelist()
+@nts.whitelist()
 def get_leave_applications(
 	employee: str,
 	approver_id: str | None = None,
@@ -349,7 +349,7 @@ def get_leave_applications(
 	if workflow_state_field := get_workflow_state_field("Leave Application"):
 		fields.append(workflow_state_field)
 
-	applications = frappe.get_list(
+	applications = nts.get_list(
 		"Leave Application",
 		fields=fields,
 		filters=filters,
@@ -364,7 +364,7 @@ def get_leave_applications(
 	return applications
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_leave_balance_map(employee: str) -> dict[str, dict[str, float]]:
 	"""
 	Returns a map of leave type and balance details like:
@@ -390,15 +390,15 @@ def get_leave_balance_map(employee: str) -> dict[str, dict[str, float]]:
 	return leave_map
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_holidays_for_employee(employee: str) -> list[dict]:
 	holiday_list = get_holiday_list_for_employee(employee, raise_exception=False)
 	if not holiday_list:
 		return []
 
-	Holiday = frappe.qb.DocType("Holiday")
+	Holiday = nts.qb.DocType("Holiday")
 	holidays = (
-		frappe.qb.from_(Holiday)
+		nts.qb.from_(Holiday)
 		.select(Holiday.name, Holiday.holiday_date, Holiday.description)
 		.where((Holiday.parent == holiday_list) & (Holiday.weekly_off == 0))
 		.orderby(Holiday.holiday_date, order=Order.asc)
@@ -410,22 +410,22 @@ def get_holidays_for_employee(employee: str) -> list[dict]:
 	return holidays
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_leave_approval_details(employee: str) -> dict:
-	leave_approver, department = frappe.get_cached_value(
+	leave_approver, department = nts.get_cached_value(
 		"Employee",
 		employee,
 		["leave_approver", "department"],
 	)
 
 	if not leave_approver and department:
-		leave_approver = frappe.db.get_value(
+		leave_approver = nts.db.get_value(
 			"Department Approver",
 			{"parent": department, "parentfield": "leave_approvers", "idx": 1},
 			"approver",
 		)
 
-	leave_approver_name = frappe.db.get_value("User", leave_approver, "full_name", cache=True)
+	leave_approver_name = nts.db.get_value("User", leave_approver, "full_name", cache=True)
 	department_approvers = get_department_approvers(department, "leave_approvers")
 
 	if leave_approver and leave_approver not in [approver.name for approver in department_approvers]:
@@ -435,7 +435,7 @@ def get_leave_approval_details(employee: str) -> dict:
 		leave_approver=leave_approver,
 		leave_approver_name=leave_approver_name,
 		department_approvers=department_approvers,
-		is_mandatory=frappe.db.get_single_value(
+		is_mandatory=nts.db.get_single_value(
 			"HR Settings", "leave_approver_mandatory_in_leave_application"
 		),
 	)
@@ -445,8 +445,8 @@ def get_department_approvers(department: str, parentfield: str) -> list[str]:
 	if not department:
 		return []
 
-	department_details = frappe.db.get_value("Department", department, ["lft", "rgt"], as_dict=True)
-	departments = frappe.get_all(
+	department_details = nts.db.get_value("Department", department, ["lft", "rgt"], as_dict=True)
+	departments = nts.get_all(
 		"Department",
 		filters={
 			"lft": ("<=", department_details.lft),
@@ -456,10 +456,10 @@ def get_department_approvers(department: str, parentfield: str) -> list[str]:
 		pluck="name",
 	)
 
-	Approver = frappe.qb.DocType("Department Approver")
-	User = frappe.qb.DocType("User")
+	Approver = nts.qb.DocType("Department Approver")
+	User = nts.qb.DocType("User")
 	department_approvers = (
-		frappe.qb.from_(User)
+		nts.qb.from_(User)
 		.join(Approver)
 		.on(Approver.approver == User.name)
 		.select(User.name.as_("name"), User.full_name.as_("full_name"))
@@ -469,7 +469,7 @@ def get_department_approvers(department: str, parentfield: str) -> list[str]:
 	return department_approvers
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_leave_types(employee: str, date: str) -> list:
 	from hrms.hr.doctype.leave_application.leave_application import get_leave_details
 
@@ -482,7 +482,7 @@ def get_leave_types(employee: str, date: str) -> list:
 
 
 # Expense Claims
-@frappe.whitelist()
+@nts.whitelist()
 def get_expense_claims(
 	employee: str,
 	approver_id: str | None = None,
@@ -509,7 +509,7 @@ def get_expense_claims(
 	if workflow_state_field := get_workflow_state_field("Expense Claim"):
 		fields.append(workflow_state_field)
 
-	claims = frappe.get_list(
+	claims = nts.get_list(
 		"Expense Claim",
 		fields=fields,
 		filters=filters,
@@ -525,33 +525,33 @@ def get_expense_claims(
 	return claims
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_expense_claim_summary(employee: str) -> dict:
-	from frappe.query_builder.functions import Sum
+	from nts.query_builder.functions import Sum
 
-	Claim = frappe.qb.DocType("Expense Claim")
+	Claim = nts.qb.DocType("Expense Claim")
 
 	pending_claims_case = (
-		frappe.qb.terms.Case().when(Claim.approval_status == "Draft", Claim.total_claimed_amount).else_(0)
+		nts.qb.terms.Case().when(Claim.approval_status == "Draft", Claim.total_claimed_amount).else_(0)
 	)
 	sum_pending_claims = Sum(pending_claims_case).as_("total_pending_amount")
 
 	approved_claims_case = (
-		frappe.qb.terms.Case()
+		nts.qb.terms.Case()
 		.when(Claim.approval_status == "Approved", Claim.total_sanctioned_amount)
 		.else_(0)
 	)
 	sum_approved_claims = Sum(approved_claims_case).as_("total_approved_amount")
 
 	rejected_claims_case = (
-		frappe.qb.terms.Case()
+		nts.qb.terms.Case()
 		.when(Claim.approval_status == "Rejected", Claim.total_sanctioned_amount)
 		.else_(0)
 	)
 	sum_rejected_claims = Sum(rejected_claims_case).as_("total_rejected_amount")
 
 	summary = (
-		frappe.qb.from_(Claim)
+		nts.qb.from_(Claim)
 		.select(
 			sum_pending_claims,
 			sum_approved_claims,
@@ -561,40 +561,40 @@ def get_expense_claim_summary(employee: str) -> dict:
 		.where((Claim.docstatus != 2) & (Claim.employee == employee))
 	).run(as_dict=True)[0]
 
-	currency = frappe.db.get_value("Company", summary.company, "default_currency")
+	currency = nts.db.get_value("Company", summary.company, "default_currency")
 	summary["currency"] = currency
 
 	return summary
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_expense_type_description(expense_type: str) -> str:
-	return frappe.db.get_value("Expense Claim Type", expense_type, "description")
+	return nts.db.get_value("Expense Claim Type", expense_type, "description")
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_expense_claim_types() -> list[dict]:
-	ClaimType = frappe.qb.DocType("Expense Claim Type")
+	ClaimType = nts.qb.DocType("Expense Claim Type")
 
-	return (frappe.qb.from_(ClaimType).select(ClaimType.name, ClaimType.description)).run(as_dict=True)
+	return (nts.qb.from_(ClaimType).select(ClaimType.name, ClaimType.description)).run(as_dict=True)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_expense_approval_details(employee: str) -> dict:
-	expense_approver, department = frappe.get_cached_value(
+	expense_approver, department = nts.get_cached_value(
 		"Employee",
 		employee,
 		["expense_approver", "department"],
 	)
 
 	if not expense_approver and department:
-		expense_approver = frappe.db.get_value(
+		expense_approver = nts.db.get_value(
 			"Department Approver",
 			{"parent": department, "parentfield": "expense_approvers", "idx": 1},
 			"approver",
 		)
 
-	expense_approver_name = frappe.db.get_value("User", expense_approver, "full_name", cache=True)
+	expense_approver_name = nts.db.get_value("User", expense_approver, "full_name", cache=True)
 	department_approvers = get_department_approvers(department, "expense_approvers")
 
 	if expense_approver and expense_approver not in [approver.name for approver in department_approvers]:
@@ -604,17 +604,17 @@ def get_expense_approval_details(employee: str) -> dict:
 		expense_approver=expense_approver,
 		expense_approver_name=expense_approver_name,
 		department_approvers=department_approvers,
-		is_mandatory=frappe.db.get_single_value("HR Settings", "expense_approver_mandatory_in_expense_claim"),
+		is_mandatory=nts.db.get_single_value("HR Settings", "expense_approver_mandatory_in_expense_claim"),
 	)
 
 
 # Employee Advance
-@frappe.whitelist()
+@nts.whitelist()
 def get_employee_advance_balance(employee: str) -> list[dict]:
-	Advance = frappe.qb.DocType("Employee Advance")
+	Advance = nts.qb.DocType("Employee Advance")
 
 	advances = (
-		frappe.qb.from_(Advance)
+		nts.qb.from_(Advance)
 		.select(
 			Advance.name,
 			Advance.employee,
@@ -638,19 +638,19 @@ def get_employee_advance_balance(employee: str) -> list[dict]:
 	return advances
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_advance_account(company: str) -> str | None:
-	return frappe.db.get_value("Company", company, "default_employee_advance_account", cache=True)
+	return nts.db.get_value("Company", company, "default_employee_advance_account", cache=True)
 
 
 # Company
-@frappe.whitelist()
+@nts.whitelist()
 def get_company_currencies() -> dict:
-	Company = frappe.qb.DocType("Company")
-	Currency = frappe.qb.DocType("Currency")
+	Company = nts.qb.DocType("Company")
+	Currency = nts.qb.DocType("Currency")
 
 	query = (
-		frappe.qb.from_(Company)
+		nts.qb.from_(Company)
 		.join(Currency)
 		.on(Company.default_currency == Currency.name)
 		.select(
@@ -665,26 +665,26 @@ def get_company_currencies() -> dict:
 	return {company.name: (company.default_currency, company.symbol) for company in companies}
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_currency_symbols() -> dict:
-	Currency = frappe.qb.DocType("Currency")
+	Currency = nts.qb.DocType("Currency")
 
-	currencies = (frappe.qb.from_(Currency).select(Currency.name, Currency.symbol)).run(as_dict=True)
+	currencies = (nts.qb.from_(Currency).select(Currency.name, Currency.symbol)).run(as_dict=True)
 
 	return {currency.name: currency.symbol or currency.name for currency in currencies}
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_company_cost_center_and_expense_account(company: str) -> dict:
-	return frappe.db.get_value(
+	return nts.db.get_value(
 		"Company", company, ["cost_center", "default_expense_claim_payable_account"], as_dict=True
 	)
 
 
 # Form View APIs
-@frappe.whitelist()
+@nts.whitelist()
 def get_doctype_fields(doctype: str) -> list[dict]:
-	fields = frappe.get_meta(doctype).fields
+	fields = nts.get_meta(doctype).fields
 	return [
 		field
 		for field in fields
@@ -692,21 +692,21 @@ def get_doctype_fields(doctype: str) -> list[dict]:
 	]
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_doctype_states(doctype: str) -> dict:
-	states = frappe.get_meta(doctype).states
+	states = nts.get_meta(doctype).states
 	return {state.title: state.color.lower() for state in states}
 
 
 # File
-@frappe.whitelist()
+@nts.whitelist()
 def get_attachments(dt: str, dn: str):
-	from frappe.desk.form.load import get_attachments
+	from nts.desk.form.load import get_attachments
 
 	return get_attachments(dt, dn)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def upload_base64_file(content, filename, dt=None, dn=None, fieldname=None):
 	import base64
 	import io
@@ -714,12 +714,12 @@ def upload_base64_file(content, filename, dt=None, dn=None, fieldname=None):
 
 	from PIL import Image, ImageOps
 
-	from frappe.handler import ALLOWED_MIMETYPES
+	from nts.handler import ALLOWED_MIMETYPES
 
 	decoded_content = base64.b64decode(content)
 	content_type = guess_type(filename)[0]
 	if content_type not in ALLOWED_MIMETYPES:
-		frappe.throw(_("You can only upload JPG, PNG, PDF, TXT or Microsoft documents."))
+		nts.throw(_("You can only upload JPG, PNG, PDF, TXT or Microsoft documents."))
 
 	if content_type.startswith("image/jpeg"):
 		# transpose the image according to the orientation tag, and remove the orientation data
@@ -732,7 +732,7 @@ def upload_base64_file(content, filename, dt=None, dn=None, fieldname=None):
 	else:
 		file_content = decoded_content
 
-	return frappe.get_doc(
+	return nts.get_doc(
 		{
 			"doctype": "File",
 			"attached_to_doctype": dt,
@@ -746,37 +746,37 @@ def upload_base64_file(content, filename, dt=None, dn=None, fieldname=None):
 	).insert()
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def delete_attachment(filename: str):
-	frappe.delete_doc("File", filename)
+	nts.delete_doc("File", filename)
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def download_salary_slip(name: str):
 	import base64
 
-	from frappe.utils.print_format import download_pdf
+	from nts.utils.print_format import download_pdf
 
-	default_print_format = frappe.get_meta("Salary Slip").default_print_format or "Standard"
+	default_print_format = nts.get_meta("Salary Slip").default_print_format or "Standard"
 
 	try:
 		download_pdf("Salary Slip", name, format=default_print_format)
 	except Exception:
-		frappe.throw(_("Failed to download Salary Slip PDF"))
+		nts.throw(_("Failed to download Salary Slip PDF"))
 
-	base64content = base64.b64encode(frappe.local.response.filecontent)
-	content_type = frappe.local.response.type
+	base64content = base64.b64encode(nts.local.response.filecontent)
+	content_type = nts.local.response.type
 
 	return f"data:{content_type};base64," + base64content.decode("utf-8")
 
 
 # Workflow
-@frappe.whitelist()
+@nts.whitelist()
 def get_workflow(doctype: str) -> dict:
 	workflow = get_workflow_name(doctype)
 	if not workflow:
-		return frappe._dict()
-	return frappe.get_doc("Workflow", workflow)
+		return nts._dict()
+	return nts.get_doc("Workflow", workflow)
 
 
 def get_workflow_state_field(doctype: str) -> str | None:
@@ -784,7 +784,7 @@ def get_workflow_state_field(doctype: str) -> str | None:
 	if not workflow_name:
 		return None
 
-	override_status, workflow_state_field = frappe.db.get_value(
+	override_status, workflow_state_field = nts.db.get_value(
 		"Workflow",
 		workflow_name,
 		["override_status", "workflow_state_field"],
@@ -796,11 +796,11 @@ def get_workflow_state_field(doctype: str) -> str | None:
 
 
 def get_allowed_states_for_workflow(workflow: dict, user_id: str) -> list[str]:
-	user_roles = frappe.get_roles(user_id)
+	user_roles = nts.get_roles(user_id)
 	return [transition.state for transition in workflow.transitions if transition.allowed in user_roles]
 
 
 # Permissions
-@frappe.whitelist()
+@nts.whitelist()
 def get_permitted_fields_for_write(doctype: str) -> list[str]:
 	return get_permitted_fields(doctype, permission_type="write")

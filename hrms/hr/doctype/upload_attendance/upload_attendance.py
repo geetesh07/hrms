@@ -1,16 +1,16 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 # For license information, please see license.txt
 
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import add_days, cstr, date_diff, getdate
-from frappe.utils.csvutils import UnicodeWriter
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import add_days, cstr, date_diff, getdate
+from nts.utils.csvutils import UnicodeWriter
 
-from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
+from prodman.setup.doctype.employee.employee import get_holiday_list_for_employee
 
 from hrms.hr.utils import get_holiday_dates_for_employee
 
@@ -19,15 +19,15 @@ class UploadAttendance(Document):
 	pass
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def get_template():
-	if not frappe.has_permission("Attendance", "create"):
-		raise frappe.PermissionError
+	if not nts.has_permission("Attendance", "create"):
+		raise nts.PermissionError
 
-	args = frappe.local.form_dict
+	args = nts.local.form_dict
 
 	if getdate(args.from_date) > getdate(args.to_date):
-		frappe.throw(_("To Date should be greater than From Date"))
+		nts.throw(_("To Date should be greater than From Date"))
 
 	w = UnicodeWriter()
 	w = add_header(w)
@@ -35,18 +35,18 @@ def get_template():
 	try:
 		w = add_data(w, args)
 	except Exception as e:
-		frappe.clear_messages()
-		frappe.respond_as_web_page("Holiday List Missing", html=e)
+		nts.clear_messages()
+		nts.respond_as_web_page("Holiday List Missing", html=e)
 		return
 
 	# write out response as a type csv
-	frappe.response["result"] = cstr(w.getvalue())
-	frappe.response["type"] = "csv"
-	frappe.response["doctype"] = "Attendance"
+	nts.response["result"] = cstr(w.getvalue())
+	nts.response["type"] = "csv"
+	nts.response["doctype"] = "Attendance"
 
 
 def add_header(w):
-	status = ", ".join((frappe.get_meta("Attendance").get_field("status").options or "").strip().split("\n"))
+	status = ", ".join((nts.get_meta("Attendance").get_field("status").options or "").strip().split("\n"))
 	w.writerow(["Notes:"])
 	w.writerow(["Please do not change the template headings"])
 	w.writerow(["Status should be one of these values: " + status])
@@ -130,7 +130,7 @@ def get_dates(args):
 
 
 def get_active_employees():
-	employees = frappe.db.get_all(
+	employees = nts.db.get_all(
 		"Employee",
 		fields=["name", "employee_name", "date_of_joining", "company", "relieving_date"],
 		filters={"docstatus": ["<", 2], "status": "Active"},
@@ -139,7 +139,7 @@ def get_active_employees():
 
 
 def get_existing_attendance_records(args):
-	attendance = frappe.db.sql(
+	attendance = nts.db.sql(
 		"""select name, attendance_date, employee, status, leave_type, naming_series
 		from `tabAttendance` where attendance_date between %s and %s and docstatus < 2""",
 		(args["from_date"], args["to_date"]),
@@ -154,23 +154,23 @@ def get_existing_attendance_records(args):
 
 
 def get_naming_series():
-	series = frappe.get_meta("Attendance").get_field("naming_series").options.strip().split("\n")
+	series = nts.get_meta("Attendance").get_field("naming_series").options.strip().split("\n")
 	if not series:
-		frappe.throw(_("Please setup numbering series for Attendance via Setup > Numbering Series"))
+		nts.throw(_("Please setup numbering series for Attendance via Setup > Numbering Series"))
 	return series[0]
 
 
-@frappe.whitelist()
+@nts.whitelist()
 def upload():
-	if not frappe.has_permission("Attendance", "create"):
-		raise frappe.PermissionError
+	if not nts.has_permission("Attendance", "create"):
+		raise nts.PermissionError
 
-	from frappe.utils.csvutils import read_csv_content
+	from nts.utils.csvutils import read_csv_content
 
-	rows = read_csv_content(frappe.local.uploaded_file)
+	rows = read_csv_content(nts.local.uploaded_file)
 	if not rows:
-		frappe.throw(_("Please select a csv file"))
-	frappe.enqueue(import_attendances, rows=rows, now=True if len(rows) < 200 else False)
+		nts.throw(_("Please select a csv file"))
+	nts.enqueue(import_attendances, rows=rows, now=True if len(rows) < 200 else False)
 
 
 def import_attendances(rows):
@@ -178,7 +178,7 @@ def import_attendances(rows):
 		rows = [row for row in rows if row[4] != "Holiday"]
 		return rows
 
-	from frappe.modules import scrub
+	from nts.modules import scrub
 
 	rows = list(filter(lambda x: x and any(x), rows))
 	columns = [scrub(f) for f in rows[4]]
@@ -190,32 +190,32 @@ def import_attendances(rows):
 
 	rows = remove_holidays(rows)
 
-	from frappe.utils.csvutils import check_record, import_doc
+	from nts.utils.csvutils import check_record, import_doc
 
 	for i, row in enumerate(rows):
 		if not row:
 			continue
 		row_idx = i + 5
-		d = frappe._dict(zip(columns, row, strict=False))
+		d = nts._dict(zip(columns, row, strict=False))
 
 		d["doctype"] = "Attendance"
 		if d.name:
-			d["docstatus"] = frappe.db.get_value("Attendance", d.name, "docstatus")
+			d["docstatus"] = nts.db.get_value("Attendance", d.name, "docstatus")
 
 		try:
 			check_record(d)
 			ret.append(import_doc(d, "Attendance", 1, row_idx, submit=True))
-			frappe.publish_realtime("import_attendance", dict(progress=i, total=len(rows)))
+			nts.publish_realtime("import_attendance", dict(progress=i, total=len(rows)))
 		except AttributeError:
 			pass
 		except Exception as e:
 			error = True
 			ret.append("Error for row (#%d) %s : %s" % (row_idx, len(row) > 1 and row[1] or "", cstr(e)))
-			frappe.errprint(frappe.get_traceback())
+			nts.errprint(nts.get_traceback())
 
 	if error:
-		frappe.db.rollback()
+		nts.db.rollback()
 	else:
-		frappe.db.commit()
+		nts.db.commit()
 
-	frappe.publish_realtime("import_attendance", dict(messages=ret, error=error))
+	nts.publish_realtime("import_attendance", dict(messages=ret, error=error))

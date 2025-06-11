@@ -1,14 +1,14 @@
-# Copyright (c) 2018, Frappe and Contributors
+# Copyright (c) 2018, nts and Contributors
 # License: GNU General Public License v3. See license.txt
 
 
-import frappe
+import nts
 
 
 def execute():
 	"""Delete leave ledger entry created
 	via leave applications with status != Approved"""
-	if not frappe.db.a_row_exists("Leave Ledger Entry"):
+	if not nts.db.a_row_exists("Leave Ledger Entry"):
 		return
 
 	leave_application_list = get_denied_leave_application_list()
@@ -17,12 +17,12 @@ def execute():
 
 
 def get_denied_leave_application_list():
-	return frappe.db.sql_list(""" Select name from `tabLeave Application` where status <> 'Approved' """)
+	return nts.db.sql_list(""" Select name from `tabLeave Application` where status <> 'Approved' """)
 
 
 def delete_denied_leaves_from_leave_ledger_entry(leave_application_list):
 	if leave_application_list:
-		frappe.db.sql(
+		nts.db.sql(
 			""" Delete
 			FROM `tabLeave Ledger Entry`
 			WHERE

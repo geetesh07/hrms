@@ -13,7 +13,7 @@ hrms.HierarchyChart = class {
 		this.doctype = doctype;
 
 		this.setup_page_style();
-		this.page.main.addClass("frappe-card");
+		this.page.main.addClass("nts-card");
 
 		this.nodes = {};
 		this.setup_node_class();
@@ -60,7 +60,7 @@ hrms.HierarchyChart = class {
 	}
 
 	make_node_element(node) {
-		let node_card = frappe.render_template("node_card", {
+		let node_card = nts.render_template("node_card", {
 			id: node.id,
 			name: node.name,
 			title: node.title,
@@ -84,7 +84,7 @@ hrms.HierarchyChart = class {
 			options: "Company",
 			fieldname: "company",
 			placeholder: __("Select Company"),
-			default: frappe.defaults.get_default("company"),
+			default: nts.defaults.get_default("company"),
 			only_select: true,
 			reqd: 1,
 			change: () => {
@@ -100,7 +100,7 @@ hrms.HierarchyChart = class {
 					me.render_root_nodes();
 					me.all_nodes_expanded = false;
 				} else {
-					frappe.throw(__("Please select a company first."));
+					nts.throw(__("Please select a company first."));
 				}
 			},
 		});
@@ -134,7 +134,7 @@ hrms.HierarchyChart = class {
 	}
 
 	export_chart() {
-		frappe.dom.freeze(__("Exporting..."));
+		nts.dom.freeze(__("Exporting..."));
 		this.page.main.css({
 			"min-height": "",
 			"max-height": "",
@@ -161,7 +161,7 @@ hrms.HierarchyChart = class {
 				a.click();
 			})
 			.finally(() => {
-				frappe.dom.unfreeze();
+				nts.dom.unfreeze();
 			});
 
 		this.setup_page_style();
@@ -219,7 +219,7 @@ hrms.HierarchyChart = class {
 	render_root_nodes(expanded_view = false) {
 		let me = this;
 
-		return frappe
+		return nts
 			.call({
 				method: me.method,
 				args: {
@@ -296,22 +296,22 @@ hrms.HierarchyChart = class {
 
 	load_children(node, deep = false) {
 		if (!this.company) {
-			frappe.throw(__("Please select a company first."));
+			nts.throw(__("Please select a company first."));
 		}
 
 		if (!deep) {
-			frappe.run_serially([
+			nts.run_serially([
 				() => this.get_child_nodes(node.id),
 				(child_nodes) => this.render_child_nodes(node, child_nodes),
 			]);
 		} else {
-			frappe.run_serially([
-				() => frappe.dom.freeze(),
+			nts.run_serially([
+				() => nts.dom.freeze(),
 				() => this.setup_hierarchy(),
 				() => this.render_root_nodes(true),
 				() => this.get_all_nodes(),
 				(data_list) => this.render_children_of_all_nodes(data_list),
-				() => frappe.dom.unfreeze(),
+				() => nts.dom.unfreeze(),
 			]);
 		}
 	}
@@ -319,7 +319,7 @@ hrms.HierarchyChart = class {
 	get_child_nodes(node_id) {
 		let me = this;
 		return new Promise((resolve) => {
-			frappe
+			nts
 				.call({
 					method: me.method,
 					args: {
@@ -368,7 +368,7 @@ hrms.HierarchyChart = class {
 	get_all_nodes() {
 		let me = this;
 		return new Promise((resolve) => {
-			frappe.call({
+			nts.call({
 				method: "hrms.utils.hierarchy_chart.get_all_nodes",
 				args: {
 					method: me.method,
@@ -570,7 +570,7 @@ hrms.HierarchyChart = class {
 
 		$(`path[data-parent="${node_parent}"]`).remove();
 
-		frappe.run_serially([
+		nts.run_serially([
 			() => this.get_child_nodes(node_parent),
 			(child_nodes) => {
 				if (child_nodes) {
@@ -608,7 +608,7 @@ hrms.HierarchyChart = class {
 		let me = this;
 
 		node_element.find(".btn-edit-node").click(function () {
-			frappe.set_route("Form", me.doctype, node.id);
+			nts.set_route("Form", me.doctype, node.id);
 		});
 	}
 

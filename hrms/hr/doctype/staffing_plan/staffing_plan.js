@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Staffing Plan", {
+nts.ui.form.on("Staffing Plan", {
 	setup: function (frm) {
 		frm.set_query("designation", "staffing_details", function () {
 			let designations = [];
@@ -26,7 +26,7 @@ frappe.ui.form.on("Staffing Plan", {
 	},
 
 	get_job_requisitions: function (frm) {
-		new frappe.ui.form.MultiSelectDialog({
+		new nts.ui.form.MultiSelectDialog({
 			doctype: "Job Requisition",
 			target: frm,
 			date_field: "posting_date",
@@ -49,14 +49,14 @@ frappe.ui.form.on("Staffing Plan", {
 			},
 			action(selections) {
 				const plan_name = frm.doc.__newname;
-				frappe
+				nts
 					.call({
 						method: "set_job_requisitions",
 						doc: frm.doc,
 						args: selections,
 					})
 					.then(() => {
-						// hack to retain prompt name that gets lost on frappe.call
+						// hack to retain prompt name that gets lost on nts.call
 						frm.doc.__newname = plan_name;
 						refresh_field("staffing_details");
 					});
@@ -67,7 +67,7 @@ frappe.ui.form.on("Staffing Plan", {
 	},
 });
 
-frappe.ui.form.on("Staffing Plan Detail", {
+nts.ui.form.on("Staffing Plan Detail", {
 	designation: function (frm, cdt, cdn) {
 		let child = locals[cdt][cdn];
 		if (frm.doc.company && child.designation) {
@@ -78,7 +78,7 @@ frappe.ui.form.on("Staffing Plan Detail", {
 	vacancies: function (frm, cdt, cdn) {
 		let child = locals[cdt][cdn];
 		if (child.vacancies < child.current_openings) {
-			frappe.throw(__("Vacancies cannot be lower than the current openings"));
+			nts.throw(__("Vacancies cannot be lower than the current openings"));
 		}
 		set_number_of_positions(frm, cdt, cdn);
 	},
@@ -94,8 +94,8 @@ frappe.ui.form.on("Staffing Plan Detail", {
 
 var set_number_of_positions = function (frm, cdt, cdn) {
 	let child = locals[cdt][cdn];
-	if (!child.designation) frappe.throw(__("Please enter the designation"));
-	frappe.call({
+	if (!child.designation) nts.throw(__("Please enter the designation"));
+	nts.call({
 		method: "hrms.hr.doctype.staffing_plan.staffing_plan.get_designation_counts",
 		args: {
 			designation: child.designation,
@@ -103,16 +103,16 @@ var set_number_of_positions = function (frm, cdt, cdn) {
 		},
 		callback: function (data) {
 			if (data.message) {
-				frappe.model.set_value(cdt, cdn, "current_count", data.message.employee_count);
-				frappe.model.set_value(cdt, cdn, "current_openings", data.message.job_openings);
+				nts.model.set_value(cdt, cdn, "current_count", data.message.employee_count);
+				nts.model.set_value(cdt, cdn, "current_openings", data.message.job_openings);
 				let total_positions = cint(data.message.employee_count) + cint(child.vacancies);
 				if (cint(child.number_of_positions) < total_positions) {
-					frappe.model.set_value(cdt, cdn, "number_of_positions", total_positions);
+					nts.model.set_value(cdt, cdn, "number_of_positions", total_positions);
 				}
 			} else {
 				// No employees for this designation
-				frappe.model.set_value(cdt, cdn, "current_count", 0);
-				frappe.model.set_value(cdt, cdn, "current_openings", 0);
+				nts.model.set_value(cdt, cdn, "current_count", 0);
+				nts.model.set_value(cdt, cdn, "current_openings", 0);
 			}
 		},
 	});
@@ -124,14 +124,14 @@ var set_number_of_positions = function (frm, cdt, cdn) {
 var set_total_estimated_cost = function (frm, cdt, cdn) {
 	let child = locals[cdt][cdn];
 	if (child.vacancies > 0 && child.estimated_cost_per_position) {
-		frappe.model.set_value(
+		nts.model.set_value(
 			cdt,
 			cdn,
 			"total_estimated_cost",
 			child.vacancies * child.estimated_cost_per_position,
 		);
 	} else {
-		frappe.model.set_value(cdt, cdn, "total_estimated_cost", 0);
+		nts.model.set_value(cdt, cdn, "total_estimated_cost", 0);
 	}
 	set_total_estimated_budget(frm);
 };

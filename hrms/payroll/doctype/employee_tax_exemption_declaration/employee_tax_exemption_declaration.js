@@ -1,7 +1,7 @@
-// Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
+// Copyright (c) 2018, nts Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Employee Tax Exemption Declaration", {
+nts.ui.form.on("Employee Tax Exemption Declaration", {
 	setup: function (frm) {
 		frm.set_query("employee", function () {
 			return {
@@ -16,7 +16,7 @@ frappe.ui.form.on("Employee Tax Exemption Declaration", {
 
 			for (let [field, label] of Object.entries(fields)) {
 				if (!frm.doc[field]) {
-					frappe.msgprint(__("Please select {0}", [label]));
+					nts.msgprint(__("Please select {0}", [label]));
 				}
 			}
 
@@ -41,7 +41,7 @@ frappe.ui.form.on("Employee Tax Exemption Declaration", {
 	refresh: function (frm) {
 		if (frm.doc.docstatus == 1) {
 			frm.add_custom_button(__("Submit Proof"), function () {
-				frappe.model.open_mapped_doc({
+				nts.model.open_mapped_doc({
 					method: "hrms.payroll.doctype.employee_tax_exemption_declaration.employee_tax_exemption_declaration.make_proof_submission",
 					frm: frm,
 				});
@@ -56,7 +56,7 @@ frappe.ui.form.on("Employee Tax Exemption Declaration", {
 	},
 
 	get_employee_currency: function (frm) {
-		frappe.call({
+		nts.call({
 			method: "hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment.get_employee_currency",
 			args: {
 				employee: frm.doc.employee,

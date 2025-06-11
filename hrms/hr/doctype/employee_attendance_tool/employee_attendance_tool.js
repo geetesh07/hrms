@@ -1,4 +1,4 @@
-frappe.ui.form.on("Employee Attendance Tool", {
+nts.ui.form.on("Employee Attendance Tool", {
 	refresh(frm) {
 		frm.trigger("reset_attendance_fields");
 		frm.trigger("reset_tool_actions");
@@ -7,7 +7,7 @@ frappe.ui.form.on("Employee Attendance Tool", {
 	},
 
 	onload(frm) {
-		frm.set_value("date", frappe.datetime.get_today());
+		frm.set_value("date", nts.datetime.get_today());
 	},
 
 	date: function (frm) {
@@ -36,7 +36,7 @@ frappe.ui.form.on("Employee Attendance Tool", {
 
 	load_employees(frm) {
 		if (!frm.doc.date) return;
-		frappe
+		nts
 			.call({
 				method: "hrms.hr.doctype.employee_attendance_tool.employee_attendance_tool.get_employees",
 				args: {
@@ -93,7 +93,7 @@ frappe.ui.form.on("Employee Attendance Tool", {
 					unhide_field("select_employees_section");
 					frm.trigger("set_primary_action");
 				} else {
-					frappe.msgprint({
+					nts.msgprint({
 						message: __(
 							"Attendance for all the employees under this criteria has been marked already.",
 						),
@@ -108,7 +108,7 @@ frappe.ui.form.on("Employee Attendance Tool", {
 		const $wrapper = frm.get_field(html_fieldname).$wrapper;
 		$wrapper.empty();
 		const employee_wrapper = $(`<div class="employee_wrapper">`).appendTo($wrapper);
-		frm.fields_dict[multicheck_fieldname] = frappe.ui.form.make_control({
+		frm.fields_dict[multicheck_fieldname] = nts.ui.form.make_control({
 			parent: employee_wrapper,
 			df: {
 				fieldname: multicheck_fieldname,
@@ -216,7 +216,7 @@ frappe.ui.form.on("Employee Attendance Tool", {
 				noDataMessage: __("No Data"),
 				disableReorderColumn: true,
 			};
-			frm.marked_emp_datatable = new frappe.DataTable(
+			frm.marked_emp_datatable = new nts.DataTable(
 				summary_wrapper.get(0),
 				datatable_options,
 			);
@@ -237,20 +237,20 @@ frappe.ui.form.on("Employee Attendance Tool", {
 				employees_to_mark_full_day.length === 0 &&
 				employees_to_mark_half_day.length === 0
 			) {
-				frappe.throw({
+				nts.throw({
 					message: __("Please select the employees you want to mark attendance for."),
 					title: __("Mandatory"),
 				});
 			}
 
 			if (employees_to_mark_full_day.length > 0 && !frm.doc.status) {
-				frappe.throw({
+				nts.throw({
 					message: __("Please select the attendance status."),
 					title: __("Mandatory"),
 				});
 			}
 			if (employees_to_mark_half_day.length > 0 && !frm.doc.half_day_status) {
-				frappe.throw({
+				nts.throw({
 					message: __("Please select half day attendance status."),
 					title: __("Mandatory"),
 				});
@@ -266,7 +266,7 @@ frappe.ui.form.on("Employee Attendance Tool", {
 	},
 
 	mark_full_day_attendance(frm, employees_to_mark_full_day, employees_to_mark_half_day) {
-		frappe
+		nts
 			.call({
 				method: "hrms.hr.doctype.employee_attendance_tool.employee_attendance_tool.mark_employee_attendance",
 				args: {
@@ -285,7 +285,7 @@ frappe.ui.form.on("Employee Attendance Tool", {
 			})
 			.then((r) => {
 				if (!r.exc) {
-					frappe.show_alert({
+					nts.show_alert({
 						message: __("Attendance marked successfully"),
 						indicator: "green",
 					});

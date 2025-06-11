@@ -1,6 +1,6 @@
-import frappeUIPreset from "frappe-ui/src/tailwind/preset";
+import ntsUIPreset from "frappe-ui/src/tailwind/preset";
 export default {
-	presets: [frappeUIPreset],
+	presets: [ntsUIPreset],
 	content: [
 		"./index.html",
 		"./src/**/*.{vue,js,ts,jsx,tsx}",

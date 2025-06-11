@@ -1,11 +1,11 @@
-# Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2018, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, get_datetime, getdate, nowdate
+import nts
+from nts.tests.utils import ntsTestCase
+from nts.utils import add_days, get_datetime, getdate, nowdate
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.shift_assignment.shift_assignment import (
 	MultipleShiftError,
@@ -18,10 +18,10 @@ from hrms.hr.doctype.shift_type.test_shift_type import make_shift_assignment, se
 test_dependencies = ["Shift Type"]
 
 
-class TestShiftAssignment(FrappeTestCase):
+class TestShiftAssignment(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Shift Assignment")
-		frappe.db.delete("Shift Type")
+		nts.db.delete("Shift Assignment")
+		nts.db.delete("Shift Type")
 
 	def test_overlapping_for_ongoing_shift(self):
 		shift = "Day Shift"
@@ -49,9 +49,9 @@ class TestShiftAssignment(FrappeTestCase):
 		setup_shift_type(shift_type="Night Shift", start_time="19:00:00", end_time="23:00:00")
 		assignment = make_shift_assignment("Night Shift", employee, date, do_not_submit=True)
 
-		frappe.db.set_single_value("HR Settings", "allow_multiple_shift_assignments", 0)
+		nts.db.set_single_value("HR Settings", "allow_multiple_shift_assignments", 0)
 		self.assertRaises(MultipleShiftError, assignment.save)
-		frappe.db.set_single_value("HR Settings", "allow_multiple_shift_assignments", 1)
+		nts.db.set_single_value("HR Settings", "allow_multiple_shift_assignments", 1)
 		assignment.save()  # would throw error if multiple shift assignments not allowed
 
 	def test_overlapping_for_fixed_period_shift(self):
@@ -192,7 +192,7 @@ class TestShiftAssignment(FrappeTestCase):
 
 		# default shift
 		shift_type = setup_shift_type(shift_type="Test Security", start_time="07:00:00", end_time="19:00:00")
-		frappe.db.set_value("Employee", employee, "default_shift", shift_type.name)
+		nts.db.set_value("Employee", employee, "default_shift", shift_type.name)
 
 		# night shift
 		shift_type = setup_shift_type(

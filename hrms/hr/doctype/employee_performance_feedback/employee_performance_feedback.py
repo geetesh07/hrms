@@ -1,10 +1,10 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from frappe.utils import flt, get_link_to_form
+import nts
+from nts import _
+from nts.model.document import Document
+from nts.utils import flt, get_link_to_form
 
 from hrms.hr.doctype.appraisal_cycle.appraisal_cycle import validate_active_appraisal_cycle
 from hrms.hr.utils import validate_active_employee
@@ -28,9 +28,9 @@ class EmployeePerformanceFeedback(Document, AppraisalMixin):
 
 	def validate_employee(self):
 		if self.employee == self.reviewer:
-			frappe.throw(
+			nts.throw(
 				_("Employees cannot give feedback to themselves. Use {0} instead: {1}").format(
-					frappe.bold(_("Self Appraisal")), get_link_to_form("Appraisal", self.appraisal)
+					nts.bold(_("Self Appraisal")), get_link_to_form("Appraisal", self.appraisal)
 				)
 			)
 
@@ -38,10 +38,10 @@ class EmployeePerformanceFeedback(Document, AppraisalMixin):
 		validate_active_employee(self.reviewer)
 
 	def validate_appraisal(self):
-		employee = frappe.db.get_value("Appraisal", self.appraisal, "employee")
+		employee = nts.db.get_value("Appraisal", self.appraisal, "employee")
 
 		if employee != self.employee:
-			frappe.throw(
+			nts.throw(
 				_("Appraisal {0} does not belong to Employee {1}").format(self.appraisal, self.employee)
 			)
 
@@ -57,16 +57,16 @@ class EmployeePerformanceFeedback(Document, AppraisalMixin):
 		if not self.appraisal:
 			return
 
-		appraisal = frappe.get_doc("Appraisal", self.appraisal)
+		appraisal = nts.get_doc("Appraisal", self.appraisal)
 		appraisal.calculate_avg_feedback_score(update=True)
 
-	@frappe.whitelist()
+	@nts.whitelist()
 	def set_feedback_criteria(self):
 		if not self.appraisal:
 			return
 
-		template = frappe.db.get_value("Appraisal", self.appraisal, "appraisal_template")
-		template = frappe.get_doc("Appraisal Template", template)
+		template = nts.db.get_value("Appraisal", self.appraisal, "appraisal_template")
+		template = nts.get_doc("Appraisal Template", template)
 
 		self.set("feedback_ratings", [])
 		for entry in template.rating_criteria:

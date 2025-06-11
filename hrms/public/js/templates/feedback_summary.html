@@ -7,7 +7,7 @@
 		<h2 class="average-rating mb-2">{{ average_rating }}</h2>
 
 		{%=
-			frappe.render_template("rating",
+			nts.render_template("rating",
 				{number_of_stars: 5, average_rating: average_rating, for_summary: true}
 			)
 		%}

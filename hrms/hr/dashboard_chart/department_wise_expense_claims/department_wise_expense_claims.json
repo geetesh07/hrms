@@ -6,7 +6,7 @@
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "Expense Claim",
- "dynamic_filters_json": "[[\"Expense Claim\",\"company\",\"=\",\"frappe.defaults.get_user_default(\\\"Company\\\")\"]]",
+ "dynamic_filters_json": "[[\"Expense Claim\",\"company\",\"=\",\"nts.defaults.get_user_default(\\\"Company\\\")\"]]",
  "filters_json": "[[\"Expense Claim\",\"docstatus\",\"=\",\"1\",false]]",
  "group_by_based_on": "department",
  "group_by_type": "Count",

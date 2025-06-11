@@ -1,15 +1,15 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
 from dateutil.relativedelta import relativedelta
 
-import frappe
-from frappe.tests.utils import FrappeTestCase, change_settings
-from frappe.utils import add_days, add_months, cstr, flt
+import nts
+from nts.tests.utils import ntsTestCase, change_settings
+from nts.utils import add_days, add_months, cstr, flt
 
-import erpnext
-from erpnext.accounts.utils import get_fiscal_year, getdate, nowdate
-from erpnext.setup.doctype.employee.test_employee import make_employee
+import prodman
+from prodman.accounts.utils import get_fiscal_year, getdate, nowdate
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.employee_advance.employee_advance import (
 	create_return_through_additional_salary,
@@ -42,7 +42,7 @@ from hrms.utils import get_date_range
 test_dependencies = ["Holiday List"]
 
 
-class TestPayrollEntry(FrappeTestCase):
+class TestPayrollEntry(ntsTestCase):
 	def setUp(self):
 		for dt in [
 			"Salary Slip",
@@ -56,16 +56,16 @@ class TestPayrollEntry(FrappeTestCase):
 			"Payroll Employee Detail",
 			"Additional Salary",
 		]:
-			frappe.db.delete(dt)
+			nts.db.delete(dt)
 
 		make_earning_salary_component(setup=True, company_list=["_Test Company"])
 		make_deduction_salary_component(setup=True, test_tax=False, company_list=["_Test Company"])
 
-		frappe.db.set_value("Company", "_Test Company", "default_holiday_list", "_Test Holiday List")
-		frappe.db.set_single_value("Payroll Settings", "email_salary_slip_to_employee", 0)
+		nts.db.set_value("Company", "_Test Company", "default_holiday_list", "_Test Holiday List")
+		nts.db.set_single_value("Payroll Settings", "email_salary_slip_to_employee", 0)
 
 		# set default payable account
-		default_account = frappe.db.get_value("Company", "_Test Company", "default_payroll_payable_account")
+		default_account = nts.db.get_value("Company", "_Test Company", "default_payroll_payable_account")
 		if not default_account or default_account != "_Test Payroll Payable - _TC":
 			create_account(
 				account_name="_Test Payroll Payable",
@@ -73,13 +73,13 @@ class TestPayrollEntry(FrappeTestCase):
 				parent_account="Current Liabilities - _TC",
 				account_type="Payable",
 			)
-			frappe.db.set_value(
+			nts.db.set_value(
 				"Company", "_Test Company", "default_payroll_payable_account", "_Test Payroll Payable - _TC"
 			)
 
 	def test_payroll_entry(self):
-		company = frappe.get_doc("Company", "_Test Company")
-		employee = frappe.db.get_value("Employee", {"company": "_Test Company"})
+		company = nts.get_doc("Company", "_Test Company")
+		employee = nts.db.get_value("Employee", {"company": "_Test Company"})
 		setup_salary_structure(employee, company)
 
 		dates = get_start_end_dates("Monthly", nowdate())
@@ -92,7 +92,7 @@ class TestPayrollEntry(FrappeTestCase):
 		)
 
 	def test_multi_currency_payroll_entry(self):
-		company = frappe.get_doc("Company", "_Test Company")
+		company = nts.get_doc("Company", "_Test Company")
 		create_department("Accounts")
 		employee = make_employee(
 			"test_muti_currency_employee@payroll.com", company=company.name, department="Accounts - _TC"
@@ -112,17 +112,17 @@ class TestPayrollEntry(FrappeTestCase):
 		)
 		payroll_entry.make_bank_entry()
 
-		salary_slip = frappe.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
-		salary_slip = frappe.get_doc("Salary Slip", salary_slip)
+		salary_slip = nts.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
+		salary_slip = nts.get_doc("Salary Slip", salary_slip)
 
 		payroll_entry.reload()
 		payroll_je = salary_slip.journal_entry
 		if payroll_je:
-			payroll_je_doc = frappe.get_doc("Journal Entry", payroll_je)
+			payroll_je_doc = nts.get_doc("Journal Entry", payroll_je)
 			self.assertEqual(salary_slip.base_gross_pay, payroll_je_doc.total_debit)
 			self.assertEqual(salary_slip.base_gross_pay, payroll_je_doc.total_credit)
 
-		payment_entry = frappe.db.sql(
+		payment_entry = nts.db.sql(
 			"""
 			select
 				ifnull(sum(je.total_debit),0) as total_debit,
@@ -163,8 +163,8 @@ class TestPayrollEntry(FrappeTestCase):
 			payment_account="Cash - _TC",
 			cost_center="Main - _TC",
 		)
-		je = frappe.db.get_value("Salary Slip", {"payroll_entry": pe.name}, "journal_entry")
-		je_entries = frappe.db.sql(
+		je = nts.db.get_value("Salary Slip", {"payroll_entry": pe.name}, "journal_entry")
+		je_entries = nts.db.sql(
 			"""
 			select account, cost_center, debit, credit
 			from `tabJournal Entry Account`
@@ -198,12 +198,12 @@ class TestPayrollEntry(FrappeTestCase):
 		)
 
 		# update cost centers in salary structure assignment for employee
-		new_assignment = frappe.db.get_value(
+		new_assignment = nts.db.get_value(
 			"Salary Structure Assignment",
 			{"employee": employee, "salary_structure": salary_structure.name, "docstatus": 1},
 			"name",
 		)
-		new_assignment = frappe.get_doc("Salary Structure Assignment", new_assignment)
+		new_assignment = nts.get_doc("Salary Structure Assignment", new_assignment)
 		new_assignment.payroll_cost_centers = []
 		for cost_center, percentage in COST_CENTERS.items():
 			new_assignment.append(
@@ -212,7 +212,7 @@ class TestPayrollEntry(FrappeTestCase):
 		new_assignment.save()
 
 		# make an old salary structure assignment to test and ensure old cost center mapping is excluded
-		old_assignment = frappe.copy_doc(new_assignment)
+		old_assignment = nts.copy_doc(new_assignment)
 		old_assignment.from_date = add_months(new_assignment.from_date, -1)
 		old_assignment.payroll_cost_centers = []
 		old_assignment.append("payroll_cost_centers", {"cost_center": "Main - _TC", "percentage": 100})
@@ -252,7 +252,7 @@ class TestPayrollEntry(FrappeTestCase):
 			process_loan_interest_accrual_for_term_loans,
 		)
 
-		frappe.db.delete("Loan")
+		nts.db.delete("Loan")
 
 		[applicant, branch, currency, payroll_payable_account] = setup_lending()
 		loan = create_loan_for_employee(applicant)
@@ -272,9 +272,9 @@ class TestPayrollEntry(FrappeTestCase):
 			payment_account="Cash - _TC",
 		)
 
-		name = frappe.db.get_value("Salary Slip", {"posting_date": nowdate(), "employee": applicant}, "name")
+		name = nts.db.get_value("Salary Slip", {"posting_date": nowdate(), "employee": applicant}, "name")
 
-		salary_slip = frappe.get_doc("Salary Slip", name)
+		salary_slip = nts.get_doc("Salary Slip", name)
 		for row in salary_slip.loans:
 			if row.loan == loan.name:
 				interest_amount = (280000 * 8.4) / (12 * 100)
@@ -296,7 +296,7 @@ class TestPayrollEntry(FrappeTestCase):
 			process_loan_interest_accrual_for_term_loans,
 		)
 
-		frappe.db.delete("Loan")
+		nts.db.delete("Loan")
 
 		[applicant, branch, currency, payroll_payable_account] = setup_lending()
 		loan = create_loan_for_employee(applicant)
@@ -323,7 +323,7 @@ class TestPayrollEntry(FrappeTestCase):
 
 	def test_salary_slip_operation_queueing(self):
 		company = "_Test Company"
-		company_doc = frappe.get_doc("Company", company)
+		company_doc = nts.get_doc("Company", company)
 		employee = make_employee("test_employee@payroll.com", company=company)
 		setup_salary_structure(employee, company_doc)
 
@@ -338,16 +338,16 @@ class TestPayrollEntry(FrappeTestCase):
 			company=company_doc.name,
 			cost_center="Main - _TC",
 		)
-		frappe.flags.enqueue_payroll_entry = True
+		nts.flags.enqueue_payroll_entry = True
 		payroll_entry.submit()
 		payroll_entry.reload()
 
 		self.assertEqual(payroll_entry.status, "Queued")
-		frappe.flags.enqueue_payroll_entry = False
+		nts.flags.enqueue_payroll_entry = False
 
 	def test_salary_slip_operation_failure(self):
 		company = "_Test Company"
-		company_doc = frappe.get_doc("Company", company)
+		company_doc = nts.get_doc("Company", company)
 		employee = make_employee("test_employee@payroll.com", company=company)
 
 		salary_structure = make_salary_structure(
@@ -359,7 +359,7 @@ class TestPayrollEntry(FrappeTestCase):
 		)
 
 		# reset account in component to test submission failure
-		component = frappe.get_doc("Salary Component", salary_structure.earnings[0].salary_component)
+		component = nts.get_doc("Salary Component", salary_structure.earnings[0].salary_component)
 		component.accounts = []
 		component.save()
 
@@ -376,13 +376,13 @@ class TestPayrollEntry(FrappeTestCase):
 		)
 
 		# set employee as Inactive to check creation failure
-		frappe.db.set_value("Employee", employee, "status", "Inactive")
+		nts.db.set_value("Employee", employee, "status", "Inactive")
 		payroll_entry.submit()
 		payroll_entry.reload()
 		self.assertEqual(payroll_entry.status, "Failed")
 		self.assertIsNotNone(payroll_entry.error_message)
 
-		frappe.db.set_value("Employee", employee, "status", "Active")
+		nts.db.set_value("Employee", employee, "status", "Active")
 		payroll_entry.submit()
 		payroll_entry.submit_salary_slips()
 
@@ -391,7 +391,7 @@ class TestPayrollEntry(FrappeTestCase):
 		self.assertIsNotNone(payroll_entry.error_message)
 
 		# set accounts
-		for data in frappe.get_all("Salary Component", pluck="name"):
+		for data in nts.get_all("Salary Component", pluck="name"):
 			set_salary_component_account(data, company_list=[company])
 
 		# Payroll Entry successful, status should change to Submitted
@@ -402,7 +402,7 @@ class TestPayrollEntry(FrappeTestCase):
 		self.assertEqual(payroll_entry.error_message, "")
 
 	def test_payroll_entry_cancellation(self):
-		company_doc = frappe.get_doc("Company", "_Test Company")
+		company_doc = nts.get_doc("Company", "_Test Company")
 		employee = make_employee("test_employee@payroll.com", company=company_doc.name)
 
 		setup_salary_structure(employee, company_doc)
@@ -419,19 +419,19 @@ class TestPayrollEntry(FrappeTestCase):
 		payroll_entry.make_bank_entry()
 		submit_bank_entry(payroll_entry.name)
 
-		salary_slip = frappe.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
+		salary_slip = nts.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
 		self.assertIsNotNone(salary_slip)
 
 		# 2 submitted JVs
 		journal_entries = get_linked_journal_entries(payroll_entry.name, docstatus=1)
 		self.assertEqual(len(journal_entries), 2)
 
-		frappe.flags.enqueue_payroll_entry = True
+		nts.flags.enqueue_payroll_entry = True
 		payroll_entry.cancel()
-		frappe.flags.enqueue_payroll_entry = False
+		nts.flags.enqueue_payroll_entry = False
 		self.assertEqual(payroll_entry.status, "Cancelled")
 
-		salary_slip = frappe.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
+		salary_slip = nts.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
 		self.assertIsNone(salary_slip)
 
 		# 2 cancelled JVs
@@ -439,7 +439,7 @@ class TestPayrollEntry(FrappeTestCase):
 		self.assertEqual(len(journal_entries), 2)
 
 	def test_payroll_entry_status(self):
-		company_doc = frappe.get_doc("Company", "_Test Company")
+		company_doc = nts.get_doc("Company", "_Test Company")
 		employee = make_employee("test_employee@payroll.com", company=company_doc.name)
 
 		setup_salary_structure(employee, company_doc)
@@ -459,7 +459,7 @@ class TestPayrollEntry(FrappeTestCase):
 		self.assertEqual(payroll_entry.status, "Cancelled")
 
 	def test_payroll_entry_cancellation_against_cancelled_journal_entry(self):
-		company_doc = frappe.get_doc("Company", "_Test Company")
+		company_doc = nts.get_doc("Company", "_Test Company")
 		employee = make_employee("test_pe_cancellation@payroll.com", company=company_doc.name)
 
 		setup_salary_structure(employee, company_doc)
@@ -478,15 +478,15 @@ class TestPayrollEntry(FrappeTestCase):
 		submit_bank_entry(payroll_entry.name)
 
 		# cancel the salary slip
-		salary_slip = frappe.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
-		salary_slip = frappe.get_doc("Salary Slip", salary_slip)
+		salary_slip = nts.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
+		salary_slip = nts.get_doc("Salary Slip", salary_slip)
 		salary_slip.cancel()
 
 		# cancel the journal entries
 		jvs = get_linked_journal_entries(payroll_entry.name)
 
 		for jv in jvs:
-			jv_doc = frappe.get_doc("Journal Entry", jv.parent)
+			jv_doc = nts.get_doc("Journal Entry", jv.parent)
 			self.assertEqual(jv_doc.accounts[0].cost_center, payroll_entry.cost_center)
 			jv_doc.cancel()
 
@@ -495,7 +495,7 @@ class TestPayrollEntry(FrappeTestCase):
 
 	@change_settings("Payroll Settings", {"process_payroll_accounting_entry_based_on_employee": 1})
 	def test_payroll_accrual_journal_entry_with_employee_tagging(self):
-		company_doc = frappe.get_doc("Company", "_Test Company")
+		company_doc = nts.get_doc("Company", "_Test Company")
 		employee = make_employee(
 			"test_payroll_accrual_journal_entry_with_employee_tagging@payroll.com", company=company_doc.name
 		)
@@ -512,13 +512,13 @@ class TestPayrollEntry(FrappeTestCase):
 			cost_center="Main - _TC",
 		)
 
-		salary_slip = frappe.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
-		salary_slip = frappe.get_doc("Salary Slip", salary_slip)
+		salary_slip = nts.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
+		salary_slip = nts.get_doc("Salary Slip", salary_slip)
 		payroll_entry.reload()
 		payroll_je = salary_slip.journal_entry
 
 		if payroll_je:
-			payroll_je_doc = frappe.get_doc("Journal Entry", payroll_je)
+			payroll_je_doc = nts.get_doc("Journal Entry", payroll_je)
 			for account in payroll_je_doc.accounts:
 				if account.account == company_doc.default_payroll_payable_account:
 					self.assertEqual(account.party_type, "Employee")
@@ -526,7 +526,7 @@ class TestPayrollEntry(FrappeTestCase):
 
 	@change_settings("Payroll Settings", {"process_payroll_accounting_entry_based_on_employee": 0})
 	def test_payroll_accrual_journal_entry_without_employee_tagging(self):
-		company_doc = frappe.get_doc("Company", "_Test Company")
+		company_doc = nts.get_doc("Company", "_Test Company")
 		employee = make_employee(
 			"test_payroll_accrual_journal_entry_without_employee_tagging@payroll.com",
 			company=company_doc.name,
@@ -544,20 +544,20 @@ class TestPayrollEntry(FrappeTestCase):
 			cost_center="Main - _TC",
 		)
 
-		salary_slip = frappe.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
-		salary_slip = frappe.get_doc("Salary Slip", salary_slip)
+		salary_slip = nts.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
+		salary_slip = nts.get_doc("Salary Slip", salary_slip)
 		payroll_entry.reload()
 		payroll_je = salary_slip.journal_entry
 
 		if payroll_je:
-			payroll_je_doc = frappe.get_doc("Journal Entry", payroll_je)
+			payroll_je_doc = nts.get_doc("Journal Entry", payroll_je)
 			for account in payroll_je_doc.accounts:
 				if account.account == company_doc.default_payroll_payable_account:
 					self.assertEqual(account.party_type, None)
 					self.assertEqual(account.party, None)
 
 	def test_advance_deduction_in_accrual_journal_entry(self):
-		company_doc = frappe.get_doc("Company", "_Test Company")
+		company_doc = nts.get_doc("Company", "_Test Company")
 		employee = make_employee("test_employee@payroll.com", company=company_doc.name)
 
 		setup_salary_structure(employee, company_doc)
@@ -594,7 +594,7 @@ class TestPayrollEntry(FrappeTestCase):
 		)
 
 		# check advance deduction entry correctly mapped in accrual entry
-		deduction_entry = frappe.get_all(
+		deduction_entry = nts.get_all(
 			"Journal Entry Account",
 			fields=["account", "party", "debit", "credit"],
 			filters={
@@ -640,7 +640,7 @@ class TestPayrollEntry(FrappeTestCase):
 		payroll_entry.reload()
 		payroll_entry.make_bank_entry()
 
-		debit_entries = frappe.db.get_all(
+		debit_entries = nts.db.get_all(
 			"Journal Entry Account",
 			fields=["party", "account", "cost_center", "debit", "credit"],
 			filters={
@@ -681,8 +681,8 @@ class TestPayrollEntry(FrappeTestCase):
 		self.assertEqual(debit_entries, expected_entries)
 
 	def test_validate_attendance(self):
-		company = frappe.get_doc("Company", "_Test Company")
-		employee = frappe.db.get_value("Employee", {"company": "_Test Company"})
+		company = nts.get_doc("Company", "_Test Company")
+		employee = nts.db.get_value("Employee", {"company": "_Test Company"})
 		setup_salary_structure(employee, company)
 
 		dates = get_start_end_dates("Monthly", nowdate())
@@ -701,7 +701,7 @@ class TestPayrollEntry(FrappeTestCase):
 
 		# case 2: employee should not be flagged for remaining payroll days for a mid-month relieving date
 		relieving_date = add_days(payroll_entry.start_date, 15)
-		frappe.db.set_value("Employee", employee, "relieving_date", relieving_date)
+		nts.db.set_value("Employee", employee, "relieving_date", relieving_date)
 
 		for date in get_date_range(payroll_entry.start_date, relieving_date):
 			mark_attendance(employee, date, "Present", ignore_validate=True)
@@ -710,7 +710,7 @@ class TestPayrollEntry(FrappeTestCase):
 		self.assertFalse(employees)
 
 		# case 3: employee should not flagged for remaining payroll days
-		frappe.db.set_value("Employee", employee, "relieving_date", None)
+		nts.db.set_value("Employee", employee, "relieving_date", None)
 
 		for date in get_date_range(add_days(relieving_date, 1), payroll_entry.end_date):
 			mark_attendance(employee, date, "Present", ignore_validate=True)
@@ -729,7 +729,7 @@ class TestPayrollEntry(FrappeTestCase):
 		},
 	)
 	def test_skip_bank_entry_for_employees_with_zero_amount(self):
-		company_doc = frappe.get_doc("Company", "_Test Company")
+		company_doc = nts.get_doc("Company", "_Test Company")
 		employee1 = make_employee("test_employee11@payroll.com", company=company_doc.name)
 		employee2 = make_employee("test_employee12@payroll.com", company=company_doc.name)
 
@@ -770,11 +770,11 @@ class TestPayrollEntry(FrappeTestCase):
 			process_loan_interest_accrual_for_term_loans,
 		)
 
-		frappe.db.delete("Loan")
+		nts.db.delete("Loan")
 		applicant, branch, currency, payroll_payable_account = setup_lending()
 
 		loan = create_loan_for_employee(applicant)
-		loan_doc = frappe.get_doc("Loan", loan.name)
+		loan_doc = nts.get_doc("Loan", loan.name)
 		loan_doc.repay_from_salary = 1
 		loan_doc.save()
 
@@ -794,8 +794,8 @@ class TestPayrollEntry(FrappeTestCase):
 			total_loan_repayment=loan.monthly_repayment_amount,
 		)
 
-		salary_slip_name = frappe.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
-		salary_slip = frappe.get_doc("Salary Slip", salary_slip_name)
+		salary_slip_name = nts.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
+		salary_slip = nts.get_doc("Salary Slip", salary_slip_name)
 		payroll_entry.reload()
 
 		initial_gross_pay = flt(salary_slip.gross_pay) - flt(salary_slip.total_deduction)
@@ -805,7 +805,7 @@ class TestPayrollEntry(FrappeTestCase):
 		payroll_entry.make_bank_entry()
 		submit_bank_entry(payroll_entry.name)
 
-		bank_entry = frappe.db.sql(
+		bank_entry = nts.db.sql(
 			"""
 			SELECT je.total_debit, je.total_credit
 			FROM `tabJournal Entry` je
@@ -824,10 +824,10 @@ class TestPayrollEntry(FrappeTestCase):
 
 
 def get_payroll_entry(**args):
-	args = frappe._dict(args)
+	args = nts._dict(args)
 
-	payroll_entry: PayrollEntry = frappe.new_doc("Payroll Entry")
-	payroll_entry.company = args.company or erpnext.get_default_company()
+	payroll_entry: PayrollEntry = nts.new_doc("Payroll Entry")
+	payroll_entry.company = args.company or prodman.get_default_company()
 	payroll_entry.start_date = args.start_date or "2016-11-01"
 	payroll_entry.end_date = args.end_date or "2016-11-30"
 	payroll_entry.payment_account = get_payment_account()
@@ -849,7 +849,7 @@ def get_payroll_entry(**args):
 	payroll_entry.insert()
 
 	# Commit so that the first salary slip creation failure does not rollback the Payroll Entry insert.
-	frappe.db.commit()  # nosemgrep
+	nts.db.commit()  # nosemgrep
 
 	return payroll_entry
 
@@ -865,16 +865,16 @@ def make_payroll_entry(**args):
 
 
 def get_payment_account():
-	return frappe.get_value(
+	return nts.get_value(
 		"Account",
-		{"account_type": "Cash", "company": erpnext.get_default_company(), "is_group": 0},
+		{"account_type": "Cash", "company": prodman.get_default_company(), "is_group": 0},
 		"name",
 	)
 
 
 def setup_salary_structure(employee, company_doc, currency=None, salary_structure=None):
-	for data in frappe.get_all("Salary Component", pluck="name"):
-		if not frappe.db.get_value(
+	for data in nts.get_all("Salary Component", pluck="name"):
+		if not nts.db.get_value(
 			"Salary Component Account", {"parent": data, "company": company_doc.name}, "name"
 		):
 			set_salary_component_account(data)
@@ -889,18 +889,18 @@ def setup_salary_structure(employee, company_doc, currency=None, salary_structur
 
 
 def create_assignments_with_cost_centers(employee1, employee2):
-	company = frappe.get_doc("Company", "_Test Company")
+	company = nts.get_doc("Company", "_Test Company")
 	setup_salary_structure(employee1, company)
 	ss = setup_salary_structure(employee2, company, salary_structure="_Test Salary Structure 2")
 
 	# update cost centers in salary structure assignment for employee2
-	ssa = frappe.db.get_value(
+	ssa = nts.db.get_value(
 		"Salary Structure Assignment",
 		{"employee": employee2, "salary_structure": ss.name, "docstatus": 1},
 		"name",
 	)
 
-	ssa_doc = frappe.get_doc("Salary Structure Assignment", ssa)
+	ssa_doc = nts.get_doc("Salary Structure Assignment", ssa)
 	ssa_doc.payroll_cost_centers = []
 	ssa_doc.append("payroll_cost_centers", {"cost_center": "_Test Cost Center - _TC", "percentage": 60})
 	ssa_doc.append("payroll_cost_centers", {"cost_center": "_Test Cost Center 2 - _TC", "percentage": 40})
@@ -914,17 +914,17 @@ def setup_lending():
 		set_loan_settings_in_company,
 	)
 
-	frappe.get_single("Installed Applications").update_versions()
+	nts.get_single("Installed Applications").update_versions()
 
 	company = "_Test Company"
 	branch = "Test Employee Branch"
 
-	if not frappe.db.exists("Branch", branch):
-		frappe.get_doc({"doctype": "Branch", "branch": branch}).insert()
+	if not nts.db.exists("Branch", branch):
+		nts.get_doc({"doctype": "Branch", "branch": branch}).insert()
 
 	set_loan_settings_in_company(company)
 	applicant = make_employee("test_employee@loan.com", company="_Test Company", branch=branch)
-	company_doc = frappe.get_doc("Company", company)
+	company_doc = nts.get_doc("Company", company)
 
 	make_salary_structure(
 		"Test Salary Structure for Loan",
@@ -934,7 +934,7 @@ def setup_lending():
 		currency=company_doc.default_currency,
 	)
 
-	if not frappe.db.exists("Loan Product", "Car Loan"):
+	if not nts.db.exists("Loan Product", "Car Loan"):
 		create_loan_accounts()
 		create_loan_product(
 			"Car Loan",
@@ -976,11 +976,11 @@ def create_loan_for_employee(applicant):
 
 
 def get_repayment_party_type(loan):
-	loan_repayment_entry, payroll_payable_account = frappe.db.get_value(
+	loan_repayment_entry, payroll_payable_account = nts.db.get_value(
 		"Loan Repayment", {"against_loan": loan}, ["name", "payroll_payable_account"]
 	)
 
-	party_type, party = frappe.db.get_value(
+	party_type, party = nts.db.get_value(
 		"GL Entry",
 		{"voucher_no": loan_repayment_entry, "account": payroll_payable_account, "is_cancelled": 0},
 		["party_type", "party"],
@@ -993,7 +993,7 @@ def submit_bank_entry(payroll_entry_id):
 	# submit the bank entry journal voucher
 	jv = get_linked_journal_entries(payroll_entry_id, docstatus=0)[0].parent
 
-	jv_doc = frappe.get_doc("Journal Entry", jv)
+	jv_doc = nts.get_doc("Journal Entry", jv)
 	jv_doc.cheque_no = "123456"
 	jv_doc.cheque_date = nowdate()
 	jv_doc.submit()
@@ -1004,7 +1004,7 @@ def get_linked_journal_entries(payroll_entry_id, docstatus=None):
 	if docstatus is not None:
 		filters["docstatus"] = docstatus
 
-	return frappe.get_all(
+	return nts.get_all(
 		"Journal Entry Account",
 		filters,
 		"parent",

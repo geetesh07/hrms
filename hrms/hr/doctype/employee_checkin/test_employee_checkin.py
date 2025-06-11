@@ -1,11 +1,11 @@
-# Copyright (c) 2019, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2019, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
 from datetime import datetime, timedelta
 
-import frappe
-from frappe.tests.utils import FrappeTestCase, change_settings
-from frappe.utils import (
+import nts
+from nts.tests.utils import ntsTestCase, change_settings
+from nts.utils import (
 	add_days,
 	get_time,
 	get_year_ending,
@@ -15,7 +15,7 @@ from frappe.utils import (
 	nowdate,
 )
 
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.attendance.attendance import mark_attendance
 from hrms.hr.doctype.employee_checkin.employee_checkin import (
@@ -30,17 +30,17 @@ from hrms.hr.doctype.shift_type.test_shift_type import make_shift_assignment, se
 from hrms.payroll.doctype.salary_slip.test_salary_slip import make_holiday_list, make_leave_application
 
 
-class TestEmployeeCheckin(FrappeTestCase):
+class TestEmployeeCheckin(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Shift Type")
-		frappe.db.delete("Shift Assignment")
-		frappe.db.delete("Employee Checkin")
+		nts.db.delete("Shift Type")
+		nts.db.delete("Shift Assignment")
+		nts.db.delete("Employee Checkin")
 
 		from_date = get_year_start(getdate())
 		to_date = get_year_ending(getdate())
 		self.holiday_list = make_holiday_list(from_date=from_date, to_date=to_date)
 
-		frappe.db.set_single_value("HR Settings", "allow_geolocation_tracking", 0)
+		nts.db.set_single_value("HR Settings", "allow_geolocation_tracking", 0)
 
 	def test_geolocation_tracking(self):
 		employee = make_employee("test_add_log_based_on_employee_field@example.com")
@@ -52,12 +52,12 @@ class TestEmployeeCheckin(FrappeTestCase):
 		# geolocation tracking is disabled
 		self.assertIsNone(checkin.geolocation)
 
-		frappe.db.set_single_value("HR Settings", "allow_geolocation_tracking", 1)
+		nts.db.set_single_value("HR Settings", "allow_geolocation_tracking", 1)
 
 		checkin.save()
 		self.assertEqual(
 			checkin.geolocation,
-			frappe.json.dumps(
+			nts.json.dumps(
 				{
 					"type": "FeatureCollection",
 					"features": [
@@ -73,7 +73,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 
 	def test_add_log_based_on_employee_field(self):
 		employee = make_employee("test_add_log_based_on_employee_field@example.com")
-		employee = frappe.get_doc("Employee", employee)
+		employee = nts.get_doc("Employee", employee)
 		employee.attendance_device_id = "3344"
 		employee.save()
 
@@ -89,21 +89,21 @@ class TestEmployeeCheckin(FrappeTestCase):
 		logs = make_n_checkins(employee, 3)
 		mark_attendance_and_link_log(logs, "Skip", nowdate())
 		log_names = [log.name for log in logs]
-		logs_count = frappe.db.count(
+		logs_count = nts.db.count(
 			"Employee Checkin", {"name": ["in", log_names], "skip_auto_attendance": 1}
 		)
 		self.assertEqual(logs_count, 3)
 
 		logs = make_n_checkins(employee, 4, 2)
 		now_date = nowdate()
-		frappe.db.delete("Attendance", {"employee": employee})
+		nts.db.delete("Attendance", {"employee": employee})
 		attendance = mark_attendance_and_link_log(logs, "Present", now_date, 8.2)
 		log_names = [log.name for log in logs]
-		logs_count = frappe.db.count(
+		logs_count = nts.db.count(
 			"Employee Checkin", {"name": ["in", log_names], "attendance": attendance.name}
 		)
 		self.assertEqual(logs_count, 4)
-		attendance_count = frappe.db.count(
+		attendance_count = nts.db.count(
 			"Attendance",
 			{"status": "Present", "working_hours": 8.2, "employee": employee, "attendance_date": now_date},
 		)
@@ -113,11 +113,11 @@ class TestEmployeeCheckin(FrappeTestCase):
 		employee = make_employee("test_mark_attendance_and_link_log@example.com")
 		logs = make_n_checkins(employee, 3)
 
-		frappe.db.delete("Attendance", {"employee": employee})
+		nts.db.delete("Attendance", {"employee": employee})
 		attendance = mark_attendance_and_link_log(logs, "Present", nowdate(), 8.2)
 		attendance.cancel()
 
-		linked_logs = frappe.db.get_all("Employee Checkin", {"attendance": attendance.name})
+		linked_logs = nts.db.get_all("Employee Checkin", {"attendance": attendance.name})
 		self.assertEqual(len(linked_logs), 0)
 
 	def test_calculate_working_hours(self):
@@ -146,8 +146,8 @@ class TestEmployeeCheckin(FrappeTestCase):
 			{"time": now_datetime() - timedelta(minutes=150), "log_type": "IN"},
 			{"time": now_datetime() - timedelta(minutes=60), "log_type": "OUT"},
 		]
-		logs_type_1 = [frappe._dict(x) for x in logs_type_1]
-		logs_type_2 = [frappe._dict(x) for x in logs_type_2]
+		logs_type_1 = [nts._dict(x) for x in logs_type_1]
+		logs_type_2 = [nts._dict(x) for x in logs_type_2]
 
 		working_hours = calculate_working_hours(logs_type_1, check_in_out_type[0], working_hours_calc_type[0])
 		self.assertEqual(working_hours, (6.5, logs_type_1[0].time, logs_type_1[-1].time))
@@ -244,7 +244,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 		)
 
 		date = getdate()
-		frappe.db.set_value("Employee", employee, "default_shift", default_shift.name)
+		nts.db.set_value("Employee", employee, "default_shift", default_shift.name)
 
 		timestamp = datetime.combine(date, get_time("14:45:00"))
 		log = make_checkin(employee, timestamp)
@@ -521,7 +521,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 		make_checkin(employee, timestamp, 24.001, 72.001)
 
 		timestamp = datetime.combine(date, get_time("10:30:00"))
-		log = frappe.get_doc(
+		log = nts.get_doc(
 			{
 				"doctype": "Employee Checkin",
 				"employee": employee,
@@ -539,7 +539,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 		make_checkin(employee, timestamp, 25.01, 75.01)
 
 		timestamp = datetime.combine(date, get_time("16:30:00"))
-		log = frappe.get_doc(
+		log = nts.get_doc(
 			{
 				"doctype": "Employee Checkin",
 				"employee": employee,
@@ -560,8 +560,8 @@ class TestEmployeeCheckin(FrappeTestCase):
 		# 12:30 - 16:30
 		shift2 = setup_shift_type(shift_type="Shift 2", start_time="12:30:00", end_time="16:30:00")
 
-		frappe.db.set_value("Employee", emp1, "default_shift", shift1.name)
-		frappe.db.set_value("Employee", emp2, "default_shift", shift1.name)
+		nts.db.set_value("Employee", emp1, "default_shift", shift1.name)
+		nts.db.set_value("Employee", emp2, "default_shift", shift1.name)
 
 		date = getdate()
 		timestamp = datetime.combine(date, get_time("12:30:00"))
@@ -663,12 +663,12 @@ class TestEmployeeCheckin(FrappeTestCase):
 		mark_attendance_and_link_log([log], "Absent", add_days(timestamp, 1))
 		log.reload()
 		log.time = timestamp
-		self.assertRaises(frappe.ValidationError, log.save)
+		self.assertRaises(nts.ValidationError, log.save)
 
 	def test_modifying_half_attendance_created_from_leave(self):
 		shift = setup_shift_type(working_hours_threshold_for_half_day=3)
 		emp = make_employee("testhalfday@example.com", company="_Test Company", default_shift=shift.name)
-		employee = frappe.get_doc("Employee", emp)
+		employee = nts.get_doc("Employee", emp)
 		# create attendance from leave
 		leave_type = create_leave_type(leave_type_name="_Test Half Day", include_holidays=0)
 		create_leave_allocation(
@@ -693,7 +693,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 		out_log = make_checkin(emp, out_time)
 
 		shift.process_auto_attendance()
-		attendance = frappe.get_all(
+		attendance = nts.get_all(
 			"Attendance",
 			filters={"leave_type": leave_type.name, "employee": emp, "attendance_date": nowdate()},
 			fields=[
@@ -719,7 +719,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 	def test_modifying_half_day_attendance_when_checkins_are_absent(self):
 		shift = setup_shift_type(working_hours_threshold_for_half_day=1)
 		emp = make_employee("testhalfday2@example.com", company="_Test Company", default_shift=shift.name)
-		employee = frappe.get_doc("Employee", emp)
+		employee = nts.get_doc("Employee", emp)
 		# create attendance from leave
 		leave_type = create_leave_type(leave_type_name="_Test Half Day", include_holidays=0)
 		create_leave_allocation(
@@ -740,7 +740,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 
 		shift.process_auto_attendance()
 
-		attendance = frappe.get_all(
+		attendance = nts.get_all(
 			"Attendance",
 			filters={"leave_type": leave_type.name, "employee": emp, "attendance_date": nowdate()},
 			fields=[
@@ -769,7 +769,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 			working_hours_threshold_for_absent=2,
 		)
 		emp = make_employee("testhalfday3@example.com", company="_Test Company", default_shift=shift.name)
-		employee = frappe.get_doc("Employee", emp)
+		employee = nts.get_doc("Employee", emp)
 		# create attendance from leave
 		leave_type = create_leave_type(leave_type_name="_Test Half Day", include_holidays=0)
 		create_leave_allocation(
@@ -793,7 +793,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 		out_log = make_checkin(emp, out_time)
 		shift.process_auto_attendance()
 
-		attendance = frappe.get_all(
+		attendance = nts.get_all(
 			"Attendance",
 			filters={"leave_type": leave_type.name, "employee": emp, "attendance_date": nowdate()},
 			fields=[
@@ -825,7 +825,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 			working_hours_threshold_for_absent=2,
 		)
 		emp = make_employee("testhalfday4@example.com", company="_Test Company", default_shift=shift.name)
-		employee = frappe.get_doc("Employee", emp)
+		employee = nts.get_doc("Employee", emp)
 		# create attendance from leave
 		leave_type = create_leave_type(leave_type_name="_Test Half Day", include_holidays=0)
 		create_leave_allocation(
@@ -849,7 +849,7 @@ class TestEmployeeCheckin(FrappeTestCase):
 		out_log = make_checkin(emp, out_time)
 		shift.process_auto_attendance()
 
-		attendance = frappe.get_all(
+		attendance = nts.get_all(
 			"Attendance",
 			filters={"leave_type": leave_type.name, "employee": emp, "attendance_date": nowdate()},
 			fields=[
@@ -885,7 +885,7 @@ def make_checkin(employee, time=None, latitude=None, longitude=None):
 	if not time:
 		time = now_datetime()
 
-	log = frappe.get_doc(
+	log = nts.get_doc(
 		{
 			"doctype": "Employee Checkin",
 			"employee": employee,
@@ -900,7 +900,7 @@ def make_checkin(employee, time=None, latitude=None, longitude=None):
 
 
 def make_shift_location(location_name, latitude, longitude, checkin_radius=500):
-	shift_location = frappe.get_doc(
+	shift_location = nts.get_doc(
 		{
 			"doctype": "Shift Location",
 			"location_name": location_name,
@@ -914,7 +914,7 @@ def make_shift_location(location_name, latitude, longitude, checkin_radius=500):
 
 
 def create_leave_allocation(employee, leave_type, from_date, to_date, new_leaves_allocated):
-	leave_allocation = frappe.get_doc(
+	leave_allocation = nts.get_doc(
 		{
 			"doctype": "Leave Allocation",
 			"employee": employee.name,

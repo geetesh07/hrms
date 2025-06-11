@@ -1,21 +1,21 @@
-# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2022, nts Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import frappe
-from frappe.tests.utils import FrappeTestCase
+import nts
+from nts.tests.utils import ntsTestCase
 
-from erpnext.setup.doctype.designation.test_designation import create_designation
-from erpnext.setup.doctype.employee.test_employee import make_employee
+from prodman.setup.doctype.designation.test_designation import create_designation
+from prodman.setup.doctype.employee.test_employee import make_employee
 
 from hrms.hr.doctype.appraisal_cycle.test_appraisal_cycle import create_appraisal_cycle
 from hrms.hr.doctype.appraisal_template.test_appraisal_template import create_appraisal_template
 from hrms.tests.test_utils import create_company
 
 
-class TestEmployeePerformanceFeedback(FrappeTestCase):
+class TestEmployeePerformanceFeedback(ntsTestCase):
 	def setUp(self):
-		frappe.db.delete("Employee Performance Feedback")
-		frappe.db.delete("Appraisal")
+		nts.db.delete("Employee Performance Feedback")
+		nts.db.delete("Appraisal")
 
 		company = create_company("_Test Appraisal").name
 		self.template = create_appraisal_template()
@@ -31,10 +31,10 @@ class TestEmployeePerformanceFeedback(FrappeTestCase):
 		cycle = create_appraisal_cycle(designation="Engineer")
 		cycle.create_appraisals()
 
-		self.appraisal = frappe.db.get_all("Appraisal", filters={"appraisal_cycle": cycle.name})[0].name
+		self.appraisal = nts.db.get_all("Appraisal", filters={"appraisal_cycle": cycle.name})[0].name
 
 	def test_validate_employees(self):
-		feedback = frappe.get_doc(
+		feedback = nts.get_doc(
 			{
 				"doctype": "Employee Performance Feedback",
 				"employee": self.employee,
@@ -44,7 +44,7 @@ class TestEmployeePerformanceFeedback(FrappeTestCase):
 		)
 
 		feedback.set_feedback_criteria()
-		self.assertRaises(frappe.ValidationError, feedback.insert)
+		self.assertRaises(nts.ValidationError, feedback.insert)
 
 	def test_set_feedback_criteria(self):
 		feedback = create_performance_feedback(
@@ -103,7 +103,7 @@ class TestEmployeePerformanceFeedback(FrappeTestCase):
 
 		feedback2.submit()
 
-		avg_feedback_score = frappe.db.get_value("Appraisal", self.appraisal, "avg_feedback_score")
+		avg_feedback_score = nts.db.get_value("Appraisal", self.appraisal, "avg_feedback_score")
 		self.assertEqual(avg_feedback_score, 3.575)
 
 	def test_update_avg_feedback_score_on_cancel(self):
@@ -120,17 +120,17 @@ class TestEmployeePerformanceFeedback(FrappeTestCase):
 		ratings[1].rating = 0.7
 		feedback.submit()
 
-		avg_feedback_score = frappe.db.get_value("Appraisal", self.appraisal, "avg_feedback_score")
+		avg_feedback_score = nts.db.get_value("Appraisal", self.appraisal, "avg_feedback_score")
 		self.assertEqual(avg_feedback_score, 3.85)
 
 		feedback.cancel()
 
-		avg_feedback_score = frappe.db.get_value("Appraisal", self.appraisal, "avg_feedback_score")
+		avg_feedback_score = nts.db.get_value("Appraisal", self.appraisal, "avg_feedback_score")
 		self.assertEqual(avg_feedback_score, 0.0)
 
 
 def create_performance_feedback(employee, reviewer, appraisal):
-	feedback = frappe.get_doc(
+	feedback = nts.get_doc(
 		{
 			"doctype": "Employee Performance Feedback",
 			"employee": employee,

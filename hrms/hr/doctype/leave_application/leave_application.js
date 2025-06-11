@@ -1,7 +1,7 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// Copyright (c) 2015, nts Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
-frappe.ui.form.on("Leave Application", {
+nts.ui.form.on("Leave Application", {
 	setup: function (frm) {
 		frm.set_query("leave_approver", function () {
 			return {
@@ -12,7 +12,7 @@ frappe.ui.form.on("Leave Application", {
 				},
 			};
 		});
-		frm.set_query("employee", erpnext.queries.employee);
+		frm.set_query("employee", prodman.queries.employee);
 	},
 
 	onload: function (frm) {
@@ -20,10 +20,10 @@ frappe.ui.form.on("Leave Application", {
 		frm.ignore_doctypes_on_cancel_all = ["Leave Ledger Entry"];
 
 		if (!frm.doc.posting_date) {
-			frm.set_value("posting_date", frappe.datetime.get_today());
+			frm.set_value("posting_date", nts.datetime.get_today());
 		}
 		if (frm.doc.docstatus == 0) {
-			return frappe.call({
+			return nts.call({
 				method: "hrms.hr.doctype.leave_application.leave_application.get_mandatory_approval",
 				args: {
 					doctype: frm.doc.doctype,
@@ -51,7 +51,7 @@ frappe.ui.form.on("Leave Application", {
 		let lwps;
 
 		if (frm.doc.employee) {
-			frappe.call({
+			nts.call({
 				method: "hrms.hr.doctype.leave_application.leave_application.get_leave_details",
 				async: false,
 				args: {
@@ -69,7 +69,7 @@ frappe.ui.form.on("Leave Application", {
 			$("div").remove(".form-dashboard-section.custom");
 
 			frm.dashboard.add_section(
-				frappe.render_template("leave_application_dashboard", {
+				nts.render_template("leave_application_dashboard", {
 					data: leave_details,
 				}),
 				__("Allocated Leaves"),
@@ -95,14 +95,14 @@ frappe.ui.form.on("Leave Application", {
 		}
 
 		frm.set_intro("");
-		if (frm.doc.__islocal && !in_list(frappe.user_roles, "Employee")) {
+		if (frm.doc.__islocal && !in_list(nts.user_roles, "Employee")) {
 			frm.set_intro(__("Fill the form and save it"));
 		} else if (
 			frm.perm[0] &&
 			frm.perm[0].submit &&
 			!frm.is_dirty() &&
 			!frm.is_new() &&
-			!frappe.model.has_workflow(frm.doctype) &&
+			!nts.model.has_workflow(frm.doctype) &&
 			frm.doc.docstatus === 0
 		) {
 			frm.set_intro(__("Submit this Leave Application to confirm."));
@@ -132,7 +132,7 @@ frappe.ui.form.on("Leave Application", {
 
 	leave_approver: function (frm) {
 		if (frm.doc.leave_approver) {
-			frm.set_value("leave_approver_name", frappe.user.full_name(frm.doc.leave_approver));
+			frm.set_value("leave_approver_name", nts.user.full_name(frm.doc.leave_approver));
 		}
 	},
 
@@ -181,10 +181,10 @@ frappe.ui.form.on("Leave Application", {
 			const other_field = updated_field === "from_date" ? "to_date" : "from_date";
 
 			frm.set_value(other_field, frm.doc[updated_field]);
-			frappe.show_alert({
+			nts.show_alert({
 				message: __("Changing '{0}' to {1}.", [
 					__(frm.fields_dict[other_field].df.label),
-					frappe.datetime.str_to_user(frm.doc[updated_field]),
+					nts.datetime.str_to_user(frm.doc[updated_field]),
 				]),
 				indicator: "blue",
 			});
@@ -197,8 +197,8 @@ frappe.ui.form.on("Leave Application", {
 
 		const half_day_datepicker = frm.fields_dict.half_day_date.datepicker;
 		half_day_datepicker.update({
-			minDate: frappe.datetime.str_to_obj(frm.doc.from_date),
-			maxDate: frappe.datetime.str_to_obj(frm.doc.to_date),
+			minDate: nts.datetime.str_to_obj(frm.doc.from_date),
+			maxDate: nts.datetime.str_to_obj(frm.doc.to_date),
 		});
 	},
 
@@ -210,7 +210,7 @@ frappe.ui.form.on("Leave Application", {
 			frm.doc.from_date &&
 			frm.doc.to_date
 		) {
-			return frappe.call({
+			return nts.call({
 				method: "hrms.hr.doctype.leave_application.leave_application.get_leave_balance_on",
 				args: {
 					employee: frm.doc.employee,
@@ -233,7 +233,7 @@ frappe.ui.form.on("Leave Application", {
 	calculate_total_days: function (frm) {
 		if (frm.doc.from_date && frm.doc.to_date && frm.doc.employee && frm.doc.leave_type) {
 			// server call is done to include holidays in leave days calculations
-			return frappe.call({
+			return nts.call({
 				method: "hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days",
 				args: {
 					employee: frm.doc.employee,
@@ -255,7 +255,7 @@ frappe.ui.form.on("Leave Application", {
 
 	set_leave_approver: function (frm) {
 		if (frm.doc.employee) {
-			return frappe.call({
+			return nts.call({
 				method: "hrms.hr.doctype.leave_application.leave_application.get_leave_approver",
 				args: {
 					employee: frm.doc.employee,
@@ -277,7 +277,7 @@ frappe.ui.form.on("Leave Application", {
 		if (
 			frm.doc.docstatus === 0 &&
 			!frm.is_dirty() &&
-			!frappe.model.has_workflow(frm.doctype)
+			!nts.model.has_workflow(frm.doctype)
 		) {
 			if (self_approval_not_allowed && current_employee == frm.doc.employee) {
 				frm.set_df_property("status", "read_only", 1);
@@ -293,7 +293,7 @@ frappe.ui.form.on("Leave Application", {
 	},
 });
 
-frappe.tour["Leave Application"] = [
+nts.tour["Leave Application"] = [
 	{
 		fieldname: "employee",
 		title: "Employee",
