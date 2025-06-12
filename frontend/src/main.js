@@ -7,7 +7,7 @@ import {
 	Button,
 	Input,
 	setConfig,
-	ntsRequest,
+	frappeRequest,
 	resourcesPlugin,
 	FormControl,
 } from "frappe-ui"
@@ -36,7 +36,7 @@ import "./main.css"
 const app = createApp(App)
 const socket = initSocket()
 
-setConfig("resourceFetcher", ntsRequest)
+setConfig("resourceFetcher", frappeRequest)
 app.use(resourcesPlugin)
 app.use(translationsPlugin)
 
