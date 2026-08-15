@@ -7,7 +7,7 @@ import {
 	Button,
 	Input,
 	setConfig,
-	ntsRequest,
+	frappeRequest,
 	resourcesPlugin,
 	FormControl,
 } from "frappe-ui"
@@ -36,7 +36,7 @@ import "./main.css"
 const app = createApp(App)
 const socket = initSocket()
 
-setConfig("resourceFetcher", ntsRequest)
+setConfig("resourceFetcher", frappeRequest)
 app.use(resourcesPlugin)
 app.use(translationsPlugin)
 
@@ -95,7 +95,7 @@ const registerServiceWorker = async () => {
 
 router.isReady().then(async () => {
 	if (import.meta.env.DEV) {
-		await ntsRequest({
+		await frappeRequest({
 			url: "/api/method/hrms.www.hrms.get_context_for_dev",
 		}).then(async (values) => {
 			if (!window.nts) window.nts = {}

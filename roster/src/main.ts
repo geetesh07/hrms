@@ -4,11 +4,11 @@ import { createApp } from "vue";
 import router from "./router";
 import App from "./App.vue";
 
-import { Button, setConfig, ntsRequest, resourcesPlugin } from "frappe-ui";
+import { Button, setConfig, frappeRequest, resourcesPlugin } from "frappe-ui";
 
 const app = createApp(App);
 
-setConfig("resourceFetcher", ntsRequest);
+setConfig("resourceFetcher", frappeRequest);
 
 app.use(router);
 app.use(resourcesPlugin);
